@@ -367,7 +367,7 @@ function homeBlocks() {
     b('hero', {
       badge: 'PREMIUM CUSTOM SPORTSWEAR WITH FREE MOCKUPS',
       heading: 'From concept to creation — we design top-tier uniforms.',
-      body: 'Fast turnaround in 3–4 weeks, or choose our 2-week Rush Service when you need it faster.',
+      body: 'From concept to creation, we deliver top-tier customized sportswear built for comfort, durability, and game-day confidence.',
       image: '/media/hero-field.png',
       primary: [{ label: 'Get my free mockup', href: '#quote' }],
       secondary: [{ label: 'Explore collections', href: '/collections' }],
@@ -380,7 +380,7 @@ function homeBlocks() {
     b('statStrip', {
       items: [
         { value: '1,000+', label: 'Teams outfitted', count: 1000, suffix: '+', highlight: false },
-        { value: '3–4 wks', label: 'Design to delivery', count: 0, suffix: '', highlight: false },
+        { value: '3–4 weeks', label: 'Order to deliver', count: 0, suffix: '', highlight: false },
         { value: '24 hrs', label: 'Mockup turnaround', count: 24, suffix: ' hrs', highlight: false },
         { value: '$0', label: 'Art & setup fees', count: 0, suffix: '', highlight: true },
       ],
