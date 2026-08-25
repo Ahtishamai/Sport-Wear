@@ -1,0 +1,321 @@
+// Design Sportswear — data model
+// Quote-request e-commerce (no cart / no checkout) + Shopify-style admin + block page builder.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------- auth
+
+enum Role {
+  ADMIN
+  EDITOR
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  passwordHash String
+  role         Role      @default(EDITOR)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@map("users")
+}
+
+// ---------------------------------------------------------------- media
+
+model Media {
+  id        String   @id @default(cuid())
+  url       String   @db.VarChar(512)
+  filename  String
+  mimeType  String
+  size      Int
+  width     Int?
+  height    Int?
+  alt       String   @default("")
+  folder    String   @default("general")
+  createdAt DateTime @default(now())
+
+  productImages ProductImage[]
+
+  @@index([folder])
+  @@map("media")
+}
+
+// ---------------------------------------------------------------- catalog
+
+enum PublishStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model Collection {
+  id          String        @id @default(cuid())
+  handle      String        @unique
+  title       String
+  subtitle    String?       @db.Text
+  description String?       @db.Text
+  bannerUrl   String?       @db.VarChar(512)
+  thumbUrl    String?       @db.VarChar(512)
+  status      PublishStatus @default(PUBLISHED)
+  position    Int           @default(0)
+  showInNav   Boolean       @default(true)
+
+  seoTitle       String?
+  seoDescription String? @db.Text
+
+  // Optional page-builder blocks appended under the product grid
+  blocks Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products ProductCollection[]
+
+  @@index([status, position])
+  @@map("collections")
+}
+
+model Product {
+  id            String        @id @default(cuid())
+  handle        String        @unique
+  title         String
+  subtitle      String?
+  description   String        @db.Text
+  basePrice     Decimal       @db.Decimal(10, 2)
+  compareAt     Decimal?      @db.Decimal(10, 2)
+  badge         String?
+  categoryLabel String        @default("Fully customizable")
+  status        PublishStatus @default(PUBLISHED)
+  featured      Boolean       @default(false)
+  position      Int           @default(0)
+  sku           String?
+
+  // Structured, admin-editable JSON
+  sports      Json? // ["Baseball","Softball","Other"]
+  colorways   Json? // [{name,from,to}]
+  sizes       Json? // ["YS","YM",...]
+  defaultQty  Json? // {"S":2,"M":4,...}
+  volumeTiers Json? // [{label,minQty,maxQty,discount,savingsLabel}]
+  specs       Json? // [{q,a}]
+  trustPoints Json? // ["No deposit to get a quote", ...]
+
+  seoTitle       String?
+  seoDescription String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  images      ProductImage[]
+  collections ProductCollection[]
+  quotes      QuoteRequest[]
+
+  @@index([status, position])
+  @@index([featured])
+  @@map("products")
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String
+  mediaId   String?
+  url       String  @db.VarChar(512)
+  alt       String  @default("")
+  position  Int     @default(0)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  media   Media?  @relation(fields: [mediaId], references: [id], onDelete: SetNull)
+
+  @@index([productId, position])
+  @@index([mediaId])
+  @@map("product_images")
+}
+
+model ProductCollection {
+  productId    String
+  collectionId String
+  position     Int    @default(0)
+
+  product    Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@id([productId, collectionId])
+  @@index([collectionId, position])
+  @@map("product_collections")
+}
+
+// ---------------------------------------------------------------- team packages
+
+model TeamPackage {
+  id        String        @id @default(cuid())
+  handle    String        @unique
+  tag       String
+  name      String
+  price     Decimal       @db.Decimal(10, 2)
+  note      String?
+  items     Json // string[]
+  imageUrl  String?       @db.VarChar(512)
+  highlight Boolean       @default(false)
+  position  Int           @default(0)
+  status    PublishStatus @default(PUBLISHED)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@map("team_packages")
+}
+
+// ---------------------------------------------------------------- content
+
+model Review {
+  id        String   @id @default(cuid())
+  text      String   @db.Text
+  name      String
+  role      String
+  initials  String
+  rating    Int      @default(5)
+  published Boolean  @default(true)
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@map("reviews")
+}
+
+model Faq {
+  id        String  @id @default(cuid())
+  question  String  @db.Text
+  answer    String  @db.Text
+  group     String  @default("home") // home | product | contact
+  published Boolean @default(true)
+  position  Int     @default(0)
+
+  @@index([group, position])
+  @@map("faqs")
+}
+
+model Page {
+  id             String        @id @default(cuid())
+  slug           String        @unique
+  title          String
+  blocks         Json // Block[] — rendered by the block registry
+  status         PublishStatus @default(PUBLISHED)
+  isSystem       Boolean       @default(false)
+  showInNav      Boolean       @default(false)
+  navLabel       String?
+  position       Int           @default(0)
+  seoTitle       String?
+  seoDescription String?       @db.Text
+  ogImage        String?       @db.VarChar(512)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  revisions PageRevision[]
+
+  @@map("pages")
+}
+
+model PageRevision {
+  id        String   @id @default(cuid())
+  pageId    String
+  blocks    Json
+  label     String?
+  authorId  String?
+  createdAt DateTime @default(now())
+
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@index([pageId, createdAt])
+  @@map("page_revisions")
+}
+
+model NavItem {
+  id       String  @id @default(cuid())
+  menu     String // header | footer_shop | footer_company
+  label    String
+  href     String
+  position Int     @default(0)
+  newTab   Boolean @default(false)
+
+  @@index([menu, position])
+  @@map("nav_items")
+}
+
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}
+
+// ---------------------------------------------------------------- leads
+
+enum LeadStatus {
+  NEW
+  IN_PROGRESS
+  QUOTED
+  WON
+  LOST
+}
+
+model QuoteRequest {
+  id         String  @id @default(cuid())
+  reference  String  @unique
+  subject    String
+  team       String
+  name       String
+  phone      String
+  email      String
+  sport      String?
+  rosterSize Int?
+  deadline   String?
+  message    String? @db.Text
+
+  // product context (when opened from a PDP)
+  productId    String?
+  productTitle String?
+  colorway     String?
+  sizeRun      Json?
+  totalUnits   Int?
+  unitPrice    Decimal? @db.Decimal(10, 2)
+  estTotal     Decimal? @db.Decimal(10, 2)
+  attachments  Json?
+
+  status     LeadStatus @default(NEW)
+  source     String     @default("site")
+  pageUrl    String?    @db.VarChar(512)
+  referrer   String?    @db.VarChar(512)
+  utm        Json?
+  adminNotes String?    @db.Text
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([productId])
+  @@map("quote_requests")
+}
+
+model ContactMessage {
+  id        String     @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String?
+  message   String     @db.Text
+  status    LeadStatus @default(NEW)
+  pageUrl   String?    @db.VarChar(512)
+  createdAt DateTime   @default(now())
+
+  @@index([status, createdAt])
+  @@map("contact_messages")
+}
