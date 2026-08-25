@@ -73,7 +73,13 @@ export const BLOCKS: BlockDefinition[] = [
       { name: 'secondary', label: 'Secondary button', type: 'list', fields: linkFields },
       { name: 'proof', label: 'Proof line', type: 'text', width: 'half' },
       { name: 'height', label: 'Height (px)', type: 'number', width: 'half', min: 380, max: 1000 },
-      { name: 'cornerYear', label: 'Corner tab — big', type: 'text', width: 'half' },
+      {
+        name: 'cornerYear',
+        label: 'Corner tab — big',
+        type: 'text',
+        width: 'half',
+        help: 'Leave both corner fields empty to hide the tab.',
+      },
       { name: 'cornerLabel', label: 'Corner tab — small', type: 'text', width: 'half' },
       { name: 'parallax', label: 'Parallax background', type: 'boolean', width: 'half' },
     ],
@@ -86,8 +92,8 @@ export const BLOCKS: BlockDefinition[] = [
       secondary: [{ label: 'Explore collections', href: '/collections' }],
       proof: '1,000+ happy customers',
       height: 720,
-      cornerYear: '2026',
-      cornerLabel: 'Team / Lookbook',
+      cornerYear: '',
+      cornerLabel: '',
       parallax: true,
     },
   },
@@ -131,8 +137,10 @@ export const BLOCKS: BlockDefinition[] = [
     label: 'Stat strip',
     group: 'Social proof',
     glyph: '▦',
-    description: 'Four bordered cells with animated count-up numbers. The last cell is yellow.',
+    description:
+      'Compact USP row — bordered cells with animated count-up numbers. Mark one cell yellow to make it the hero stat.',
     fields: [
+      bgField,
       {
         name: 'items',
         label: 'Stats',
@@ -153,6 +161,7 @@ export const BLOCKS: BlockDefinition[] = [
       },
     ],
     defaults: {
+      background: 'white',
       items: [
         { value: '1,000+', label: 'Teams outfitted', count: 1000, suffix: '+', highlight: false },
         { value: '3–4 wks', label: 'Design to delivery', count: 0, suffix: '', highlight: false },
@@ -415,6 +424,15 @@ export const BLOCKS: BlockDefinition[] = [
       { name: 'eyebrow', label: 'Eyebrow', type: 'text', width: 'half' },
       { name: 'heading', label: 'Heading', type: 'text', width: 'half' },
       {
+        name: 'height',
+        label: 'Image height (px)',
+        type: 'number',
+        width: 'half',
+        min: 200,
+        max: 720,
+        help: 'Capped on phones so the card never fills the screen.',
+      },
+      {
         name: 'cards',
         label: 'Cards',
         type: 'list',
@@ -430,6 +448,7 @@ export const BLOCKS: BlockDefinition[] = [
     defaults: {
       eyebrow: 'By sport',
       heading: 'Explore categories',
+      height: 460,
       cards: [
         {
           title: 'Softball',

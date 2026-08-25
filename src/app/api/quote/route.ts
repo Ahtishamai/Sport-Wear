@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/db';
+import { prisma, withDbRetry } from '@/lib/db';
 import { badRequest, clientIp, json, rateLimit, serverError } from '@/lib/api';
 import { isEmail, reference } from '@/lib/utils';
 import { saveUpload } from '@/lib/upload';
@@ -67,7 +67,8 @@ export async function POST(req: Request) {
       productId = exists?.id ?? null;
     }
 
-    const quote = await prisma.quoteRequest.create({
+    const quote = await withDbRetry(() =>
+      prisma.quoteRequest.create({
       data: {
         reference: reference('Q'),
         subject: get('subject') || 'Custom team kit',
@@ -89,8 +90,9 @@ export async function POST(req: Request) {
         attachments: attachments.length ? attachments : undefined,
         pageUrl: get('pageUrl') || null,
         referrer: get('referrer') || null,
-      },
-    });
+        },
+      })
+    );
 
     await notifyQuote(quote).catch(() => {});
 

@@ -10,11 +10,40 @@ import { edSetting } from '@/components/blocks/primitives';
 
 export type NavLink = { id: string; label: string; href: string; newTab?: boolean };
 
+/**
+ * Announcement bar. On phones the three messages would stack into three lines
+ * and eat most of the first screen, so below `md` they scroll as a single-line
+ * marquee instead; from `md` up they sit centred as designed.
+ */
 export function AnnouncementBar({ items }: { items: string[] }) {
   if (!items.length) return null;
+
+  const Item = ({ text, index }: { text: string; index: number }) => (
+    <>
+      <span {...edSetting(`announcement.${index}`)}>{text}</span>
+      <span aria-hidden="true" className="text-brand">
+        ✦
+      </span>
+    </>
+  );
+
   return (
-    <div className="bg-ink px-5 py-[11px] text-white">
-      <div className="flex flex-wrap items-center justify-center gap-x-[26px] gap-y-1 text-center text-[13px] font-semibold uppercase tracking-[.06em]">
+    <div className="bg-ink text-white">
+      {/* phones — one scrolling line */}
+      <div className="overflow-hidden py-2 md:hidden">
+        <div
+          data-marquee
+          className="animate-marq flex w-max items-center gap-4 whitespace-nowrap text-[11px] font-semibold uppercase tracking-[.08em]"
+          style={{ '--marq-duration': '22s' } as React.CSSProperties}
+        >
+          {[...items, ...items].map((t, i) => (
+            <Item key={i} text={t} index={i % items.length} />
+          ))}
+        </div>
+      </div>
+
+      {/* tablet and up — centred, as designed */}
+      <div className="hidden flex-wrap items-center justify-center gap-x-[26px] gap-y-1 px-5 py-[11px] text-center text-[13px] font-semibold uppercase tracking-[.06em] md:flex">
         {items.map((t, i) => (
           <span key={i} className="flex items-center gap-[26px]">
             <span {...edSetting(`announcement.${i}`)}>{t}</span>
@@ -27,6 +56,42 @@ export function AnnouncementBar({ items }: { items: string[] }) {
         ))}
       </div>
     </div>
+  );
+}
+
+/** Falls back to the site name if the logo file is missing, rather than
+ *  rendering a broken-image icon in the header. */
+function Logo({
+  src,
+  siteName,
+  className,
+  priority,
+}: {
+  src: string;
+  siteName: string;
+  className?: string;
+  priority?: boolean;
+}) {
+  const [failed, setFailed] = useState(false);
+
+  if (!src || failed) {
+    return (
+      <span className="font-display text-[15px] font-black uppercase leading-none tracking-[.06em] sm:text-[17px]">
+        {siteName}
+      </span>
+    );
+  }
+
+  return (
+    <Image
+      src={src}
+      alt={siteName}
+      width={200}
+      height={40}
+      priority={priority}
+      onError={() => setFailed(true)}
+      className={className}
+    />
   );
 }
 
@@ -61,15 +126,19 @@ export function Header({
 
   return (
     <header className="sticky top-0 z-[60] border-b border-hairline bg-[rgba(255,255,255,.94)] backdrop-blur-[14px]">
-      <div className="flex flex-wrap items-center gap-7 px-5 py-3.5 md:px-10">
-        <Link href="/" aria-label={`${siteName} — home`} className="shrink-0" {...edSetting('logoDark', 'image')}>
-          <Image
+      {/* One row at every width — never wraps. */}
+      <div className="flex items-center gap-3 px-4 py-2.5 md:gap-7 md:px-10 md:py-3.5">
+        <Link
+          href="/"
+          aria-label={`${siteName} — home`}
+          className="flex shrink-0 items-center"
+          {...edSetting('logoDark', 'image')}
+        >
+          <Logo
             src={logo}
-            alt={siteName}
-            width={160}
-            height={30}
+            siteName={siteName}
             priority
-            className="h-[30px] w-auto object-contain"
+            className="h-[26px] w-auto max-w-[120px] object-contain sm:max-w-[170px] md:h-[30px]"
           />
         </Link>
 
@@ -88,28 +157,40 @@ export function Header({
           ))}
         </nav>
 
-        <div className="ml-auto flex items-center gap-4">
+        <div className="ml-auto flex shrink-0 items-center gap-2 md:gap-4">
           <a
             href={phoneHref}
             className="hidden whitespace-nowrap text-[15px] font-semibold text-ink md:block"
           >
             <span {...edSetting('phone')}>{phone}</span>
           </a>
+
+          {/* Call button — phones only, where tapping to call beats reading a number. */}
+          <a
+            href={phoneHref}
+            aria-label={`Call ${phone}`}
+            className="flex h-10 w-10 items-center justify-center border border-hairline text-ink transition-colors hover:border-ink md:hidden"
+          >
+            <Icon name="phone" size={17} />
+          </a>
+
           <button
             type="button"
             onClick={() => open('Custom team kit')}
-            className="btn btn-yellow btn-md text-[13px] max-sm:px-4 max-sm:py-3 max-sm:text-[11px]"
+            className="btn btn-yellow whitespace-nowrap px-3 py-2.5 text-[11px] tracking-[.06em] sm:px-4 md:px-[22px] md:py-[13px] md:text-[13px] md:tracking-[.1em]"
           >
-            Request a quote
+            <span className="sm:hidden">Quote</span>
+            <span className="hidden sm:inline">Request a quote</span>
           </button>
+
           <button
             type="button"
             aria-label="Open menu"
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen(true)}
-            className="p-1 lg:hidden"
+            className="flex h-10 w-10 items-center justify-center text-ink lg:hidden"
           >
-            <Icon name="menu" size={26} />
+            <Icon name="menu" size={24} />
           </button>
         </div>
       </div>
@@ -122,32 +203,43 @@ export function Header({
             onClick={() => setMenuOpen(false)}
             className="absolute inset-0 cursor-default bg-[rgba(16,17,20,.45)] backdrop-blur-[3px]"
           />
-          <div className="animate-slide-in relative ml-auto flex h-full w-[85%] max-w-[360px] flex-col bg-white">
-            <div className="flex items-center justify-between border-b border-hairline px-5 py-4">
-              <Image
+          <div className="animate-slide-in relative ml-auto flex h-full w-[86%] max-w-[360px] flex-col bg-white">
+            <div className="flex items-center justify-between border-b border-hairline px-5 py-3.5">
+              <Logo
                 src={logo}
-                alt={siteName}
-                width={140}
-                height={26}
-                className="h-[26px] w-auto object-contain"
+                siteName={siteName}
+                className="h-[26px] w-auto max-w-[150px] object-contain"
               />
-              <button type="button" onClick={() => setMenuOpen(false)} aria-label="Close menu" className="p-2">
+              <button
+                type="button"
+                onClick={() => setMenuOpen(false)}
+                aria-label="Close menu"
+                className="flex h-10 w-10 items-center justify-center"
+              >
                 <Icon name="close" size={22} />
               </button>
             </div>
-            <nav aria-label="Mobile" className="flex flex-col p-5">
+
+            <nav aria-label="Mobile" className="flex flex-col overflow-y-auto px-5">
               {nav.map((n) => (
                 <Link
                   key={n.id}
                   href={n.href}
-                  className="border-b border-hairline py-4 text-[15px] font-semibold uppercase tracking-[.04em] text-ink"
+                  data-active={isActive(n.href)}
+                  className="flex items-center justify-between border-b border-hairline py-4 text-[15px] font-semibold uppercase tracking-[.04em] text-ink data-[active=true]:text-brand-text"
                 >
                   {n.label}
+                  <Icon name="arrowRight" size={16} />
                 </Link>
               ))}
             </nav>
-            <div className="mt-auto space-y-3 p-5">
-              <a href={phoneHref} className="block text-[16px] font-semibold text-ink">
+
+            <div className="mt-auto space-y-3 border-t border-hairline p-5">
+              <a
+                href={phoneHref}
+                className="flex items-center gap-2.5 text-[16px] font-semibold text-ink"
+              >
+                <Icon name="phone" size={17} />
                 {phone}
               </a>
               <button
@@ -160,6 +252,9 @@ export function Header({
               >
                 Request a quote
               </button>
+              <p className="text-center text-[12px] text-muted">
+                Free mockup in 24 hours · No deposit
+              </p>
             </div>
           </div>
         </div>

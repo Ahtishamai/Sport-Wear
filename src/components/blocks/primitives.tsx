@@ -165,8 +165,8 @@ export function PhotoTile({
 
   const inner = (
     <div
-      className="group zoom-wrap relative block w-full bg-plate"
-      style={{ height }}
+      className="group zoom-wrap tile-h relative block w-full bg-plate"
+      style={{ ["--tile-h"]: `${height}px` } as React.CSSProperties}
       {...edImage(bid, path('image'))}
     >
       {image ? (
@@ -242,7 +242,7 @@ export type CardProduct = {
 export function ProductPlateCard({ p }: { p: CardProduct }) {
   return (
     <Link href={`/products/${p.handle}`} className="group block">
-      <div className="zoom-wrap relative h-[400px] border border-hairline bg-surface">
+      <div className="zoom-wrap relative h-[300px] border border-hairline bg-surface sm:h-[400px]">
         {p.image ? (
           <Image
             src={p.image}

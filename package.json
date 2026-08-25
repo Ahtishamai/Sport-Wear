@@ -11,7 +11,8 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
-    "setup": "prisma generate && prisma db push && tsx prisma/seed.ts"
+    "setup": "prisma generate && prisma db push && tsx prisma/seed.ts",
+    "db:limits": "node -r dotenv/config scripts/db-limits.mjs"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -19,6 +20,7 @@
   "dependencies": {
     "@prisma/client": "^6.2.1",
     "bcryptjs": "^2.4.3",
+    "dotenv": "^17.4.2",
     "jose": "^5.9.6",
     "next": "^15.5.23",
     "react": "^19.0.0",

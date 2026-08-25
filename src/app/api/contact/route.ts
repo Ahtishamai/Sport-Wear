@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/db';
+import { prisma, withDbRetry } from '@/lib/db';
 import { badRequest, clientIp, json, rateLimit, serverError } from '@/lib/api';
 import { isEmail } from '@/lib/utils';
 import { notifyContact } from '@/lib/notify';
@@ -25,7 +25,8 @@ export async function POST(req: Request) {
     if (!email || !isEmail(email)) return badRequest('A valid email is required.');
     if (message.length < 10) return badRequest('Please add a little more detail.');
 
-    const row = await prisma.contactMessage.create({
+    const row = await withDbRetry(() =>
+      prisma.contactMessage.create({
       data: {
         name,
         email: email.toLowerCase(),
@@ -33,8 +34,9 @@ export async function POST(req: Request) {
         subject: get('subject') || null,
         message,
         pageUrl: get('pageUrl') || null,
-      },
-    });
+        },
+      })
+    );
 
     await notifyContact(row).catch(() => {});
 

@@ -33,10 +33,14 @@ export type BlockComponentProps = { p: P; bid?: string; priority?: boolean };
 export function HeroBlock({ p, bid, priority }: BlockComponentProps) {
   const primary = p.primary?.[0];
   const secondary = p.secondary?.[0];
+  const height = Math.max(380, Number(p.height) || 720);
   return (
     <section
-      className="relative flex items-center overflow-hidden bg-ink"
-      style={{ height: Math.max(380, Number(p.height) || 720) }}
+      className="hero-band relative flex items-center overflow-hidden bg-ink py-16 md:py-0"
+      // Phones hug the content (padding does the work); the designed fixed
+      // height applies from tablet up — see .hero-band.
+      style={{ ['--hero-height' as string]: `${height}px` }}
+      data-hero
       data-reveal-root
     >
       <div className="absolute inset-0" {...edImage(bid, 'image')}>
@@ -53,9 +57,20 @@ export function HeroBlock({ p, bid, priority }: BlockComponentProps) {
           />
         ) : null}
       </div>
+      {/* The designed left-to-right scrim only protects text that sits in the
+          left column. On phones the copy spans the full width, so it gets a
+          top-to-bottom scrim instead. */}
       <div
         aria-hidden="true"
-        className="absolute inset-0"
+        className="absolute inset-0 md:hidden"
+        style={{
+          background:
+            'linear-gradient(180deg, rgba(16,17,20,.82) 0%, rgba(16,17,20,.74) 55%, rgba(16,17,20,.86) 100%)',
+        }}
+      />
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 hidden md:block"
         style={{
           background:
             'linear-gradient(90deg, rgba(16,17,20,.92) 0%, rgba(16,17,20,.72) 42%, rgba(16,17,20,.35) 100%)',
@@ -67,7 +82,7 @@ export function HeroBlock({ p, bid, priority }: BlockComponentProps) {
       >
         {p.badge && (
           <span
-            className="mb-6 inline-block bg-brand px-[15px] py-[9px] text-[12px] font-bold uppercase tracking-[.16em] text-ink"
+            className="mb-5 inline-block bg-brand px-3 py-2 text-[10px] font-bold uppercase leading-snug tracking-[.12em] text-ink md:mb-6 md:px-[15px] md:py-[9px] md:text-[12px] md:tracking-[.16em]"
             {...edText(bid, 'badge')}
           >
             {p.badge}
@@ -75,29 +90,29 @@ export function HeroBlock({ p, bid, priority }: BlockComponentProps) {
         )}
         <h1
           className="h-display max-w-[900px] text-white"
-          style={{ fontSize: 'clamp(34px,4.9vw,70px)' }}
+          style={{ fontSize: 'clamp(30px,7vw,70px)' }}
           {...edText(bid, 'heading')}
         >
           {p.heading}
         </h1>
         {p.body && (
           <p
-            className="mt-6 max-w-[560px] text-[19px] leading-relaxed text-ondark"
+            className="mt-5 max-w-[560px] text-[16px] leading-relaxed text-ondark md:mt-6 md:text-[19px]"
             {...edText(bid, 'body')}
           >
             {p.body}
           </p>
         )}
-        <div className="mt-8 flex flex-wrap gap-3.5">
+        <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-3.5 md:mt-8">
           {primary?.label && (
-            <CtaLink href={primary.href} className="btn btn-yellow btn-lg" bid={bid} path="primary.0.label">
+            <CtaLink href={primary.href} className="btn btn-yellow btn-lg w-full sm:w-auto" bid={bid} path="primary.0.label">
               {primary.label}
             </CtaLink>
           )}
           {secondary?.label && (
             <CtaLink
               href={secondary.href}
-              className="btn btn-ghost-light btn-lg"
+              className="btn btn-ghost-light btn-lg w-full sm:w-auto"
               bid={bid}
               path="secondary.0.label"
             >
@@ -106,7 +121,7 @@ export function HeroBlock({ p, bid, priority }: BlockComponentProps) {
           )}
         </div>
         {p.proof && (
-          <div className="mt-8 flex items-center gap-3">
+          <div className="mt-7 flex items-center gap-3 md:mt-8">
             <span className="text-[15px] tracking-[1px] text-brand" aria-hidden="true">
               ★★★★★
             </span>
@@ -202,25 +217,34 @@ export function PageHeaderBlock({
 
 // -------------------------------------------------------------------- proof
 
+/**
+ * The USP strip. Sits in its own padded band rather than welded to the hero,
+ * with real gaps between cells and a compact type scale so it reads as a
+ * supporting row instead of competing with the headline.
+ */
 export function StatStripBlock({ p, bid }: BlockComponentProps) {
   const items: P[] = p.items ?? [];
+  if (!items.length) return null;
+
   return (
-    <section data-reveal-root className="border-x border-b border-hairline">
-      <div className="grid grid-cols-2 lg:grid-cols-4">
+    <section
+      data-reveal-root
+      className={cn(
+        BG_CLASS[(p.background as Bg) ?? 'white'],
+        'gutter py-8 md:py-11'
+      )}
+    >
+      <div className="grid grid-cols-2 gap-2.5 md:gap-3 lg:grid-cols-4">
         {items.map((s, i) => (
           <div
             key={i}
             className={cn(
-              'px-7 py-[26px]',
-              i < items.length - 1 && 'lg:border-r',
-              i % 2 === 0 && 'max-lg:border-r',
-              i < items.length - 2 && 'max-lg:border-b',
-              'border-hairline'
+              'border px-4 py-4 text-center md:px-5 md:py-5 lg:text-left',
+              s.highlight ? 'border-brand bg-brand' : 'border-hairline bg-white'
             )}
-            style={s.highlight ? { background: '#FFD100' } : undefined}
           >
             <div
-              className="font-display text-[30px] font-black leading-none"
+              className="font-display text-[22px] font-black leading-none md:text-[26px]"
               data-count={s.count ? String(s.count) : undefined}
               data-suffix={s.suffix || undefined}
               {...edText(bid, `items.${i}.value`)}
@@ -228,7 +252,7 @@ export function StatStripBlock({ p, bid }: BlockComponentProps) {
               {s.value}
             </div>
             <div
-              className="mt-2.5 text-[12px] font-semibold uppercase tracking-[.12em]"
+              className="mt-2 text-[10px] font-semibold uppercase leading-snug tracking-[.1em] md:text-[11px]"
               style={{ color: s.highlight ? '#5C4E00' : '#8A8C93' }}
               {...edText(bid, `items.${i}.label`)}
             >
@@ -454,7 +478,11 @@ export function CategoryCardsBlock({ p, bid }: BlockComponentProps) {
       <div className="grid gap-4 md:grid-cols-2">
         {cards.map((c, i) => (
           <Link key={i} href={c.href || '/collections'} className="group block border border-hairline">
-            <div className="zoom-wrap relative h-[300px] bg-plate" {...edImage(bid, `cards.${i}.image`)}>
+            <div
+              className="zoom-wrap tile-h relative bg-plate"
+              style={{ ['--tile-h']: `${Number(p.height) || 460}px` } as React.CSSProperties}
+              {...edImage(bid, `cards.${i}.image`)}
+            >
               {c.image ? (
                 <Image
                   src={c.image}

@@ -32,7 +32,7 @@ Sign in at **`/admin/login`** with the `ADMIN_EMAIL` / `ADMIN_PASSWORD` from you
 
 | Variable | Required | Notes |
 |---|---|---|
-| `DATABASE_URL` | yes | `mysql://user:pass@host:3306/design_sportswear` |
+| `DATABASE_URL` | yes | `mysql://user:pass@host:3306/db?connection_limit=5` — see *Database limits* |
 | `AUTH_SECRET` | yes | 32+ random chars. `openssl rand -base64 48` |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | seed only | The account the seed creates |
 | `NEXT_PUBLIC_SITE_URL` | prod | Used for canonicals, sitemap and JSON-LD |
@@ -172,6 +172,67 @@ Conversion is the point of this build, not a coat of paint:
 - **Performance** — static-first rendering (`revalidate` + targeted `revalidatePath` on every admin save), AVIF/WebP via `next/image`, self-hosted Saira + Poppins, one rAF-throttled scroll listener
 - **SEO** — per-page and per-product SEO fields, canonicals, generated sitemap, `Product` / `BreadcrumbList` / `LocalBusiness` JSON-LD, one `<h1>` per page
 - **Accessibility** — skip link, focus-visible rings, labelled controls, `prefers-reduced-motion` disables reveals, marquees, parallax and count-ups
+
+---
+
+## Database limits
+
+Shared MySQL accounts are metered. Run this any time to see where you stand:
+
+```bash
+npm run db:limits
+```
+
+It prints your account quotas, the server's idle timeout, current usage, this app's pool size and
+the database size — plus a warning if one idle process would eat too much of the hourly quota.
+
+### What actually binds
+
+On a typical Hostinger account the ceiling is **not** concurrent connections — it is
+`MAX_CONNECTIONS_PER_HOUR`. Every *new* connection counts, so connection churn is the thing to
+control, not peak concurrency.
+
+Two settings interact:
+
+- **`wait_timeout`** (often 300s) — the server closes pooled connections that sit idle. The pool
+  then reopens them, and each reopen spends one from the hourly quota.
+- **`connection_limit`** — how many connections each Node process holds. Multiply it by the number
+  of processes, then by `3600 / wait_timeout`, for the worst-case reconnects per hour.
+
+The `DATABASE_URL` therefore carries explicit pool settings:
+
+```
+?connection_limit=5&pool_timeout=20&connect_timeout=15
+```
+
+Prisma's default pool is `cpus × 2 + 1`, which on a large host can be 17+ connections per process —
+enough to burn an hourly quota on churn alone. Five is ample here because the public site is
+static-rendered: most page views touch no database at all.
+
+If you scale to multiple instances, divide: four instances should run `connection_limit=2`, not 5.
+
+### When the quota is hit
+
+Failures are detected and handled rather than surfacing as generic 500s:
+
+- API routes return **503 with `Retry-After`** and a "briefly at capacity" message.
+- The server log names the cause and points at `npm run db:limits`.
+- **Quote and contact submissions retry with backoff** before giving up — a capacity blip must not
+  cost a lead.
+
+### Keeping usage low
+
+- The public site is static with ISR, so traffic does not scale database load. Admin saves call
+  `revalidatePath` to refresh only the affected pages.
+- `next build` prerenders every route and opens connections in parallel workers. Repeated builds
+  in one hour are the most likely way to hit the quota during development — space them out, or
+  point `.env` at a local MySQL while developing and keep the remote URL for deploys.
+- Page revisions are capped at 30 per page, so `page_revisions` cannot grow without bound.
+
+### If you outgrow it
+
+Raise the quota in hPanel, move to a Hostinger VPS/Cloud plan, or put a pooler in front
+(PlanetScale, PgBouncer-equivalent). The only change needed is `DATABASE_URL`.
 
 ---
 

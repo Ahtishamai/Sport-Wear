@@ -1,6 +1,9 @@
 import 'server-only';
 import { NextResponse } from 'next/server';
 import { getSession, type SessionUser } from './auth';
+import { isDbCapacityError } from './db';
+
+export { isDbCapacityError };
 
 export function json(data: unknown, status = 200) {
   return NextResponse.json(data, { status });
@@ -15,6 +18,18 @@ export function unauthorized() {
 }
 
 export function serverError(err: unknown) {
+  if (isDbCapacityError(err)) {
+    console.error(
+      '[db] Connection quota reached. Check `npm run db:limits`; lower connection_limit ' +
+        'in DATABASE_URL or reduce the number of app instances.',
+      err instanceof Error ? err.message : err
+    );
+    return NextResponse.json(
+      { error: 'The site is briefly at capacity. Please try again in a moment.' },
+      { status: 503, headers: { 'Retry-After': '30' } }
+    );
+  }
+
   if (process.env.NODE_ENV === 'development') console.error(err);
   return NextResponse.json({ error: 'Something went wrong on our end.' }, { status: 500 });
 }
