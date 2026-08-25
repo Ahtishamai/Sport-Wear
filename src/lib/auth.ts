@@ -14,10 +14,20 @@ export type SessionUser = {
   role: 'ADMIN' | 'EDITOR';
 };
 
+/** Thrown when the deployment is missing required configuration. */
+export class ConfigError extends Error {}
+
+export function authSecretConfigured() {
+  const s = process.env.AUTH_SECRET;
+  return Boolean(s && s.length >= 16);
+}
+
 function secret() {
   const s = process.env.AUTH_SECRET;
   if (!s || s.length < 16) {
-    throw new Error('AUTH_SECRET is missing or too short — set it in .env');
+    throw new ConfigError(
+      "AUTH_SECRET is missing or shorter than 16 characters. Set it in the server environment and restart."
+    );
   }
   return new TextEncoder().encode(s);
 }

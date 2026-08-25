@@ -173,6 +173,28 @@ Conversion is the point of this build, not a coat of paint:
 - **SEO** — per-page and per-product SEO fields, canonicals, generated sitemap, `Product` / `BreadcrumbList` / `LocalBusiness` JSON-LD, one `<h1>` per page
 - **Accessibility** — skip link, focus-visible rings, labelled controls, `prefers-reduced-motion` disables reveals, marquees, parallax and count-ups
 
+
+### Sign-in troubleshooting
+
+If the admin sign-in shows an error, the message now names the cause:
+
+| Message | Meaning | Fix |
+|---|---|---|
+| Those credentials did not match. | Wrong email or password | Check the credentials |
+| Sign-in is not configured on this server… | `AUTH_SECRET` missing or under 16 chars | Set it in the server environment and restart |
+| The site cannot reach its database… | Bad or unreachable `DATABASE_URL` | Check host, credentials, remote-access allowlist |
+| The database is briefly at capacity… | Connection quota hit | See *Database limits* |
+| Too many attempts… | Rate limit (10 per 5 min per IP) | Wait a few minutes |
+
+`GET /api/health` reports the same state as JSON without exposing any values —
+useful on hosts where server logs are hard to reach:
+
+```json
+{ "ok": true, "checks": { "auth": "configured", "database": "up (12ms)", "adminAccounts": "1" } }
+```
+
+It returns 503 when something is wrong, so it also works as an uptime check.
+
 ---
 
 ## Database limits

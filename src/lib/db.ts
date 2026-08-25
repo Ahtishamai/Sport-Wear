@@ -59,3 +59,14 @@ export async function withDbRetry<T>(fn: () => Promise<T>, attempts = 3): Promis
   }
   throw lastError;
 }
+
+/** True when the database cannot be reached at all (host down, bad creds, firewall). */
+export function isDbUnreachableError(err: unknown) {
+  const msg = err instanceof Error ? err.message : String(err ?? "");
+  return (
+    /Can't reach database server/i.test(msg) ||
+    /Authentication failed against database/i.test(msg) ||
+    /ECONNREFUSED|ETIMEDOUT|ENOTFOUND|EHOSTUNREACH/i.test(msg) ||
+    /\bP1000\b|\bP1001\b|\bP1002\b|\bP1017\b/.test(msg)
+  );
+}
