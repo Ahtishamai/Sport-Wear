@@ -5,6 +5,8 @@ import { Icon } from '@/components/site/Icon';
 import { QuoteButton } from '@/components/site/QuoteButton';
 import {
   BG_CLASS,
+  edImage,
+  edText,
   Eyebrow,
   ImagePlaceholder,
   PackageCard,
@@ -22,9 +24,13 @@ import {
 type P = Record<string, any>;
 type TileP = React.ComponentProps<typeof PhotoTile>;
 
+/** Every block component receives the id of the block it is rendering, so its
+ *  text and images can be edited in place on the live site. */
+export type BlockComponentProps = { p: P; bid?: string; priority?: boolean };
+
 // -------------------------------------------------------------------- hero
 
-export function HeroBlock({ p, priority }: { p: P; priority?: boolean }) {
+export function HeroBlock({ p, bid, priority }: BlockComponentProps) {
   const primary = p.primary?.[0];
   const secondary = p.secondary?.[0];
   return (
@@ -33,18 +39,20 @@ export function HeroBlock({ p, priority }: { p: P; priority?: boolean }) {
       style={{ height: Math.max(380, Number(p.height) || 720) }}
       data-reveal-root
     >
-      {p.image ? (
-        <Image
-          src={p.image}
-          alt=""
-          fill
-          priority={priority}
-          sizes="100vw"
-          data-parallax={p.parallax === false ? undefined : '0.18'}
-          className="absolute inset-0 h-full w-full object-cover"
-          style={{ transform: 'scale(1.14)' }}
-        />
-      ) : null}
+      <div className="absolute inset-0" {...edImage(bid, 'image')}>
+        {p.image ? (
+          <Image
+            src={p.image}
+            alt=""
+            fill
+            priority={priority}
+            sizes="100vw"
+            data-parallax={p.parallax === false ? undefined : '0.18'}
+            className="h-full w-full object-cover"
+            style={{ transform: 'scale(1.14)' }}
+          />
+        ) : null}
+      </div>
       <div
         aria-hidden="true"
         className="absolute inset-0"
@@ -58,27 +66,41 @@ export function HeroBlock({ p, priority }: { p: P; priority?: boolean }) {
         style={{ textShadow: '0 2px 18px rgba(16,17,20,.65)' }}
       >
         {p.badge && (
-          <span className="mb-6 inline-block bg-brand px-[15px] py-[9px] text-[12px] font-bold uppercase tracking-[.16em] text-ink">
+          <span
+            className="mb-6 inline-block bg-brand px-[15px] py-[9px] text-[12px] font-bold uppercase tracking-[.16em] text-ink"
+            {...edText(bid, 'badge')}
+          >
             {p.badge}
           </span>
         )}
         <h1
           className="h-display max-w-[900px] text-white"
           style={{ fontSize: 'clamp(34px,4.9vw,70px)' }}
+          {...edText(bid, 'heading')}
         >
           {p.heading}
         </h1>
         {p.body && (
-          <p className="mt-6 max-w-[560px] text-[19px] leading-relaxed text-ondark">{p.body}</p>
+          <p
+            className="mt-6 max-w-[560px] text-[19px] leading-relaxed text-ondark"
+            {...edText(bid, 'body')}
+          >
+            {p.body}
+          </p>
         )}
         <div className="mt-8 flex flex-wrap gap-3.5">
           {primary?.label && (
-            <CtaLink href={primary.href} className="btn btn-yellow btn-lg">
+            <CtaLink href={primary.href} className="btn btn-yellow btn-lg" bid={bid} path="primary.0.label">
               {primary.label}
             </CtaLink>
           )}
           {secondary?.label && (
-            <CtaLink href={secondary.href} className="btn btn-ghost-light btn-lg">
+            <CtaLink
+              href={secondary.href}
+              className="btn btn-ghost-light btn-lg"
+              bid={bid}
+              path="secondary.0.label"
+            >
               {secondary.label}
             </CtaLink>
           )}
@@ -88,14 +110,21 @@ export function HeroBlock({ p, priority }: { p: P; priority?: boolean }) {
             <span className="text-[15px] tracking-[1px] text-brand" aria-hidden="true">
               ★★★★★
             </span>
-            <span className="text-[14px] font-semibold text-white">{p.proof}</span>
+            <span className="text-[14px] font-semibold text-white" {...edText(bid, 'proof')}>
+              {p.proof}
+            </span>
           </div>
         )}
       </div>
       {(p.cornerYear || p.cornerLabel) && (
         <div className="absolute bottom-0 left-0 bg-brand px-5 py-[13px]">
-          <div className="font-display text-[22px] font-black leading-none">{p.cornerYear}</div>
-          <div className="mt-1 text-[11px] font-bold uppercase tracking-[.14em] text-brand-on">
+          <div className="font-display text-[22px] font-black leading-none" {...edText(bid, 'cornerYear')}>
+            {p.cornerYear}
+          </div>
+          <div
+            className="mt-1 text-[11px] font-bold uppercase tracking-[.14em] text-brand-on"
+            {...edText(bid, 'cornerLabel')}
+          >
             {p.cornerLabel}
           </div>
         </div>
@@ -106,11 +135,9 @@ export function HeroBlock({ p, priority }: { p: P; priority?: boolean }) {
 
 export function PageHeaderBlock({
   p,
+  bid,
   breadcrumb,
-}: {
-  p: P;
-  breadcrumb?: { label: string; href?: string }[];
-}) {
+}: BlockComponentProps & { breadcrumb?: { label: string; href?: string }[] }) {
   const dark = p.theme === 'dark';
   return (
     <section
@@ -139,12 +166,19 @@ export function PageHeaderBlock({
           </ol>
         </nav>
       )}
-      <Eyebrow onDark={dark}>{p.eyebrow}</Eyebrow>
-      <h1 className="h-display" style={{ fontSize: 'clamp(34px,4.6vw,62px)', lineHeight: 0.98 }}>
+      <Eyebrow onDark={dark} bid={bid} path="eyebrow">
+        {p.eyebrow}
+      </Eyebrow>
+      <h1
+        className="h-display"
+        style={{ fontSize: 'clamp(34px,4.6vw,62px)', lineHeight: 0.98 }}
+        {...edText(bid, 'heading')}
+      >
         {p.heading}
       </h1>
       {p.body && (
         <p
+          {...edText(bid, 'body')}
           className={cn(
             'mt-5 max-w-[720px] text-[17px] leading-relaxed md:text-[18px]',
             dark ? 'text-ondark-2' : 'text-body'
@@ -157,6 +191,7 @@ export function PageHeaderBlock({
         <div
           className="zoom-wrap relative mt-9 w-full bg-plate"
           style={{ height: 'clamp(200px,22vw,280px)' }}
+          {...edImage(bid, 'image')}
         >
           <Image src={p.image} alt="" fill sizes="100vw" className="object-cover" />
         </div>
@@ -167,7 +202,7 @@ export function PageHeaderBlock({
 
 // -------------------------------------------------------------------- proof
 
-export function StatStripBlock({ p }: { p: P }) {
+export function StatStripBlock({ p, bid }: BlockComponentProps) {
   const items: P[] = p.items ?? [];
   return (
     <section data-reveal-root className="border-x border-b border-hairline">
@@ -188,12 +223,14 @@ export function StatStripBlock({ p }: { p: P }) {
               className="font-display text-[30px] font-black leading-none"
               data-count={s.count ? String(s.count) : undefined}
               data-suffix={s.suffix || undefined}
+              {...edText(bid, `items.${i}.value`)}
             >
               {s.value}
             </div>
             <div
               className="mt-2.5 text-[12px] font-semibold uppercase tracking-[.12em]"
               style={{ color: s.highlight ? '#5C4E00' : '#8A8C93' }}
+              {...edText(bid, `items.${i}.label`)}
             >
               {s.label}
             </div>
@@ -204,7 +241,61 @@ export function StatStripBlock({ p }: { p: P }) {
   );
 }
 
-export function MarqueeBlock({ p }: { p: P }) {
+/** Free-form stat grid — any number of cells, used for "By the numbers". */
+export function NumbersGridBlock({ p, bid }: BlockComponentProps) {
+  const items: P[] = p.items ?? [];
+  if (!items.length) return null;
+  const onDark = p.background === 'ink';
+  return (
+    <Section background={(p.background as Bg) ?? 'ink'}>
+      <SectionHeading
+        eyebrow={p.eyebrow}
+        heading={p.heading}
+        body={p.body}
+        align={p.align ?? 'center'}
+        onDark={onDark}
+        bid={bid}
+      />
+      <div
+        className="grid gap-px border border-hairline/20"
+        style={{
+          gridTemplateColumns: `repeat(auto-fit, minmax(${Number(p.minWidth) || 220}px, 1fr))`,
+          background: onDark ? 'rgba(255,255,255,.14)' : '#E6E6E2',
+        }}
+      >
+        {items.map((s, i) => (
+          <div
+            key={i}
+            className={cn('px-6 py-8 text-center', onDark ? 'bg-ink' : 'bg-white')}
+          >
+            <div
+              className={cn(
+                'font-display text-[34px] font-black leading-none md:text-[40px]',
+                onDark ? 'text-brand' : 'text-ink'
+              )}
+              data-count={s.count ? String(s.count) : undefined}
+              data-suffix={s.suffix || undefined}
+              {...edText(bid, `items.${i}.value`)}
+            >
+              {s.value}
+            </div>
+            <div
+              className={cn(
+                'mt-3 text-[13px] font-semibold leading-snug',
+                onDark ? 'text-ondark-2' : 'text-body'
+              )}
+              {...edText(bid, `items.${i}.label`)}
+            >
+              {s.label}
+            </div>
+          </div>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+export function MarqueeBlock({ p }: BlockComponentProps) {
   const items: string[] = p.items ?? [];
   if (!items.length) return null;
   const row = [...items, ...items];
@@ -239,20 +330,30 @@ export type ReviewItem = {
   rating: number;
 };
 
-export function ReviewsBlock({ p, reviews }: { p: P; reviews: ReviewItem[] }) {
+export function ReviewsBlock({
+  p,
+  bid,
+  reviews,
+}: BlockComponentProps & { reviews: ReviewItem[] }) {
   if (!reviews.length) return null;
   const row = [...reviews, ...reviews];
   return (
     <section data-reveal-root className="overflow-hidden bg-white py-[76px] md:py-[88px]">
       <div className="gutter mb-10 text-center">
-        <Eyebrow>{p.eyebrow}</Eyebrow>
-        {p.heading && <h2 className="h-section">{p.heading}</h2>}
+        <Eyebrow bid={bid} path="eyebrow">
+          {p.eyebrow}
+        </Eyebrow>
+        {p.heading && (
+          <h2 className="h-section" {...edText(bid, 'heading')}>
+            {p.heading}
+          </h2>
+        )}
         {p.ratingLine && (
           <p className="mt-4 flex flex-wrap items-center justify-center gap-2.5 text-[15px] font-medium text-body">
             <span className="tracking-[1px] text-gold" aria-hidden="true">
               ★★★★★
             </span>
-            {p.ratingLine}
+            <span {...edText(bid, 'ratingLine')}>{p.ratingLine}</span>
           </p>
         )}
       </div>
@@ -299,37 +400,43 @@ export function ReviewsBlock({ p, reviews }: { p: P; reviews: ReviewItem[] }) {
 
 // -------------------------------------------------------------------- commerce
 
-export function FeaturedTilesBlock({ p }: { p: P }) {
+export function FeaturedTilesBlock({ p, bid }: BlockComponentProps) {
   const tiles: P[] = p.tiles ?? [];
   const [a, b, c, d] = tiles;
   return (
     <Section>
-      <SectionHeading heading={p.heading} align={p.align ?? 'center'} />
+      <SectionHeading heading={p.heading} align={p.align ?? 'center'} bid={bid} />
       <div className="grid gap-3 lg:grid-cols-3">
-        {a && (
-          <PhotoTile {...(a as TileP)} height={680} priority />
-        )}
-        {b && <PhotoTile {...(b as TileP)} height={680} />}
+        {a && <PhotoTile {...(a as TileP)} height={680} priority bid={bid} ep="tiles.0" />}
+        {b && <PhotoTile {...(b as TileP)} height={680} bid={bid} ep="tiles.1" />}
         <div className="grid gap-3">
-          {c && <PhotoTile {...(c as TileP)} height={334} />}
-          {d && <PhotoTile {...(d as TileP)} height={334} />}
+          {c && <PhotoTile {...(c as TileP)} height={334} bid={bid} ep="tiles.2" />}
+          {d && <PhotoTile {...(d as TileP)} height={334} bid={bid} ep="tiles.3" />}
         </div>
       </div>
     </Section>
   );
 }
 
-export function TileGroupsBlock({ p }: { p: P }) {
+export function TileGroupsBlock({ p, bid }: BlockComponentProps) {
   const groups: P[] = p.groups ?? [];
   return (
     <Section>
       <div className="grid gap-11 lg:grid-cols-2">
         {groups.map((g, i) => (
           <div key={i}>
-            <h2 className="h-section mb-7">{g.heading}</h2>
+            <h2 className="h-section mb-7" {...edText(bid, `groups.${i}.heading`)}>
+              {g.heading}
+            </h2>
             <div className="grid gap-3 sm:grid-cols-2">
               {(g.tiles ?? []).map((t: P, j: number) => (
-                <PhotoTile key={j} {...(t as TileP)} height={380} />
+                <PhotoTile
+                  key={j}
+                  {...(t as TileP)}
+                  height={380}
+                  bid={bid}
+                  ep={`groups.${i}.tiles.${j}`}
+                />
               ))}
             </div>
           </div>
@@ -339,15 +446,15 @@ export function TileGroupsBlock({ p }: { p: P }) {
   );
 }
 
-export function CategoryCardsBlock({ p }: { p: P }) {
+export function CategoryCardsBlock({ p, bid }: BlockComponentProps) {
   const cards: P[] = p.cards ?? [];
   return (
     <Section>
-      <SectionHeading eyebrow={p.eyebrow} heading={p.heading} />
+      <SectionHeading eyebrow={p.eyebrow} heading={p.heading} bid={bid} />
       <div className="grid gap-4 md:grid-cols-2">
         {cards.map((c, i) => (
           <Link key={i} href={c.href || '/collections'} className="group block border border-hairline">
-            <div className="zoom-wrap relative h-[300px] bg-plate">
+            <div className="zoom-wrap relative h-[300px] bg-plate" {...edImage(bid, `cards.${i}.image`)}>
               {c.image ? (
                 <Image
                   src={c.image}
@@ -361,10 +468,20 @@ export function CategoryCardsBlock({ p }: { p: P }) {
               )}
             </div>
             <div className="border-t border-hairline p-8">
-              <h3 className="h-display text-[26px]">{c.title}</h3>
-              <p className="mt-3 text-[16px] leading-relaxed text-body">{c.body}</p>
+              <h3 className="h-display text-[26px]" {...edText(bid, `cards.${i}.title`)}>
+                {c.title}
+              </h3>
+              <p
+                className="mt-3 text-[16px] leading-relaxed text-body"
+                {...edText(bid, `cards.${i}.body`)}
+              >
+                {c.body}
+              </p>
               <span className="mt-5 inline-block border-b-2 border-brand pb-1 text-[13px] font-semibold uppercase tracking-[.1em]">
-                {c.linkLabel || `Explore ${c.title}`} →
+                <span {...edText(bid, `cards.${i}.linkLabel`)}>
+                  {c.linkLabel || `Explore ${c.title}`}
+                </span>{' '}
+                →
               </span>
             </div>
           </Link>
@@ -374,12 +491,16 @@ export function CategoryCardsBlock({ p }: { p: P }) {
   );
 }
 
-export function ProductGridBlock({ p, products }: { p: P; products: CardProduct[] }) {
+export function ProductGridBlock({
+  p,
+  bid,
+  products,
+}: BlockComponentProps & { products: CardProduct[] }) {
   if (!products.length) return null;
   const catalog = p.cardStyle === 'catalog';
   return (
     <Section background={(p.background as Bg) ?? 'white'}>
-      <SectionHeading heading={p.heading} align={p.align ?? 'center'} />
+      <SectionHeading heading={p.heading} align={p.align ?? 'center'} bid={bid} />
       <div
         className="grid gap-5"
         style={{
@@ -396,7 +517,12 @@ export function ProductGridBlock({ p, products }: { p: P; products: CardProduct[
       </div>
       {p.ctaLabel && (
         <div className="mt-12 text-center">
-          <CtaLink href={p.ctaHref || '/collections'} className="btn btn-ink btn-lg">
+          <CtaLink
+            href={p.ctaHref || '/collections'}
+            className="btn btn-ink btn-lg"
+            bid={bid}
+            path="ctaLabel"
+          >
             {p.ctaLabel}
           </CtaLink>
         </div>
@@ -405,7 +531,11 @@ export function ProductGridBlock({ p, products }: { p: P; products: CardProduct[
   );
 }
 
-export function PackagesGridBlock({ p, packages }: { p: P; packages: CardPackage[] }) {
+export function PackagesGridBlock({
+  p,
+  bid,
+  packages,
+}: BlockComponentProps & { packages: CardPackage[] }) {
   if (!packages.length) return null;
   return (
     <Section background={(p.background as Bg) ?? 'surface'} bordered={p.background !== 'ink'}>
@@ -414,6 +544,7 @@ export function PackagesGridBlock({ p, packages }: { p: P; packages: CardPackage
         heading={p.heading}
         body={p.body}
         onDark={p.background === 'ink'}
+        bid={bid}
       />
       <div
         className="grid gap-5"
@@ -436,11 +567,15 @@ export type CollectionCard = {
   count: number;
 };
 
-export function CollectionListBlock({ p, collections }: { p: P; collections: CollectionCard[] }) {
+export function CollectionListBlock({
+  p,
+  bid,
+  collections,
+}: BlockComponentProps & { collections: CollectionCard[] }) {
   if (!collections.length) return null;
   return (
     <Section background={(p.background as Bg) ?? 'white'}>
-      <SectionHeading eyebrow={p.eyebrow} heading={p.heading} />
+      <SectionHeading eyebrow={p.eyebrow} heading={p.heading} bid={bid} />
       <div
         className="grid gap-4"
         style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}
@@ -480,11 +615,11 @@ export function CollectionListBlock({ p, collections }: { p: P; collections: Col
 
 // -------------------------------------------------------------------- conversion
 
-export function StepsBlock({ p }: { p: P }) {
+export function StepsBlock({ p, bid }: BlockComponentProps) {
   const steps: P[] = p.steps ?? [];
   return (
     <Section background={(p.background as Bg) ?? 'white'} className="md:py-[92px]">
-      <SectionHeading eyebrow={p.eyebrow} heading={p.heading} align="center" />
+      <SectionHeading eyebrow={p.eyebrow} heading={p.heading} align="center" bid={bid} />
       <div
         className="grid gap-7"
         style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))' }}
@@ -499,10 +634,18 @@ export function StepsBlock({ p }: { p: P }) {
                 <Icon name={s.icon || 'star'} size={22} />
               </span>
             </div>
-            <h3 className="font-display text-[19px] font-extrabold uppercase leading-tight">
+            <h3
+              className="font-display text-[19px] font-extrabold uppercase leading-tight"
+              {...edText(bid, `steps.${i}.title`)}
+            >
               {s.title}
             </h3>
-            <p className="mt-2.5 text-[15px] leading-relaxed text-body">{s.body}</p>
+            <p
+              className="mt-2.5 text-[15px] leading-relaxed text-body"
+              {...edText(bid, `steps.${i}.body`)}
+            >
+              {s.body}
+            </p>
           </div>
         ))}
       </div>
@@ -510,22 +653,69 @@ export function StepsBlock({ p }: { p: P }) {
   );
 }
 
-export function IconFeaturesBlock({ p }: { p: P }) {
+export function IconFeaturesBlock({ p, bid }: BlockComponentProps) {
   const items: P[] = p.items ?? [];
+  const size = (p.size as string) ?? 'compact';
+  const large = size === 'large';
+  const standard = size === 'standard' || large;
+  const onDark = p.background === 'ink';
+
+  const minWidth = large ? 340 : standard ? 280 : 230;
+
   return (
-    <Section background={(p.background as Bg) ?? 'white'} className="!py-12">
-      {p.heading && <SectionHeading heading={p.heading} align="center" />}
+    <Section
+      background={(p.background as Bg) ?? 'white'}
+      className={standard ? undefined : '!py-12'}
+    >
+      <SectionHeading
+        eyebrow={p.eyebrow}
+        heading={p.heading}
+        body={p.body}
+        align={p.align ?? (standard ? 'center' : 'left')}
+        onDark={onDark}
+        bid={bid}
+      />
       <div
         className="grid gap-3.5"
-        style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))' }}
+        style={{ gridTemplateColumns: `repeat(auto-fit, minmax(${minWidth}px, 1fr))` }}
       >
         {items.map((f, i) => (
-          <div key={i} className="border border-hairline bg-surface px-6 py-7">
-            <span className="mb-4 flex h-[46px] w-[46px] items-center justify-center bg-brand text-ink">
-              <Icon name={f.icon || 'star'} size={22} />
+          <div
+            key={i}
+            className={cn(
+              'border',
+              onDark ? 'border-white/12 bg-white/[.04]' : 'border-hairline bg-surface',
+              large ? 'px-8 py-9' : standard ? 'px-7 py-8' : 'px-6 py-7'
+            )}
+          >
+            <span
+              className={cn(
+                'mb-4 flex items-center justify-center bg-brand text-ink',
+                large ? 'h-[56px] w-[56px]' : 'h-[46px] w-[46px]'
+              )}
+            >
+              <Icon name={f.icon || 'star'} size={large ? 26 : 22} />
             </span>
-            <h3 className="font-display text-[16px] font-extrabold uppercase">{f.title}</h3>
-            <p className="mt-2 text-[14px] leading-relaxed text-body">{f.body}</p>
+            <h3
+              className={cn(
+                'font-display font-extrabold uppercase leading-tight',
+                large ? 'text-[20px]' : standard ? 'text-[18px]' : 'text-[16px]',
+                onDark && 'text-white'
+              )}
+              {...edText(bid, `items.${i}.title`)}
+            >
+              {f.title}
+            </h3>
+            <p
+              className={cn(
+                'mt-2.5 leading-relaxed',
+                large ? 'text-[15px]' : 'text-[14px]',
+                onDark ? 'text-ondark-2' : 'text-body'
+              )}
+              {...edText(bid, `items.${i}.body`)}
+            >
+              {f.body}
+            </p>
           </div>
         ))}
       </div>
@@ -533,22 +723,24 @@ export function IconFeaturesBlock({ p }: { p: P }) {
   );
 }
 
-export function CtaBandBlock({ p }: { p: P }) {
+export function CtaBandBlock({ p, bid }: BlockComponentProps) {
   const primary = p.primary?.[0];
   const secondary = p.secondary?.[0];
   return (
     <section data-reveal-root className="relative overflow-hidden bg-ink">
-      {p.image ? (
-        <Image
-          src={p.image}
-          alt=""
-          fill
-          sizes="100vw"
-          data-parallax="0.22"
-          className="absolute inset-0 h-full w-full object-cover opacity-[.14]"
-          style={{ transform: 'scale(1.14)' }}
-        />
-      ) : null}
+      <div className="absolute inset-0" {...edImage(bid, 'image')}>
+        {p.image ? (
+          <Image
+            src={p.image}
+            alt=""
+            fill
+            sizes="100vw"
+            data-parallax="0.22"
+            className="h-full w-full object-cover opacity-[.14]"
+            style={{ transform: 'scale(1.14)' }}
+          />
+        ) : null}
+      </div>
       <div
         aria-hidden="true"
         className="absolute inset-0"
@@ -557,20 +749,30 @@ export function CtaBandBlock({ p }: { p: P }) {
         }}
       />
       <div className="gutter relative py-[96px] text-center">
-        <h2 className="h-section mx-auto max-w-[820px] text-white">{p.heading}</h2>
+        <h2 className="h-section mx-auto max-w-[820px] text-white" {...edText(bid, 'heading')}>
+          {p.heading}
+        </h2>
         {p.body && (
-          <p className="mx-auto mt-5 max-w-[620px] text-[18px] leading-relaxed text-ondark-2">
+          <p
+            className="mx-auto mt-5 max-w-[620px] text-[18px] leading-relaxed text-ondark-2"
+            {...edText(bid, 'body')}
+          >
             {p.body}
           </p>
         )}
         <div className="mt-9 flex flex-wrap justify-center gap-3.5">
           {primary?.label && (
-            <CtaLink href={primary.href} className="btn btn-yellow btn-lg">
+            <CtaLink href={primary.href} className="btn btn-yellow btn-lg" bid={bid} path="primary.0.label">
               {primary.label}
             </CtaLink>
           )}
           {secondary?.label && (
-            <CtaLink href={secondary.href} className="btn btn-ghost-light btn-lg">
+            <CtaLink
+              href={secondary.href}
+              className="btn btn-ghost-light btn-lg"
+              bid={bid}
+              path="secondary.0.label"
+            >
               {secondary.label}
             </CtaLink>
           )}
@@ -580,19 +782,30 @@ export function CtaBandBlock({ p }: { p: P }) {
   );
 }
 
-export function QuoteCalloutBlock({ p }: { p: P }) {
+export function QuoteCalloutBlock({ p, bid }: BlockComponentProps) {
   return (
     <Section className="!py-12">
       <div className="flex flex-wrap items-center gap-6 bg-brand px-6 py-5 md:px-8">
-        {p.big && <span className="font-display text-[30px] font-black leading-none">{p.big}</span>}
+        {p.big && (
+          <span className="font-display text-[30px] font-black leading-none" {...edText(bid, 'big')}>
+            {p.big}
+          </span>
+        )}
         <div className="flex-1 min-w-[220px]">
-          <div className="font-display text-[14px] font-extrabold uppercase tracking-[.04em]">
+          <div
+            className="font-display text-[14px] font-extrabold uppercase tracking-[.04em]"
+            {...edText(bid, 'heading')}
+          >
             {p.heading}
           </div>
-          {p.body && <p className="mt-1.5 text-[14px] leading-snug text-brand-on">{p.body}</p>}
+          {p.body && (
+            <p className="mt-1.5 text-[14px] leading-snug text-brand-on" {...edText(bid, 'body')}>
+              {p.body}
+            </p>
+          )}
         </div>
         <QuoteButton subject={p.subject || 'Custom team kit'} className="btn btn-ink btn-md">
-          {p.ctaLabel || 'Request a quote'}
+          <span {...edText(bid, 'ctaLabel')}>{p.ctaLabel || 'Request a quote'}</span>
         </QuoteButton>
       </div>
     </Section>
@@ -601,7 +814,7 @@ export function QuoteCalloutBlock({ p }: { p: P }) {
 
 // -------------------------------------------------------------------- content
 
-export function RichTextBlock({ p }: { p: P }) {
+export function RichTextBlock({ p, bid }: BlockComponentProps) {
   const narrow = p.width !== 'full';
   const onDark = p.background === 'ink';
   return (
@@ -612,10 +825,18 @@ export function RichTextBlock({ p }: { p: P }) {
           p.align === 'center' && 'text-center'
         )}
       >
-        <Eyebrow onDark={onDark}>{p.eyebrow}</Eyebrow>
-        {p.heading && <h2 className="h-section mb-6">{p.heading}</h2>}
+        <Eyebrow onDark={onDark} bid={bid} path="eyebrow">
+          {p.eyebrow}
+        </Eyebrow>
+        {p.heading && (
+          <h2 className="h-section mb-6" {...edText(bid, 'heading')}>
+            {p.heading}
+          </h2>
+        )}
         <RichText
           text={p.body}
+          bid={bid}
+          path="body"
           className={cn('text-[17px] leading-[1.65]', onDark ? 'text-ondark-2' : 'text-body')}
         />
       </div>
@@ -623,11 +844,11 @@ export function RichTextBlock({ p }: { p: P }) {
   );
 }
 
-export function ImageTextBlock({ p }: { p: P }) {
+export function ImageTextBlock({ p, bid }: BlockComponentProps) {
   const onDark = p.background === 'ink';
   const cta = p.cta?.[0];
   const media = (
-    <div className="zoom-wrap relative min-h-[380px] bg-plate">
+    <div className="zoom-wrap relative min-h-[380px] bg-plate" {...edImage(bid, 'image')}>
       {p.image ? (
         <Image src={p.image} alt="" fill sizes="(max-width: 900px) 100vw, 50vw" className="object-cover" />
       ) : (
@@ -637,10 +858,18 @@ export function ImageTextBlock({ p }: { p: P }) {
   );
   const copy = (
     <div className="flex flex-col justify-center">
-      <Eyebrow onDark={onDark}>{p.eyebrow}</Eyebrow>
-      {p.heading && <h2 className="h-section mb-5">{p.heading}</h2>}
+      <Eyebrow onDark={onDark} bid={bid} path="eyebrow">
+        {p.eyebrow}
+      </Eyebrow>
+      {p.heading && (
+        <h2 className="h-section mb-5" {...edText(bid, 'heading')}>
+          {p.heading}
+        </h2>
+      )}
       <RichText
         text={p.body}
+        bid={bid}
+        path="body"
         className={cn('text-[17px] leading-[1.65]', onDark ? 'text-ondark-2' : 'text-body')}
       />
       {(p.bullets ?? []).length > 0 && (
@@ -650,14 +879,14 @@ export function ImageTextBlock({ p }: { p: P }) {
               <span aria-hidden="true" className="text-success">
                 ✓
               </span>
-              {b}
+              <span {...edText(bid, `bullets.${i}`)}>{b}</span>
             </li>
           ))}
         </ul>
       )}
       {cta?.label && (
         <div className="mt-8">
-          <CtaLink href={cta.href} className="btn btn-ink btn-lg">
+          <CtaLink href={cta.href} className="btn btn-ink btn-lg" bid={bid} path="cta.0.label">
             {cta.label}
           </CtaLink>
         </div>
@@ -684,15 +913,24 @@ export function ImageTextBlock({ p }: { p: P }) {
   );
 }
 
-export function GalleryBlock({ p }: { p: P }) {
+export function GalleryBlock({ p, bid }: BlockComponentProps) {
   const images: P[] = p.images ?? [];
   if (!images.length) return null;
   return (
     <Section background={(p.background as Bg) ?? 'white'} className="!py-14">
       <div className="mb-7 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <Eyebrow>{p.eyebrow}</Eyebrow>
-          {p.heading && <h2 className="font-display text-[24px] font-extrabold uppercase">{p.heading}</h2>}
+          <Eyebrow bid={bid} path="eyebrow">
+            {p.eyebrow}
+          </Eyebrow>
+          {p.heading && (
+            <h2
+              className="font-display text-[24px] font-extrabold uppercase"
+              {...edText(bid, 'heading')}
+            >
+              {p.heading}
+            </h2>
+          )}
         </div>
       </div>
       <div
@@ -704,6 +942,7 @@ export function GalleryBlock({ p }: { p: P }) {
             key={i}
             className="zoom-wrap relative bg-plate"
             style={{ height: Number(p.height) || 260 }}
+            {...edImage(bid, `images.${i}.image`)}
           >
             {im.image ? (
               <Image
@@ -723,19 +962,19 @@ export function GalleryBlock({ p }: { p: P }) {
   );
 }
 
-export function TeamGridBlock({ p }: { p: P }) {
+export function TeamGridBlock({ p, bid }: BlockComponentProps) {
   const people: P[] = p.people ?? [];
   if (!people.length) return null;
   return (
     <Section background={(p.background as Bg) ?? 'white'}>
-      <SectionHeading eyebrow={p.eyebrow} heading={p.heading} />
+      <SectionHeading eyebrow={p.eyebrow} heading={p.heading} bid={bid} />
       <div
         className="grid gap-5"
         style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}
       >
         {people.map((m, i) => (
           <div key={i} className="border border-hairline">
-            <div className="zoom-wrap relative h-[300px] bg-plate">
+            <div className="zoom-wrap relative h-[300px] bg-plate" {...edImage(bid, `people.${i}.image`)}>
               {m.image ? (
                 <Image
                   src={m.image}
@@ -749,11 +988,26 @@ export function TeamGridBlock({ p }: { p: P }) {
               )}
             </div>
             <div className="p-6">
-              <h3 className="font-display text-[17px] font-extrabold uppercase">{m.name}</h3>
-              <p className="mt-1 text-[13px] font-semibold uppercase tracking-[.1em] text-brand-text">
+              <h3
+                className="font-display text-[17px] font-extrabold uppercase"
+                {...edText(bid, `people.${i}.name`)}
+              >
+                {m.name}
+              </h3>
+              <p
+                className="mt-1 text-[13px] font-semibold uppercase tracking-[.1em] text-brand-text"
+                {...edText(bid, `people.${i}.role`)}
+              >
                 {m.role}
               </p>
-              {m.bio && <p className="mt-3 text-[14px] leading-relaxed text-body">{m.bio}</p>}
+              {m.bio && (
+                <p
+                  className="mt-3 text-[14px] leading-relaxed text-body"
+                  {...edText(bid, `people.${i}.bio`)}
+                >
+                  {m.bio}
+                </p>
+              )}
             </div>
           </div>
         ))}
@@ -762,22 +1016,37 @@ export function TeamGridBlock({ p }: { p: P }) {
   );
 }
 
-export function TimelineBlock({ p }: { p: P }) {
+export function TimelineBlock({ p, bid }: BlockComponentProps) {
   const items: P[] = p.items ?? [];
   if (!items.length) return null;
   return (
     <Section background={(p.background as Bg) ?? 'surface'}>
-      <SectionHeading eyebrow={p.eyebrow} heading={p.heading} />
+      <SectionHeading eyebrow={p.eyebrow} heading={p.heading} bid={bid} />
       <ol className="border-t-2 border-ink">
         {items.map((it, i) => (
           <li
             key={i}
             className="grid gap-4 border-b border-hairline-2 bg-white px-6 py-7 md:grid-cols-[160px_1fr]"
           >
-            <span className="font-display text-[28px] font-black leading-none">{it.year}</span>
+            <span
+              className="font-display text-[28px] font-black leading-none"
+              {...edText(bid, `items.${i}.year`)}
+            >
+              {it.year}
+            </span>
             <div>
-              <h3 className="font-display text-[17px] font-extrabold uppercase">{it.title}</h3>
-              <p className="mt-2 max-w-[760px] text-[15px] leading-relaxed text-body">{it.body}</p>
+              <h3
+                className="font-display text-[17px] font-extrabold uppercase"
+                {...edText(bid, `items.${i}.title`)}
+              >
+                {it.title}
+              </h3>
+              <p
+                className="mt-2 max-w-[760px] text-[15px] leading-relaxed text-body"
+                {...edText(bid, `items.${i}.body`)}
+              >
+                {it.body}
+              </p>
             </div>
           </li>
         ))}
@@ -786,11 +1055,15 @@ export function TimelineBlock({ p }: { p: P }) {
   );
 }
 
-export function MapEmbedBlock({ p }: { p: P }) {
+export function MapEmbedBlock({ p, bid }: BlockComponentProps) {
   if (!p.src) return null;
   return (
     <Section background={(p.background as Bg) ?? 'white'} className="!py-14">
-      {p.heading && <h2 className="h-section mb-7">{p.heading}</h2>}
+      {p.heading && (
+        <h2 className="h-section mb-7" {...edText(bid, 'heading')}>
+          {p.heading}
+        </h2>
+      )}
       <div className="border border-hairline">
         <iframe
           src={p.src}
@@ -805,7 +1078,7 @@ export function MapEmbedBlock({ p }: { p: P }) {
   );
 }
 
-export function SpacerBlock({ p }: { p: P }) {
+export function SpacerBlock({ p }: BlockComponentProps) {
   return (
     <div className={BG_CLASS[(p.background as Bg) ?? 'white']}>
       <div className="gutter" style={{ paddingTop: Number(p.height) || 0 }}>
@@ -816,7 +1089,7 @@ export function SpacerBlock({ p }: { p: P }) {
   );
 }
 
-export function HtmlBlock({ p }: { p: P }) {
+export function HtmlBlock({ p }: BlockComponentProps) {
   return (
     <Section background={(p.background as Bg) ?? 'white'} className="!py-10">
       <div dangerouslySetInnerHTML={{ __html: String(p.html ?? '') }} />
@@ -831,28 +1104,34 @@ export function CtaLink({
   href,
   className,
   children,
+  bid,
+  path,
 }: {
   href?: string;
   className?: string;
   children: React.ReactNode;
+  bid?: string;
+  path?: string;
 }) {
+  const label = path ? <span {...edText(bid, path)}>{children}</span> : children;
+
   if (!href || href === '#quote') {
     return (
       <QuoteButton className={className} subject="Custom team kit">
-        {children}
+        {label}
       </QuoteButton>
     );
   }
   if (/^(https?:|mailto:|tel:)/.test(href)) {
     return (
       <a href={href} className={className}>
-        {children}
+        {label}
       </a>
     );
   }
   return (
     <Link href={href} className={className}>
-      {children}
+      {label}
     </Link>
   );
 }

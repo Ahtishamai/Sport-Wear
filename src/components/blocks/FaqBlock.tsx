@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuote } from '@/components/site/QuoteProvider';
-import { Eyebrow } from './primitives';
+import { edText, Eyebrow } from './primitives';
 import { cn } from '@/lib/utils';
 import type { Bg } from './primitives';
 import { BG_CLASS } from './primitives';
@@ -11,9 +11,11 @@ export type FaqItem = { id: string; question: string; answer: string };
 
 export function FaqBlock({
   p,
+  bid,
   faqs,
 }: {
   p: Record<string, any>;
+  bid?: string;
   faqs: FaqItem[];
 }) {
   const [open, setOpen] = useState(faqs[0]?.id ?? '');
@@ -28,8 +30,12 @@ export function FaqBlock({
     >
       <div className="mx-auto max-w-[1000px]">
         <div className="mb-10 text-center">
-          <Eyebrow>{p.eyebrow}</Eyebrow>
-          {p.heading && <h2 className="h-section">{p.heading}</h2>}
+          <Eyebrow bid={bid} path="eyebrow">{p.eyebrow}</Eyebrow>
+          {p.heading && (
+            <h2 className="h-section" {...edText(bid, 'heading')}>
+              {p.heading}
+            </h2>
+          )}
         </div>
 
         <div className="border-t-2 border-ink">
@@ -65,13 +71,13 @@ export function FaqBlock({
 
         {p.footerText && (
           <p className="mt-8 text-center text-[15px] font-medium text-body">
-            {p.footerText}{' '}
+            <span {...edText(bid, 'footerText')}>{p.footerText}</span>{' '}
             <button
               type="button"
               onClick={() => openQuote('Question from the FAQ')}
               className="font-semibold text-ink underline decoration-brand decoration-2 underline-offset-4"
             >
-              {p.footerCta || 'Ask our team →'}
+              <span {...edText(bid, 'footerCta')}>{p.footerCta || 'Ask our team →'}</span>
             </button>
           </p>
         )}

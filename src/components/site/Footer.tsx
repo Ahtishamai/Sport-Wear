@@ -3,6 +3,7 @@ import Image from 'next/image';
 import type { SiteSettings } from '@/lib/settings';
 import type { NavLink } from './Header';
 import { QuoteButton } from './QuoteButton';
+import { edSetting } from '@/components/blocks/primitives';
 
 export function Footer({
   settings,
@@ -17,6 +18,7 @@ export function Footer({
     <footer className="bg-ink text-white" data-reveal-root>
       <div className="mx-auto grid max-w-[1320px] gap-9 px-5 pt-[66px] pb-10 md:px-10 lg:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
         <div>
+          <div className="inline-block" {...edSetting('logoLight', 'image')}>
           <Image
             src={settings.logoLight}
             alt={settings.siteName}
@@ -24,7 +26,8 @@ export function Footer({
             height={32}
             className="h-8 w-auto object-contain"
           />
-          <p className="mt-5 max-w-[300px] text-[15px] leading-relaxed text-ondark-3">
+          </div>
+          <p className="mt-5 max-w-[300px] text-[15px] leading-relaxed text-ondark-3" {...edSetting('footerBlurb')}>
             {settings.footerBlurb}
           </p>
           <div className="mt-6 flex gap-2.5">
@@ -53,7 +56,7 @@ export function Footer({
           <ul className="space-y-2.5 text-[15px] font-medium text-ondark-3">
             <li>
               <a href={settings.phoneHref} className="transition-colors hover:text-brand">
-                {settings.phone}
+                <span {...edSetting('phone')}>{settings.phone}</span>
               </a>
             </li>
             <li>
@@ -61,10 +64,12 @@ export function Footer({
                 href={`mailto:${settings.email}`}
                 className="transition-colors hover:text-brand"
               >
-                {settings.email}
+                <span {...edSetting('email')}>{settings.email}</span>
               </a>
             </li>
-            <li className="leading-relaxed">{settings.address}</li>
+            <li className="leading-relaxed" {...edSetting('address')}>
+              {settings.address}
+            </li>
           </ul>
           <QuoteButton className="btn btn-yellow btn-md mt-6" subject="Custom team kit">
             Request a quote
@@ -74,8 +79,8 @@ export function Footer({
 
       <div className="border-t border-white/12">
         <div className="mx-auto flex max-w-[1320px] flex-wrap items-center justify-between gap-3 px-5 py-5 text-[13px] font-medium text-ondark-4 md:px-10">
-          <span>{settings.copyright}</span>
-          <span>{settings.footerMeta}</span>
+          <span {...edSetting('copyright')}>{settings.copyright}</span>
+          <span {...edSetting('footerMeta')}>{settings.footerMeta}</span>
         </div>
       </div>
     </footer>

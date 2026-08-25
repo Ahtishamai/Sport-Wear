@@ -1,9 +1,15 @@
 'use client';
 
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Icon } from './Icon';
+
+/** Loaded only when an admin actually turns editing on. */
+const InlineEditor = dynamic(() => import('./InlineEditor').then((m) => m.InlineEditor), {
+  ssr: false,
+});
 
 /** Maps a public URL to the admin screen that edits it. */
 export function adminEditHref(pathname: string) {
@@ -13,7 +19,7 @@ export function adminEditHref(pathname: string) {
   const collection = pathname.match(/^\/collections\/([^/]+)/);
   if (collection) return `/admin/collections/${collection[1]}`;
   if (pathname === '/collections') return '/admin/collections';
-  if (pathname === '/team-packages') return '/admin/packages';
+  if (pathname === '/team-packages') return '/admin/pages/team-packages/edit';
   const slug = pathname.replace(/^\//, '').split('/')[0];
   return slug ? `/admin/pages/${slug}/edit` : '/admin';
 }
@@ -21,13 +27,14 @@ export function adminEditHref(pathname: string) {
 type Me = { name: string } | null;
 
 /**
- * Front-of-site admin bar. Self-fetches the session so the public pages stay
+ * Front-of-site admin bar. Self-fetches the session so public pages stay
  * statically cacheable (no cookie read during render).
  */
 export function EditBar() {
   const pathname = usePathname();
   const [me, setMe] = useState<Me>(null);
   const [hidden, setHidden] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -42,18 +49,33 @@ export function EditBar() {
     };
   }, []);
 
-  if (!me || hidden) return null;
+  // Leaving the page cancels edit mode.
+  useEffect(() => setEditing(false), [pathname]);
+
+  if (!me) return null;
+
+  if (editing) return <InlineEditor onExit={() => setEditing(false)} />;
+
+  if (hidden) return null;
 
   return (
     <div className="fixed bottom-4 left-4 z-[150] flex items-center gap-1 rounded-full border border-white/15 bg-ink px-2 py-1.5 text-white shadow-lg print:hidden">
       <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand text-[11px] font-bold text-ink">
         {me.name.slice(0, 2).toUpperCase()}
       </span>
+      <button
+        type="button"
+        onClick={() => setEditing(true)}
+        className="flex items-center gap-1.5 rounded-full bg-brand px-3 py-1.5 text-[12px] font-bold text-ink transition-opacity hover:opacity-90"
+      >
+        <Icon name="pencil" size={13} />
+        Edit content
+      </button>
       <Link
         href={adminEditHref(pathname)}
         className="rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors hover:bg-white/10"
       >
-        Edit this page
+        Sections
       </Link>
       <span aria-hidden="true" className="h-4 w-px bg-white/20" />
       <Link

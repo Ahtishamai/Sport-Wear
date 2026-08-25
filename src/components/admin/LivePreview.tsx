@@ -26,6 +26,7 @@ import {
   ReviewsBlock,
   RichTextBlock,
   SpacerBlock,
+  NumbersGridBlock,
   StatStripBlock,
   StepsBlock,
   TileGroupsBlock,
@@ -132,7 +133,7 @@ function PreviewBlock({
 
   switch (block.type) {
     case 'hero':
-      return <HeroBlock p={p} priority={index === 0} />;
+      return <HeroBlock p={p} bid={block.id} priority={index === 0} />;
     case 'pageHeader':
       return (
         <PageHeaderBlock
@@ -140,54 +141,56 @@ function PreviewBlock({
           breadcrumb={[{ label: 'Home', href: '/' }, { label: p.heading || 'Page' }]}
         />
       );
+    case 'numbersGrid':
+      return <NumbersGridBlock p={p} bid={block.id} />;
     case 'statStrip':
-      return <StatStripBlock p={p} />;
+      return <StatStripBlock p={p} bid={block.id} />;
     case 'marquee':
-      return <MarqueeBlock p={p} />;
+      return <MarqueeBlock p={p} bid={block.id} />;
     case 'featuredTiles':
-      return <FeaturedTilesBlock p={p} />;
+      return <FeaturedTilesBlock p={p} bid={block.id} />;
     case 'tileGroups':
-      return <TileGroupsBlock p={p} />;
+      return <TileGroupsBlock p={p} bid={block.id} />;
     case 'categoryCards':
-      return <CategoryCardsBlock p={p} />;
+      return <CategoryCardsBlock p={p} bid={block.id} />;
     case 'productGrid':
-      return <ProductGridBlock p={p} products={pickProducts(p, data)} />;
+      return <ProductGridBlock p={p} bid={block.id} products={pickProducts(p, data)} />;
     case 'packagesGrid':
-      return <PackagesGridBlock p={p} packages={data.packages.slice(0, Number(p.limit) || 4)} />;
+      return <PackagesGridBlock p={p} bid={block.id} packages={data.packages.slice(0, Number(p.limit) || 4)} />;
     case 'collectionList':
       return (
-        <CollectionListBlock p={p} collections={data.collections.slice(0, Number(p.limit) || 12)} />
+        <CollectionListBlock p={p} bid={block.id} collections={data.collections.slice(0, Number(p.limit) || 12)} />
       );
     case 'steps':
-      return <StepsBlock p={p} />;
+      return <StepsBlock p={p} bid={block.id} />;
     case 'iconFeatures':
-      return <IconFeaturesBlock p={p} />;
+      return <IconFeaturesBlock p={p} bid={block.id} />;
     case 'ctaBand':
-      return <CtaBandBlock p={p} />;
+      return <CtaBandBlock p={p} bid={block.id} />;
     case 'quoteCallout':
-      return <QuoteCalloutBlock p={p} />;
+      return <QuoteCalloutBlock p={p} bid={block.id} />;
     case 'reviews':
-      return <ReviewsBlock p={p} reviews={data.reviews.slice(0, Number(p.limit) || 12)} />;
+      return <ReviewsBlock p={p} bid={block.id} reviews={data.reviews.slice(0, Number(p.limit) || 12)} />;
     case 'faq':
-      return <FaqBlock p={p} faqs={data.faqs[p.group || 'home'] ?? []} />;
+      return <FaqBlock p={p} bid={block.id} faqs={data.faqs[p.group || 'home'] ?? []} />;
     case 'richText':
-      return <RichTextBlock p={p} />;
+      return <RichTextBlock p={p} bid={block.id} />;
     case 'imageText':
-      return <ImageTextBlock p={p} />;
+      return <ImageTextBlock p={p} bid={block.id} />;
     case 'gallery':
-      return <GalleryBlock p={p} />;
+      return <GalleryBlock p={p} bid={block.id} />;
     case 'teamGrid':
-      return <TeamGridBlock p={p} />;
+      return <TeamGridBlock p={p} bid={block.id} />;
     case 'timeline':
-      return <TimelineBlock p={p} />;
+      return <TimelineBlock p={p} bid={block.id} />;
     case 'contactForm':
-      return <ContactFormBlock p={p} details={data.contact} />;
+      return <ContactFormBlock p={p} bid={block.id} details={data.contact} />;
     case 'mapEmbed':
-      return <MapEmbedBlock p={p} />;
+      return <MapEmbedBlock p={p} bid={block.id} />;
     case 'spacer':
-      return <SpacerBlock p={p} />;
+      return <SpacerBlock p={p} bid={block.id} />;
     case 'html':
-      return <HtmlBlock p={p} />;
+      return <HtmlBlock p={p} bid={block.id} />;
     default:
       return (
         <div className="gutter border-y border-hairline bg-surface py-6 text-[13px] text-muted">

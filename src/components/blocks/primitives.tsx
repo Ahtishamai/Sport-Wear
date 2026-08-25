@@ -3,6 +3,29 @@ import Image from 'next/image';
 import { cn, money } from '@/lib/utils';
 import { QuoteButton } from '@/components/site/QuoteButton';
 
+// ------------------------------------------------------------------ inline editing
+
+/**
+ * `data-edit` marks an element as editable from the live site (see InlineEditor).
+ * The value encodes exactly which block prop the element renders, so a save
+ * needs no page context: `block:<blockId>:<propPath>`.
+ */
+export function edText(bid: string | undefined, path: string) {
+  return bid ? { 'data-edit': `block:${bid}:${path}`, 'data-edit-kind': 'text' } : {};
+}
+
+export function edImage(bid: string | undefined, path: string) {
+  return bid ? { 'data-edit': `block:${bid}:${path}`, 'data-edit-kind': 'image' } : {};
+}
+
+export function edSetting(path: string, kind: 'text' | 'image' = 'text') {
+  return { 'data-edit': `setting:${path}`, 'data-edit-kind': kind };
+}
+
+export type EditableProps = { bid?: string };
+
+// ------------------------------------------------------------------ layout
+
 export type Bg = 'white' | 'surface' | 'ink' | 'yellow';
 
 export const BG_CLASS: Record<Bg, string> = {
@@ -45,14 +68,21 @@ export function Eyebrow({
   children,
   onDark,
   className,
+  bid,
+  path,
 }: {
   children?: React.ReactNode;
   onDark?: boolean;
   className?: string;
+  bid?: string;
+  path?: string;
 }) {
   if (!children) return null;
   return (
-    <div className={cn('eyebrow mb-3.5', onDark ? 'text-brand' : 'text-brand-text', className)}>
+    <div
+      {...(path ? edText(bid, path) : {})}
+      className={cn('eyebrow mb-3.5', onDark ? 'text-brand' : 'text-brand-text', className)}
+    >
       {children}
     </div>
   );
@@ -65,6 +95,8 @@ export function SectionHeading({
   align = 'left',
   onDark,
   className,
+  bid,
+  paths,
 }: {
   eyebrow?: string;
   heading?: string;
@@ -72,14 +104,23 @@ export function SectionHeading({
   align?: 'left' | 'center';
   onDark?: boolean;
   className?: string;
+  bid?: string;
+  paths?: { eyebrow?: string; heading?: string; body?: string };
 }) {
   if (!eyebrow && !heading && !body) return null;
   return (
     <div className={cn(align === 'center' && 'text-center', 'mb-10', className)}>
-      <Eyebrow onDark={onDark}>{eyebrow}</Eyebrow>
-      {heading && <h2 className="h-section">{heading}</h2>}
+      <Eyebrow onDark={onDark} bid={bid} path={paths?.eyebrow ?? 'eyebrow'}>
+        {eyebrow}
+      </Eyebrow>
+      {heading && (
+        <h2 className="h-section" {...edText(bid, paths?.heading ?? 'heading')}>
+          {heading}
+        </h2>
+      )}
       {body && (
         <p
+          {...edText(bid, paths?.body ?? 'body')}
           className={cn(
             'mt-4 max-w-[640px] text-[17px] leading-relaxed',
             onDark ? 'text-ondark-2' : 'text-body',
@@ -93,6 +134,8 @@ export function SectionHeading({
   );
 }
 
+// ------------------------------------------------------------------ tiles
+
 /** Photo tile with a gradient scrim and an overlaid label block. */
 export function PhotoTile({
   eyebrow,
@@ -103,6 +146,8 @@ export function PhotoTile({
   align = 'left',
   height = 380,
   priority,
+  bid,
+  ep,
 }: {
   eyebrow?: string;
   title: string;
@@ -112,11 +157,17 @@ export function PhotoTile({
   align?: 'left' | 'right';
   height?: number;
   priority?: boolean;
+  bid?: string;
+  /** edit path prefix for this tile, e.g. `tiles.0` */
+  ep?: string;
 }) {
+  const path = (field: string) => (ep ? `${ep}.${field}` : field);
+
   const inner = (
     <div
       className="group zoom-wrap relative block w-full bg-plate"
       style={{ height }}
+      {...edImage(bid, path('image'))}
     >
       {image ? (
         <Image
@@ -144,8 +195,16 @@ export function PhotoTile({
           align === 'right' && 'right-0 text-right'
         )}
       >
-        {eyebrow && <div className="eyebrow mb-2.5 text-brand">{eyebrow}</div>}
-        <h3 className="h-display text-white" style={{ fontSize: 'clamp(28px,2.9vw,42px)', lineHeight: 0.98 }}>
+        {eyebrow && (
+          <div className="eyebrow mb-2.5 text-brand" {...edText(bid, path('eyebrow'))}>
+            {eyebrow}
+          </div>
+        )}
+        <h3
+          className="h-display text-white"
+          style={{ fontSize: 'clamp(28px,2.9vw,42px)', lineHeight: 0.98 }}
+          {...edText(bid, path('title'))}
+        >
           {title}
         </h3>
         {links && links.length > 0 && (
@@ -166,6 +225,10 @@ export function PhotoTile({
   );
 }
 
+// ------------------------------------------------------------------ catalog cards
+// These render live catalog records, so they are edited in Admin → Products,
+// not inline. They deliberately carry no data-edit attributes.
+
 export type CardProduct = {
   id: string;
   handle: string;
@@ -176,7 +239,6 @@ export type CardProduct = {
   image?: string | null;
 };
 
-/** Centred "plate" card — the Items-you-might-like style. */
 export function ProductPlateCard({ p }: { p: CardProduct }) {
   return (
     <Link href={`/products/${p.handle}`} className="group block">
@@ -204,7 +266,6 @@ export function ProductPlateCard({ p }: { p: CardProduct }) {
   );
 }
 
-/** Bordered catalog card with badge + View details button. */
 export function ProductCatalogCard({ p }: { p: CardProduct }) {
   return (
     <Link
@@ -346,10 +407,35 @@ export function ImagePlaceholder({ label = 'Photo' }: { label?: string }) {
   );
 }
 
+// ------------------------------------------------------------------ text
+
 /** Minimal inline markdown: **bold**, [text](href), and blank-line paragraphs. */
-export function RichText({ text, className }: { text?: string; className?: string }) {
+export function RichText({
+  text,
+  className,
+  bid,
+  path,
+}: {
+  text?: string;
+  className?: string;
+  bid?: string;
+  path?: string;
+}) {
   if (!text) return null;
   const paragraphs = String(text).split(/\n\s*\n/);
+
+  // In edit mode the whole body is one editable region, so keep the raw source
+  // in a single element when a path is supplied.
+  if (bid && path) {
+    return (
+      <div className={cn('prose-ds', className)} {...edText(bid, path)} data-edit-multiline="true">
+        {paragraphs.map((p, i) => (
+          <p key={i} dangerouslySetInnerHTML={{ __html: inlineMarkdown(p) }} />
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className={cn('prose-ds', className)}>
       {paragraphs.map((p, i) => (

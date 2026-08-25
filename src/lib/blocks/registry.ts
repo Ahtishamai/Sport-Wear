@@ -162,6 +162,60 @@ export const BLOCKS: BlockDefinition[] = [
     },
   },
   {
+    type: 'numbersGrid',
+    label: 'By the numbers',
+    group: 'Social proof',
+    glyph: '⋕',
+    description:
+      'A grid of headline figures with captions — any number of cells, with optional count-up animation.',
+    fields: [
+      { name: 'eyebrow', label: 'Eyebrow', type: 'text', width: 'half' },
+      { name: 'heading', label: 'Heading', type: 'text', width: 'half' },
+      { name: 'body', label: 'Intro', type: 'textarea', rows: 2 },
+      alignField,
+      bgField,
+      {
+        name: 'minWidth',
+        label: 'Min cell width (px)',
+        type: 'number',
+        width: 'half',
+        min: 140,
+        max: 400,
+      },
+      {
+        name: 'items',
+        label: 'Figures',
+        type: 'list',
+        fields: [
+          { name: 'value', label: 'Figure', type: 'text', width: 'half' },
+          { name: 'label', label: 'Caption', type: 'text', width: 'half' },
+          {
+            name: 'count',
+            label: 'Count up to',
+            type: 'number',
+            width: 'half',
+            help: 'Leave 0 to show the figure as typed.',
+          },
+          { name: 'suffix', label: 'Suffix', type: 'text', width: 'half' },
+        ],
+      },
+    ],
+    defaults: {
+      eyebrow: 'By the numbers',
+      heading: 'The short version',
+      body: '',
+      align: 'center',
+      background: 'ink',
+      minWidth: 220,
+      items: [
+        { value: '8+', label: 'Years of industry experience', count: 0, suffix: '' },
+        { value: '1,000+', label: 'Happy customers', count: 1000, suffix: '+' },
+        { value: '50+', label: 'Premium sportswear products', count: 50, suffix: '+' },
+        { value: '100%', label: 'Custom designs', count: 0, suffix: '' },
+      ],
+    },
+  },
+  {
     type: 'marquee',
     label: 'Scrolling strip',
     group: 'Social proof',
@@ -561,9 +615,25 @@ export const BLOCKS: BlockDefinition[] = [
     label: 'Icon feature row',
     group: 'Conversion',
     glyph: '◈',
-    description: 'Four small value-prop cards with yellow icon chips.',
+    description:
+      'Value-prop cards with yellow icon chips. Three sizes — from a compact strip to full feature cards.',
     fields: [
-      { name: 'heading', label: 'Heading (optional)', type: 'text' },
+      { name: 'eyebrow', label: 'Eyebrow', type: 'text', width: 'half' },
+      { name: 'heading', label: 'Heading (optional)', type: 'text', width: 'half' },
+      { name: 'body', label: 'Intro', type: 'textarea', rows: 2 },
+      {
+        name: 'size',
+        label: 'Card size',
+        type: 'select',
+        width: 'half',
+        default: 'compact',
+        options: [
+          { label: 'Compact strip', value: 'compact' },
+          { label: 'Standard cards', value: 'standard' },
+          { label: 'Large cards', value: 'large' },
+        ],
+      },
+      alignField,
       {
         name: 'items',
         label: 'Features',
@@ -571,13 +641,17 @@ export const BLOCKS: BlockDefinition[] = [
         fields: [
           { name: 'title', label: 'Title', type: 'text', width: 'half' },
           { name: 'icon', label: 'Icon', type: 'icon', width: 'half', default: 'star' },
-          { name: 'body', label: 'Body', type: 'textarea', rows: 2 },
+          { name: 'body', label: 'Body', type: 'textarea', rows: 3 },
         ],
       },
       bgField,
     ],
     defaults: {
+      eyebrow: '',
       heading: '',
+      body: '',
+      size: 'compact',
+      align: 'center',
       background: 'white',
       items: [
         { title: 'No art or setup fees', icon: 'art', body: 'Design, revisions, names and numbers are all included.' },

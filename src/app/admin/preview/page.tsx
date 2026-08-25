@@ -6,9 +6,12 @@ import {
   getCollectionCards,
   getPackages,
   getProductsForBlock,
+  getNav,
   getReviews,
 } from '@/lib/queries';
 import { QuoteProvider } from '@/components/site/QuoteProvider';
+import { AnnouncementBar, Header } from '@/components/site/Header';
+import { Footer } from '@/components/site/Footer';
 import { LivePreview, type PreviewData } from '@/components/admin/LivePreview';
 import { normalizeBlocks } from '@/components/blocks/Renderer';
 import type { CardProduct } from '@/components/blocks/primitives';
@@ -31,7 +34,7 @@ export default async function PreviewPage({
 
   const { slug } = await searchParams;
 
-  const [page, settings, products, featured, packages, reviews, collections, faqRows] =
+  const [page, settings, products, featured, packages, reviews, collections, nav, faqRows] =
     await Promise.all([
       slug ? prisma.page.findUnique({ where: { slug } }) : null,
       getSettings(),
@@ -40,6 +43,7 @@ export default async function PreviewPage({
       getPackages(8),
       getReviews(12),
       getCollectionCards(24),
+      getNav(),
       prisma.faq.findMany({ where: { published: true }, orderBy: { position: 'asc' } }),
     ]);
 
@@ -85,7 +89,16 @@ export default async function PreviewPage({
         sportOptions: settings.sportOptions,
       }}
     >
+      {settings.announcementEnabled && <AnnouncementBar items={settings.announcement} />}
+      <Header
+        nav={nav.header}
+        logo={settings.logoDark}
+        phone={settings.phone}
+        phoneHref={settings.phoneHref}
+        siteName={settings.siteName}
+      />
       <LivePreview initialBlocks={normalizeBlocks(page?.blocks)} data={data} />
+      <Footer settings={settings} shop={nav.footerShop} company={nav.footerCompany} />
     </QuoteProvider>
   );
 }

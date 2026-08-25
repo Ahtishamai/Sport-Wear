@@ -52,7 +52,8 @@ Sign in at **`/admin/login`** with the `ADMIN_EMAIL` / `ADMIN_PASSWORD` from you
 | `/collections/[handle]` | One collection, same filtered grid | Collections → *(the collection)* |
 | `/products/[handle]` | CRO product page + configurator | Products → *(the product)* |
 | `/team-packages` | Per-player package cards | Pages → Team packages |
-| `/about`, `/contact`, `/faqs`, `/track-order`, `/size-chart`, `/privacy-policy` | CMS pages | Pages (visual builder) |
+| `/about` | 12-section About page — story, mission, vision, values, why-choose-us, numbers | Pages → About us |
+| `/contact`, `/faqs`, `/track-order`, `/size-chart`, `/privacy-policy` | CMS pages | Pages (visual builder) |
 | `/sitemap.xml`, `/robots.txt` | Generated | — |
 
 Any new page created in the admin gets a real route at `/{slug}` automatically.
@@ -67,6 +68,7 @@ Any new page created in the admin gets a real route at `/{slug}` automatically.
 **live preview iframe of the real site** on the right.
 
 - Type in a field → the preview updates as you type (no save needed to see it)
+- The preview shows the real announcement bar, header and footer around your sections
 - Click a section **in the preview** to select and edit it
 - Add / reorder / duplicate / hide / delete sections
 - Desktop · tablet · mobile preview widths
@@ -75,18 +77,39 @@ Any new page created in the admin gets a real route at `/{slug}` automatically.
 
 ### Editing from the front of the site
 
-Sign in, then browse the public site normally: an admin bar appears bottom-left with **Edit this
-page**, which jumps straight to the right admin screen for whatever you are looking at — a page,
-a product or a collection.
+Sign in, then browse the public site normally — an admin bar appears bottom-left:
+
+- **Edit content** turns on inline editing. Every heading, paragraph, button label, badge, stat,
+  tile caption and list item on the page is outlined and directly typeable; every image gets a
+  *Replace image* overlay that opens the media library. A bar along the bottom counts unsaved
+  changes, and Save writes them all at once.
+- **Sections** jumps to the visual builder for whatever you are looking at — a page, a product or
+  a collection.
+
+Inline editing covers the global chrome too: the announcement bar, header logo and phone number,
+and the whole footer (blurb, contact details, copyright) are editable straight from the page, and
+those changes apply site-wide.
+
+While edit mode is on, links and buttons are inert so a stray click cannot navigate away, pasted
+text is stripped to plain text, and leaving with unsaved changes warns first.
+
+Editable elements carry `data-edit="block:<id>:<path>"` or `data-edit="setting:<key>"`, so a save
+posts to `/api/admin/inline` and the server resolves each target back to the page, collection or
+settings record that owns it — no page context needed on the client. Block edits also write a
+page revision, so an inline change can be rolled back like any other.
+
+What is *not* inline-editable by design: product names, prices and images, package contents,
+reviews and FAQ answers. Those are catalog records shown in many places at once, so they are
+edited in their own admin screens and update everywhere.
 
 ### Sections available
 
-24 block types across six groups, all editable through generated forms:
+25 block types across six groups, all editable through generated forms:
 
 - **Hero & headers** — hero banner, page header
 - **Commerce** — photo tile mosaic, two tile columns, category cards, product grid, team packages, collection list
 - **Conversion** — how-it-works steps, icon feature row, CTA band, quote callout, FAQ accordion, contact form
-- **Social proof** — stat strip (animated count-up), scrolling strip, review carousel
+- **Social proof** — stat strip (animated count-up), by-the-numbers grid, scrolling strip, review carousel
 - **Content** — text section, image + text, photo strip, people grid, milestones, map
 - **Layout** — spacer/divider, custom HTML
 

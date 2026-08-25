@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { cn, isEmail } from '@/lib/utils';
 import { Icon } from '@/components/site/Icon';
 import { useQuote } from '@/components/site/QuoteProvider';
-import { BG_CLASS, Eyebrow, type Bg } from './primitives';
+import { BG_CLASS, edText, Eyebrow, type Bg } from './primitives';
 
 type Details = {
   phone: string;
@@ -15,9 +15,11 @@ type Details = {
 
 export function ContactFormBlock({
   p,
+  bid,
   details,
 }: {
   p: Record<string, any>;
+  bid?: string;
   details: Details;
 }) {
   const [sent, setSent] = useState(false);
@@ -77,9 +79,17 @@ export function ContactFormBlock({
     >
       <div className="grid gap-12 lg:grid-cols-[.85fr_1.15fr]">
         <div>
-          <Eyebrow>{p.eyebrow}</Eyebrow>
-          {p.heading && <h2 className="h-section">{p.heading}</h2>}
-          {p.body && <p className="mt-5 max-w-[460px] text-[17px] leading-relaxed text-body">{p.body}</p>}
+          <Eyebrow bid={bid} path="eyebrow">{p.eyebrow}</Eyebrow>
+          {p.heading && (
+            <h2 className="h-section" {...edText(bid, 'heading')}>
+              {p.heading}
+            </h2>
+          )}
+          {p.body && (
+            <p className="mt-5 max-w-[460px] text-[17px] leading-relaxed text-body" {...edText(bid, 'body')}>
+              {p.body}
+            </p>
+          )}
 
           <ul className="mt-9 space-y-5">
             <ContactRow icon="phone" label="Call the shop">

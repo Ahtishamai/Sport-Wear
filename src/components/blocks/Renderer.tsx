@@ -28,6 +28,7 @@ import {
   QuoteCalloutBlock,
   RichTextBlock,
   SpacerBlock,
+  NumbersGridBlock,
   StatStripBlock,
   StepsBlock,
   TeamGridBlock,
@@ -72,25 +73,28 @@ async function renderBlock(block: Block, index: number, ctx: RenderContext) {
 
   switch (block.type) {
     case 'hero':
-      return <HeroBlock key={key} p={p} priority={index === 0} />;
+      return <HeroBlock key={key} p={p} bid={block.id} priority={index === 0} />;
 
     case 'pageHeader':
-      return <PageHeaderBlock key={key} p={p} breadcrumb={ctx.breadcrumb} />;
+      return <PageHeaderBlock key={key} p={p} bid={block.id} breadcrumb={ctx.breadcrumb} />;
+
+    case 'numbersGrid':
+      return <NumbersGridBlock key={key} p={p} bid={block.id} />;
 
     case 'statStrip':
-      return <StatStripBlock key={key} p={p} />;
+      return <StatStripBlock key={key} p={p} bid={block.id} />;
 
     case 'marquee':
-      return <MarqueeBlock key={key} p={p} />;
+      return <MarqueeBlock key={key} p={p} bid={block.id} />;
 
     case 'featuredTiles':
-      return <FeaturedTilesBlock key={key} p={p} />;
+      return <FeaturedTilesBlock key={key} p={p} bid={block.id} />;
 
     case 'tileGroups':
-      return <TileGroupsBlock key={key} p={p} />;
+      return <TileGroupsBlock key={key} p={p} bid={block.id} />;
 
     case 'categoryCards':
-      return <CategoryCardsBlock key={key} p={p} />;
+      return <CategoryCardsBlock key={key} p={p} bid={block.id} />;
 
     case 'productGrid': {
       const products = await getProductsForBlock({
@@ -100,55 +104,55 @@ async function renderBlock(block: Block, index: number, ctx: RenderContext) {
         limit: p.limit,
         excludeId: ctx.excludeProductId,
       });
-      return <ProductGridBlock key={key} p={p} products={products} />;
+      return <ProductGridBlock key={key} p={p} bid={block.id} products={products} />;
     }
 
     case 'packagesGrid': {
       const packages = await getPackages(Number(p.limit) || 4);
-      return <PackagesGridBlock key={key} p={p} packages={packages} />;
+      return <PackagesGridBlock key={key} p={p} bid={block.id} packages={packages} />;
     }
 
     case 'collectionList': {
       const collections = await getCollectionCards(Number(p.limit) || 12);
-      return <CollectionListBlock key={key} p={p} collections={collections} />;
+      return <CollectionListBlock key={key} p={p} bid={block.id} collections={collections} />;
     }
 
     case 'steps':
-      return <StepsBlock key={key} p={p} />;
+      return <StepsBlock key={key} p={p} bid={block.id} />;
 
     case 'iconFeatures':
-      return <IconFeaturesBlock key={key} p={p} />;
+      return <IconFeaturesBlock key={key} p={p} bid={block.id} />;
 
     case 'ctaBand':
-      return <CtaBandBlock key={key} p={p} />;
+      return <CtaBandBlock key={key} p={p} bid={block.id} />;
 
     case 'quoteCallout':
-      return <QuoteCalloutBlock key={key} p={p} />;
+      return <QuoteCalloutBlock key={key} p={p} bid={block.id} />;
 
     case 'reviews': {
       const reviews = await getReviews(Number(p.limit) || 12);
-      return <ReviewsBlock key={key} p={p} reviews={reviews} />;
+      return <ReviewsBlock key={key} p={p} bid={block.id} reviews={reviews} />;
     }
 
     case 'faq': {
       const faqs = await getFaqs(p.group || 'home');
-      return <FaqBlock key={key} p={p} faqs={faqs} />;
+      return <FaqBlock key={key} p={p} bid={block.id} faqs={faqs} />;
     }
 
     case 'richText':
-      return <RichTextBlock key={key} p={p} />;
+      return <RichTextBlock key={key} p={p} bid={block.id} />;
 
     case 'imageText':
-      return <ImageTextBlock key={key} p={p} />;
+      return <ImageTextBlock key={key} p={p} bid={block.id} />;
 
     case 'gallery':
-      return <GalleryBlock key={key} p={p} />;
+      return <GalleryBlock key={key} p={p} bid={block.id} />;
 
     case 'teamGrid':
-      return <TeamGridBlock key={key} p={p} />;
+      return <TeamGridBlock key={key} p={p} bid={block.id} />;
 
     case 'timeline':
-      return <TimelineBlock key={key} p={p} />;
+      return <TimelineBlock key={key} p={p} bid={block.id} />;
 
     case 'contactForm': {
       const s = await getSettings();
@@ -167,13 +171,13 @@ async function renderBlock(block: Block, index: number, ctx: RenderContext) {
     }
 
     case 'mapEmbed':
-      return <MapEmbedBlock key={key} p={p} />;
+      return <MapEmbedBlock key={key} p={p} bid={block.id} />;
 
     case 'spacer':
-      return <SpacerBlock key={key} p={p} />;
+      return <SpacerBlock key={key} p={p} bid={block.id} />;
 
     case 'html':
-      return <HtmlBlock key={key} p={p} />;
+      return <HtmlBlock key={key} p={p} bid={block.id} />;
 
     default:
       if (process.env.NODE_ENV === 'development') {

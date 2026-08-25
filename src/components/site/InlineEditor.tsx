@@ -1,0 +1,276 @@
+'use client';
+
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { MediaPicker } from '@/components/admin/MediaPicker';
+import { Icon } from './Icon';
+
+type Pending = Map<string, unknown>;
+
+/**
+ * Live front-end editing.
+ *
+ * Every editable element on the site carries `data-edit="block:<id>:<path>"` or
+ * `data-edit="setting:<key>"`. Switching this on makes text elements
+ * contenteditable and puts a "replace" affordance over images; Save posts the
+ * collected changes to /api/admin/inline, which resolves each target back to
+ * the page, collection or settings record that owns it.
+ */
+export function InlineEditor({ onExit }: { onExit: () => void }) {
+  const router = useRouter();
+  const pending = useRef<Pending>(new Map());
+  const originals = useRef(new Map<string, string>());
+  const [count, setCount] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [picker, setPicker] = useState<{ target: string; el: HTMLElement } | null>(null);
+  const [hint, setHint] = useState(true);
+
+  const bump = () => setCount(pending.current.size);
+
+  // ---------------------------------------------------------------- setup
+  useEffect(() => {
+    document.body.dataset.inlineEditing = 'true';
+
+    const textEls = Array.from(
+      document.querySelectorAll<HTMLElement>('[data-edit][data-edit-kind="text"]')
+    );
+    const imageEls = Array.from(
+      document.querySelectorAll<HTMLElement>('[data-edit][data-edit-kind="image"]')
+    );
+
+    for (const el of textEls) {
+      const target = el.dataset.edit;
+      if (!target) continue;
+      originals.current.set(target, el.innerText);
+      el.contentEditable = 'plaintext-only';
+      // Safari and Firefox ignore plaintext-only; fall back to true.
+      if (el.contentEditable !== 'plaintext-only') el.contentEditable = 'true';
+      el.spellcheck = true;
+      el.dataset.inlineEditable = 'true';
+    }
+
+    for (const el of imageEls) {
+      el.dataset.inlineEditable = 'image';
+    }
+
+    const onInput = (e: Event) => {
+      const el = (e.target as HTMLElement)?.closest?.<HTMLElement>('[data-inline-editable="true"]');
+      if (!el) return;
+      const target = el.dataset.edit;
+      if (!target) return;
+      const value = el.innerText.replace(/ /g, ' ');
+      if (value === originals.current.get(target)) pending.current.delete(target);
+      else pending.current.set(target, value);
+      bump();
+    };
+
+    // Keep links and buttons inert while editing so a click never navigates.
+    const onClick = (e: MouseEvent) => {
+      const node = e.target as HTMLElement;
+      const image = node.closest?.<HTMLElement>('[data-inline-editable="image"]');
+      if (image) {
+        e.preventDefault();
+        e.stopPropagation();
+        const target = image.dataset.edit;
+        if (target) setPicker({ target, el: image });
+        return;
+      }
+      if (node.closest?.('[data-inline-ui]')) return;
+      if (node.closest?.('a, button')) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+
+    // Enter should not inject block elements into a heading.
+    const onKeyDown = (e: KeyboardEvent) => {
+      const el = (e.target as HTMLElement)?.closest?.<HTMLElement>('[data-inline-editable="true"]');
+      if (!el) return;
+      if (e.key === 'Enter' && !e.shiftKey && el.dataset.editMultiline !== 'true') {
+        e.preventDefault();
+        el.blur();
+      }
+    };
+
+    // Strip formatting from pasted content.
+    const onPaste = (e: ClipboardEvent) => {
+      const el = (e.target as HTMLElement)?.closest?.<HTMLElement>('[data-inline-editable="true"]');
+      if (!el) return;
+      e.preventDefault();
+      const text = e.clipboardData?.getData('text/plain') ?? '';
+      document.execCommand('insertText', false, text);
+    };
+
+    document.addEventListener('input', onInput, true);
+    document.addEventListener('click', onClick, true);
+    document.addEventListener('keydown', onKeyDown, true);
+    document.addEventListener('paste', onPaste, true);
+
+    const t = setTimeout(() => setHint(false), 5000);
+
+    return () => {
+      document.removeEventListener('input', onInput, true);
+      document.removeEventListener('click', onClick, true);
+      document.removeEventListener('keydown', onKeyDown, true);
+      document.removeEventListener('paste', onPaste, true);
+      clearTimeout(t);
+      delete document.body.dataset.inlineEditing;
+      for (const el of textEls) {
+        el.removeAttribute('contenteditable');
+        delete el.dataset.inlineEditable;
+      }
+      for (const el of imageEls) delete el.dataset.inlineEditable;
+    };
+  }, []);
+
+  // ---------------------------------------------------------------- warn on leave
+  useEffect(() => {
+    if (!count) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [count]);
+
+  // ---------------------------------------------------------------- actions
+  const applyImage = useCallback((url: string) => {
+    if (!picker) return;
+    pending.current.set(picker.target, url);
+    const img = picker.el.querySelector('img');
+    if (img) {
+      img.removeAttribute('srcset');
+      img.src = url;
+    } else {
+      picker.el.style.backgroundImage = `url(${url})`;
+      picker.el.style.backgroundSize = 'cover';
+    }
+    bump();
+    setPicker(null);
+  }, [picker]);
+
+  async function save() {
+    if (!count || busy) return;
+    setBusy(true);
+    setError('');
+    try {
+      const changes = Array.from(pending.current.entries()).map(([target, value]) => ({
+        target,
+        value,
+      }));
+      const res = await fetch('/api/admin/inline', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ changes }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json?.error || 'Save failed');
+
+      pending.current.clear();
+      setCount(0);
+      onExit();
+      router.refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Save failed');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function discard() {
+    if (count && !window.confirm(`Discard ${count} unsaved change${count === 1 ? '' : 's'}?`)) {
+      return;
+    }
+    pending.current.clear();
+    setCount(0);
+    onExit();
+    router.refresh();
+  }
+
+  return (
+    <>
+      <style>{`
+        [data-inline-editable="true"] {
+          outline: 1px dashed rgba(255,209,0,.85);
+          outline-offset: 3px;
+          cursor: text;
+          transition: outline-color .15s, background-color .15s;
+          min-width: 1ch;
+          min-height: 1em;
+        }
+        [data-inline-editable="true"]:hover { outline-color: #101114; background: rgba(255,209,0,.10); }
+        [data-inline-editable="true"]:focus {
+          outline: 2px solid #101114; outline-offset: 3px;
+          background: rgba(255,209,0,.16);
+        }
+        [data-inline-editable="image"] { cursor: pointer; outline: 2px dashed rgba(255,209,0,.85); outline-offset: -2px; }
+        [data-inline-editable="image"]:hover { outline-color: #101114; }
+        [data-inline-editable="image"]::after {
+          content: "Replace image";
+          position: absolute; inset: auto 0 0 0; z-index: 5;
+          background: rgba(16,17,20,.88); color: #FFD100;
+          font: 700 11px/1 Poppins, system-ui, sans-serif;
+          letter-spacing: .1em; text-transform: uppercase;
+          padding: 8px; text-align: center; pointer-events: none;
+        }
+        body[data-inline-editing] { padding-bottom: 84px; }
+      `}</style>
+
+      {picker && (
+        <MediaPicker
+          open
+          folder="content"
+          onClose={() => setPicker(null)}
+          onPick={(m) => applyImage(m.url)}
+        />
+      )}
+
+      <div
+        data-inline-ui
+        className="fixed inset-x-0 bottom-0 z-[190] border-t border-white/15 bg-ink text-white print:hidden"
+      >
+        <div className="mx-auto flex max-w-[1320px] flex-wrap items-center gap-3 px-5 py-3">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand text-ink">
+            <Icon name="pencil" size={15} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="text-[13px] font-semibold">
+              Editing this page
+              {count > 0 && (
+                <span className="ml-2 rounded-full bg-brand px-2 py-0.5 text-[11px] font-bold text-ink">
+                  {count} change{count === 1 ? '' : 's'}
+                </span>
+              )}
+            </div>
+            <div className="text-[12px] text-white/55">
+              {error ? (
+                <span className="text-[#FF8A8F]">{error}</span>
+              ) : hint ? (
+                'Click any highlighted text to type over it, or any image to replace it.'
+              ) : (
+                'Text and images outlined in yellow are editable.'
+              )}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={discard}
+            className="rounded-[2px] border border-white/25 px-3.5 py-2 text-[12px] font-semibold transition-colors hover:border-white"
+          >
+            {count ? 'Discard' : 'Done'}
+          </button>
+          <button
+            type="button"
+            onClick={save}
+            disabled={!count || busy}
+            className="rounded-[2px] border border-brand bg-brand px-4 py-2 text-[12px] font-bold uppercase tracking-[.08em] text-ink transition-opacity disabled:opacity-40"
+          >
+            {busy ? 'Saving…' : 'Save changes'}
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}

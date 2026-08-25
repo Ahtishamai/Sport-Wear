@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Icon } from './Icon';
 import { useQuote } from './QuoteProvider';
+import { edSetting } from '@/components/blocks/primitives';
 
 export type NavLink = { id: string; label: string; href: string; newTab?: boolean };
 
@@ -16,7 +17,7 @@ export function AnnouncementBar({ items }: { items: string[] }) {
       <div className="flex flex-wrap items-center justify-center gap-x-[26px] gap-y-1 text-center text-[13px] font-semibold uppercase tracking-[.06em]">
         {items.map((t, i) => (
           <span key={i} className="flex items-center gap-[26px]">
-            {t}
+            <span {...edSetting(`announcement.${i}`)}>{t}</span>
             {i < items.length - 1 && (
               <span aria-hidden="true" className="text-brand">
                 ✦
@@ -61,7 +62,7 @@ export function Header({
   return (
     <header className="sticky top-0 z-[60] border-b border-hairline bg-[rgba(255,255,255,.94)] backdrop-blur-[14px]">
       <div className="flex flex-wrap items-center gap-7 px-5 py-3.5 md:px-10">
-        <Link href="/" aria-label={`${siteName} — home`} className="shrink-0">
+        <Link href="/" aria-label={`${siteName} — home`} className="shrink-0" {...edSetting('logoDark', 'image')}>
           <Image
             src={logo}
             alt={siteName}
@@ -92,7 +93,7 @@ export function Header({
             href={phoneHref}
             className="hidden whitespace-nowrap text-[15px] font-semibold text-ink md:block"
           >
-            {phone}
+            <span {...edSetting('phone')}>{phone}</span>
           </a>
           <button
             type="button"

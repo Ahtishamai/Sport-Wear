@@ -7,6 +7,7 @@
  */
 import { PrismaClient, type Prisma } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { aboutBlocks } from './about-page';
 
 const prisma = new PrismaClient();
 
@@ -681,120 +682,6 @@ function packagesBlocks() {
     b('ctaBand', {
       heading: 'Tell us the roster, we will price the season',
       body: 'Send the number of players and your sport — we will come back with a per-player price and a mockup within 24 hours.',
-      image: '/media/cta-dugout.png',
-      primary: [{ label: 'Request a quote', href: '#quote' }],
-      secondary: [{ label: 'Call the team', href: 'tel:+19592419213' }],
-    }),
-  ];
-}
-
-function aboutBlocks() {
-  return [
-    b('pageHeader', {
-      theme: 'dark',
-      eyebrow: 'About us',
-      heading: 'Uniforms built in-house, not brokered',
-      body: 'We are a Springfield, Massachusetts shop that designs, sublimates, cuts and sews custom baseball and softball kit — for travel teams, high school programs and rec leagues across the country.',
-      showBreadcrumb: true,
-      image: '',
-    }),
-    b('imageText', {
-      image: '/media/about-workshop.png',
-      side: 'left',
-      background: 'white',
-      eyebrow: 'Our story',
-      heading: 'Started with one travel team',
-      body: 'We began by printing jerseys for a single 14U travel team that could not get a straight answer on price or delivery from anyone else.\n\nThat is still the whole idea: **one point of contact**, a real mockup before you commit, and a firm per-unit price with no art or setup fees hidden underneath it.',
-      bullets: [
-        'Sublimation, cut and sew under one roof',
-        'One point of contact from mockup to delivery',
-        'Artwork kept on file for mid-season reorders',
-      ],
-      cta: [{ label: 'Request a quote', href: '#quote' }],
-    }),
-    b('statStrip', {
-      items: [
-        { value: '1,000+', label: 'Teams outfitted', count: 1000, suffix: '+', highlight: false },
-        { value: '3–4 wks', label: 'Design to delivery', count: 0, suffix: '', highlight: false },
-        { value: '24 hrs', label: 'Mockup turnaround', count: 24, suffix: ' hrs', highlight: false },
-        { value: '$0', label: 'Art & setup fees', count: 0, suffix: '', highlight: true },
-      ],
-    }),
-    b('timeline', {
-      eyebrow: 'Milestones',
-      heading: 'How we got here',
-      background: 'surface',
-      items: [
-        {
-          year: '2018',
-          title: 'One team, one garage',
-          body: 'The first order was 14 jerseys for a local travel team. The artwork is still on file.',
-        },
-        {
-          year: '2021',
-          title: 'Sublimation brought in-house',
-          body: 'Buying our own presses cut turnaround from eight weeks to four and let us drop art fees entirely.',
-        },
-        {
-          year: '2023',
-          title: 'Cut and sew added',
-          body: 'Full garment construction under one roof, which is what made the 2-week rush build possible.',
-        },
-        {
-          year: '2026',
-          title: '1,000+ programs a season',
-          body: 'Travel, high school, rec and showcase programs shipping nationwide from Springfield.',
-        },
-      ],
-    }),
-    b('iconFeatures', {
-      heading: 'What you get working with us',
-      background: 'white',
-      items: [
-        {
-          title: 'No art or setup fees',
-          icon: 'art',
-          body: 'Design, revisions, names and numbers are all included in the unit price.',
-        },
-        {
-          title: 'Free mockup first',
-          icon: 'clock',
-          body: 'You see the kit and the firm price before any money changes hands.',
-        },
-        {
-          title: 'Built in-house',
-          icon: 'factory',
-          body: 'No brokers, no offshore middlemen, no surprise delays.',
-        },
-        {
-          title: 'Reorders on file',
-          icon: 'reorder',
-          body: 'New player in July? Their kit matches the one from March.',
-        },
-      ],
-    }),
-    b('gallery', {
-      eyebrow: 'On the field',
-      heading: 'Teams wearing it now',
-      height: 260,
-      background: 'surface',
-      images: [
-        { image: '/media/lookbook-1.png', alt: 'Team in custom jerseys' },
-        { image: '/media/lookbook-2.png', alt: 'Player at bat' },
-        { image: '/media/lookbook-3.png', alt: 'Dugout huddle' },
-        { image: '/media/lookbook-4.png', alt: 'Team photo' },
-      ],
-    }),
-    b('reviews', {
-      eyebrow: 'Reviews',
-      heading: 'What coaches say',
-      ratingLine: '4.9 average from 1,000+ teams across softball & baseball',
-      speed: 46,
-      limit: 12,
-    }),
-    b('ctaBand', {
-      heading: 'Let us build your next kit',
-      body: 'Tell us the sport and the roster size — a free mockup and a firm per-unit price come back within 24 hours.',
       image: '/media/cta-dugout.png',
       primary: [{ label: 'Request a quote', href: '#quote' }],
       secondary: [{ label: 'Call the team', href: 'tel:+19592419213' }],
