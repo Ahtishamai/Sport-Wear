@@ -62,7 +62,7 @@ export function HeroBlock({ p, bid, priority }: BlockComponentProps) {
           top-to-bottom scrim instead. */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 md:hidden"
+        className="pointer-events-none absolute inset-0 md:hidden"
         style={{
           background:
             'linear-gradient(180deg, rgba(16,17,20,.82) 0%, rgba(16,17,20,.74) 55%, rgba(16,17,20,.86) 100%)',
@@ -70,7 +70,7 @@ export function HeroBlock({ p, bid, priority }: BlockComponentProps) {
       />
       <div
         aria-hidden="true"
-        className="absolute inset-0 hidden md:block"
+        className="pointer-events-none absolute inset-0 hidden md:block"
         style={{
           background:
             'linear-gradient(90deg, rgba(16,17,20,.92) 0%, rgba(16,17,20,.72) 42%, rgba(16,17,20,.35) 100%)',
@@ -771,7 +771,7 @@ export function CtaBandBlock({ p, bid }: BlockComponentProps) {
       </div>
       <div
         aria-hidden="true"
-        className="absolute inset-0"
+        className="pointer-events-none absolute inset-0"
         style={{
           background: 'linear-gradient(90deg, #101114 30%, rgba(16,17,20,.55) 100%)',
         }}

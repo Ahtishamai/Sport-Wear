@@ -181,7 +181,7 @@ export function PhotoTile({
       ) : null}
       <div
         aria-hidden="true"
-        className="absolute inset-0"
+        className="pointer-events-none absolute inset-0"
         style={{
           background:
             align === 'left'
