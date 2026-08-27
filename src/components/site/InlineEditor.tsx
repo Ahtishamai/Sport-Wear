@@ -111,17 +111,19 @@ export function InlineEditor({ onExit }: { onExit: () => void }) {
     // Keep links and buttons inert while editing so a click never navigates.
     const onClick = (e: MouseEvent) => {
       const node = e.target as HTMLElement;
-      const image = node.closest?.<HTMLElement>('[data-inline-editable="image"]');
-      if (image) {
-        e.preventDefault();
-        e.stopPropagation();
-        const target = image.dataset.edit;
-        if (target) setPicker({ target, el: image });
-        return;
-      }
+
       // The media dialog renders inside this component, so its own buttons must
       // stay live — without this the close, upload and pick actions are all inert.
       if (node.closest?.('[data-inline-ui], [role="dialog"]')) return;
+
+      // A photo tile puts its caption inside the image container, so clicking
+      // the caption used to open the picker instead of placing a caret. Text
+      // always wins; the Replace control is the only way to swap an image.
+      if (node.closest?.('[data-inline-editable="true"]')) {
+        e.preventDefault(); // a wrapping link must not navigate
+        return;
+      }
+
       if (node.closest?.('a, button')) {
         e.preventDefault();
         e.stopPropagation();
@@ -317,9 +319,9 @@ export function InlineEditor({ onExit }: { onExit: () => void }) {
               {error ? (
                 <span className="text-[#FF8A8F]">{error}</span>
               ) : hint ? (
-                'Click any highlighted text to type over it, or any image to replace it.'
+                'Click any highlighted text to type over it. Use Replace image to swap a photo.'
               ) : (
-                'Text and images outlined in yellow are editable.'
+                'Outlined text is editable. Images have a Replace control.'
               )}
             </div>
           </div>

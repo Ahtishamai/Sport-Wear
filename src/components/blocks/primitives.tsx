@@ -22,6 +22,20 @@ export function edSetting(path: string, kind: 'text' | 'image' = 'text') {
   return { 'data-edit': `setting:${path}`, 'data-edit-kind': kind };
 }
 
+/**
+ * Marks an element that renders a database record rather than block props —
+ * a team package, for instance. The server only accepts an allow-listed set of
+ * model/field pairs, so this cannot be used to reach arbitrary columns.
+ */
+export function edRecord(
+  model: string,
+  id: string,
+  field: string,
+  kind: 'text' | 'image' = 'text'
+) {
+  return { 'data-edit': `record:${model}:${id}:${field}`, 'data-edit-kind': kind };
+}
+
 export type EditableProps = { bid?: string };
 
 // ------------------------------------------------------------------ layout
@@ -226,8 +240,8 @@ export function PhotoTile({
 }
 
 // ------------------------------------------------------------------ catalog cards
-// These render live catalog records, so they are edited in Admin → Products,
-// not inline. They deliberately carry no data-edit attributes.
+// Product cards render live catalog records and are edited in Admin → Products.
+// Team package cards are editable in place, through record: edit targets.
 
 export type CardProduct = {
   id: string;
@@ -334,6 +348,7 @@ export function PackageCard({ pk }: { pk: CardPackage }) {
       <div
         className="zoom-wrap relative h-[340px] border-b"
         style={{ borderColor: hl ? 'rgba(16,17,20,.15)' : '#E6E6E2', background: '#F0F0ED' }}
+        {...edRecord('teamPackage', pk.id, 'imageUrl', 'image')}
       >
         {pk.imageUrl ? (
           <Image
@@ -351,10 +366,13 @@ export function PackageCard({ pk }: { pk: CardPackage }) {
         <div
           className="mb-3 text-[11px] font-bold uppercase tracking-[.16em]"
           style={{ color: hl ? 'rgba(16,17,20,.6)' : '#8A7300' }}
+          {...edRecord('teamPackage', pk.id, 'tag')}
         >
           {pk.tag}
         </div>
-        <h3 className="h-display text-[28px]">{pk.name}</h3>
+        <h3 className="h-display text-[28px]" {...edRecord('teamPackage', pk.id, 'name')}>
+          {pk.name}
+        </h3>
         <ul className="mt-5 space-y-2.5">
           {pk.items.map((it, i) => (
             <li
@@ -365,12 +383,15 @@ export function PackageCard({ pk }: { pk: CardPackage }) {
               <span aria-hidden="true" style={{ color: hl ? '#101114' : '#1F8A4C' }}>
                 ✓
               </span>
-              {it}
+              <span {...edRecord('teamPackage', pk.id, `items.${i}`)}>{it}</span>
             </li>
           ))}
         </ul>
         <div className="mt-7 flex items-baseline gap-2">
-          <span className="font-display text-[46px] font-black leading-none">
+          <span
+            className="font-display text-[46px] font-black leading-none"
+            {...edRecord('teamPackage', pk.id, 'price')}
+          >
             {money(pk.price)}
           </span>
           <span className="text-[13px] font-semibold text-muted">/ player</span>
@@ -379,6 +400,7 @@ export function PackageCard({ pk }: { pk: CardPackage }) {
           <p
             className="mt-2 text-[13px] font-medium"
             style={{ color: hl ? 'rgba(16,17,20,.66)' : '#8A8C93' }}
+            {...edRecord('teamPackage', pk.id, 'note')}
           >
             {pk.note}
           </p>

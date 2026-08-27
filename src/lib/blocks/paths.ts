@@ -47,10 +47,14 @@ export function setPath<T>(source: T, path: string, value: unknown): T {
   return clone(source, 0) as T;
 }
 
-/** `block:<id>:<path>` / `setting:<key>` → structured target. */
+/**
+ * `block:<id>:<path>` · `setting:<key>` · `record:<model>:<id>:<field>`
+ * → structured target.
+ */
 export type EditTarget =
   | { kind: 'block'; id: string; path: string }
-  | { kind: 'setting'; path: string };
+  | { kind: 'setting'; path: string }
+  | { kind: 'record'; model: string; id: string; field: string };
 
 export function parseEditTarget(raw: string): EditTarget | null {
   if (raw.startsWith('block:')) {
@@ -61,6 +65,13 @@ export function parseEditTarget(raw: string): EditTarget | null {
     const path = rest.slice(sep + 1);
     if (!id || !path) return null;
     return { kind: 'block', id, path };
+  }
+  if (raw.startsWith('record:')) {
+    // record:<model>:<id>:<field>, where field may itself be a path (items.0)
+    const [, model, id, ...rest] = raw.split(':');
+    const field = rest.join(':');
+    if (!model || !id || !field) return null;
+    return { kind: 'record', model, id, field };
   }
   if (raw.startsWith('setting:')) {
     const path = raw.slice('setting:'.length);

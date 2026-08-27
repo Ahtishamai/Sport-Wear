@@ -15,6 +15,41 @@ const MAX_CHANGES = 300;
 const MAX_STRING = 20_000;
 
 /**
+ * Which database columns may be edited from the page. Anything not listed here
+ * is ignored, so a crafted target cannot reach an arbitrary column — prices and
+ * publish state included, unless named below.
+ */
+const EDITABLE_RECORDS: Record<
+  string,
+  { fields: string[]; money?: string[]; json?: string[]; revalidate: string[] }
+> = {
+  teamPackage: {
+    fields: ['imageUrl', 'tag', 'name', 'note', 'price', 'items'],
+    money: ['price'],
+    json: ['items'],
+    revalidate: ['/', '/team-packages'],
+  },
+};
+
+class BadValue extends Error {}
+
+function toMoney(raw: unknown) {
+  const cleaned = String(raw ?? '').replace(/[^0-9.]/g, '');
+
+  // Stripping the symbols out of text with no digits leaves an empty string,
+  // and Number('') is 0 — which would silently zero a price on a typo.
+  if (!/[0-9]/.test(cleaned)) {
+    throw new BadValue(`"${raw}" is not a valid price. Use a number such as 470.`);
+  }
+
+  const n = Number(cleaned);
+  if (!Number.isFinite(n) || n < 0) {
+    throw new BadValue(`"${raw}" is not a valid price. Use a number such as 470.`);
+  }
+  return Math.round(n * 100) / 100;
+}
+
+/**
  * Applies inline front-end edits. Each change carries the `data-edit` target it
  * came from, so the client never needs to know which page or record owns it.
  */
@@ -30,6 +65,10 @@ export async function POST(req: Request) {
 
     const blockEdits = new Map<string, { path: string; value: unknown }[]>();
     const settingEdits: Record<string, unknown> = {};
+    const recordEdits = new Map<
+      string,
+      { model: string; id: string; edits: { field: string; value: unknown }[] }
+    >();
 
     for (const c of changes) {
       const target = parseEditTarget(String(c?.target ?? ''));
@@ -43,6 +82,15 @@ export async function POST(req: Request) {
 
       if (target.kind === 'setting') {
         settingEdits[target.path] = value;
+      } else if (target.kind === 'record') {
+        const key = `${target.model}:${target.id}`;
+        const entry = recordEdits.get(key) ?? {
+          model: target.model,
+          id: target.id,
+          edits: [],
+        };
+        entry.edits.push({ field: target.field, value });
+        recordEdits.set(key, entry);
       } else {
         const list = blockEdits.get(target.id) ?? [];
         list.push({ path: target.path, value });
@@ -122,10 +170,49 @@ export async function POST(req: Request) {
       }
     }
 
+    // ---------------------------------------------------------- records
+    for (const entry of recordEdits.values()) {
+      const cfg = EDITABLE_RECORDS[entry.model];
+      if (!cfg) continue;
+
+      const model = prisma[entry.model as 'teamPackage'];
+      const current = await model.findUnique({ where: { id: entry.id } });
+      if (!current) continue;
+
+      const data: Record<string, unknown> = {};
+      for (const e of entry.edits) {
+        const [base, ...rest] = e.field.split('.');
+        if (!cfg.fields.includes(base)) continue;
+
+        if (rest.length) {
+          if (!cfg.json?.includes(base)) continue;
+          const start = data[base] ?? (current as Record<string, unknown>)[base] ?? [];
+          data[base] = setPath(start, rest.join('.'), e.value);
+        } else if (cfg.money?.includes(base)) {
+          data[base] = toMoney(e.value);
+        } else {
+          data[base] = e.value;
+        }
+      }
+
+      if (!Object.keys(data).length) continue;
+
+      await model.update({ where: { id: entry.id }, data: data as never });
+      cfg.revalidate.forEach((path) => {
+        try {
+          revalidatePath(path);
+        } catch {
+          /* best effort */
+        }
+      });
+      touched.push(`${entry.model}:${entry.id}`);
+    }
+
     if (!touched.length) return badRequest('Nothing matched those edit targets.');
 
     return json({ ok: true, updated: touched });
   } catch (err) {
+    if (err instanceof BadValue) return badRequest(err.message);
     return serverError(err);
   }
 }
