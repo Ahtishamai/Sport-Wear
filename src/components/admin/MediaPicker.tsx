@@ -1,10 +1,10 @@
 'use client';
 
-import Image from 'next/image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, type MediaItem } from '@/lib/admin-client';
 import { Button, Input } from './ui';
 import { Icon } from '@/components/site/Icon';
+import { Thumb } from './Thumb';
 import { cn } from '@/lib/utils';
 
 export function MediaPicker({
@@ -128,7 +128,7 @@ export function MediaPicker({
                   className="group border border-[#E3E3DF] text-left transition-colors hover:border-ink"
                 >
                   <span className="relative block h-[110px] bg-[#F0F0ED]">
-                    <Image src={m.url} alt={m.alt || m.filename} fill sizes="200px" className="object-cover" />
+                    <Thumb src={m.url} alt={m.alt || m.filename} />
                   </span>
                   <span className="block truncate px-2 py-1.5 text-[11px] text-[#6B6D74]">
                     {m.filename}
@@ -159,13 +159,7 @@ export function ImageField({
   return (
     <div className={cn('flex items-start gap-3', className)}>
       <div className="relative h-[64px] w-[80px] shrink-0 border border-[#E3E3DF] bg-[#F0F0ED]">
-        {value ? (
-          <Image src={value} alt="" fill sizes="80px" className="object-cover" />
-        ) : (
-          <span className="flex h-full items-center justify-center text-[10px] text-[#9A9CA2]">
-            None
-          </span>
-        )}
+        <Thumb src={value} alt="" />
       </div>
       <div className="min-w-0 flex-1">
         <Input

@@ -367,7 +367,7 @@ function homeBlocks() {
     b('hero', {
       badge: 'PREMIUM CUSTOM SPORTSWEAR WITH FREE MOCKUPS',
       heading: 'From concept to creation — we design top-tier uniforms.',
-      body: 'From concept to creation, we deliver top-tier customized sportswear built for comfort, durability, and game-day confidence.',
+      body: 'Top-tier customized sportswear built for comfort, durability, and game-day confidence.',
       image: '/media/hero-field.png',
       primary: [{ label: 'Get my free mockup', href: '#quote' }],
       secondary: [{ label: 'Explore collections', href: '/collections' }],

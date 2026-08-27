@@ -76,7 +76,9 @@ export function InlineEditor({ onExit }: { onExit: () => void }) {
         if (target) setPicker({ target, el: image });
         return;
       }
-      if (node.closest?.('[data-inline-ui]')) return;
+      // The media dialog renders inside this component, so its own buttons must
+      // stay live — without this the close, upload and pick actions are all inert.
+      if (node.closest?.('[data-inline-ui], [role="dialog"]')) return;
       if (node.closest?.('a, button')) {
         e.preventDefault();
         e.stopPropagation();
@@ -219,12 +221,14 @@ export function InlineEditor({ onExit }: { onExit: () => void }) {
       `}</style>
 
       {picker && (
-        <MediaPicker
-          open
-          folder="content"
-          onClose={() => setPicker(null)}
-          onPick={(m) => applyImage(m.url)}
-        />
+        <div data-inline-ui>
+          <MediaPicker
+            open
+            folder="content"
+            onClose={() => setPicker(null)}
+            onPick={(m) => applyImage(m.url)}
+          />
+        </div>
       )}
 
       <div

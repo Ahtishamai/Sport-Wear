@@ -7,6 +7,16 @@ const nextConfig: NextConfig = {
     formats: ['image/avif', 'image/webp'],
     remotePatterns: [{ protocol: 'https', hostname: '**' }],
   },
+  // Uploaded media is written after the build, so route it through the app
+  // instead of the platform static layer, which may only know about build-time files.
+  async rewrites() {
+    return {
+      beforeFiles: [{ source: "/uploads/:path*", destination: "/api/uploads/:path*" }],
+      afterFiles: [],
+      fallback: [],
+    };
+  },
+
   async headers() {
     return [
       {

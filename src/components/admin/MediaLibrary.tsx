@@ -1,10 +1,10 @@
 'use client';
 
-import Image from 'next/image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, type MediaItem } from '@/lib/admin-client';
 import { Button, EmptyState, Input, useToast } from './ui';
 import { Icon } from '@/components/site/Icon';
+import { Thumb } from './Thumb';
 import { formatDate } from '@/lib/utils';
 
 export function MediaLibrary() {
@@ -129,13 +129,7 @@ export function MediaLibrary() {
                 className="group border border-[#E3E3DF] bg-white text-left transition-colors hover:border-ink"
               >
                 <span className="relative block h-[120px] bg-[#F0F0ED]">
-                  <Image
-                    src={m.url}
-                    alt={m.alt || m.filename}
-                    fill
-                    sizes="200px"
-                    className="object-cover"
-                  />
+                  <Thumb src={m.url} alt={m.alt || m.filename} />
                 </span>
                 <span className="block truncate px-2 py-1.5 text-[11px] text-[#6B6D74]">
                   {m.filename}
@@ -170,7 +164,7 @@ function MediaDetail({
       <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 cursor-default bg-black/50" />
       <div className="relative grid w-full max-w-[840px] gap-0 bg-white md:grid-cols-[1.2fr_1fr]">
         <div className="relative min-h-[300px] bg-[#F0F0ED]">
-          <Image src={item.url} alt={item.alt || item.filename} fill sizes="500px" className="object-contain" />
+          <Thumb src={item.url} alt={item.alt || item.filename} fit="contain" />
         </div>
         <div className="p-6">
           <div className="mb-4 flex items-start justify-between gap-3">

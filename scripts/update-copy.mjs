@@ -10,7 +10,7 @@ const prisma = new PrismaClient();
 const dry = process.argv.includes('--dry');
 
 const HERO_BODY =
-  'From concept to creation, we deliver top-tier customized sportswear built for comfort, durability, and game-day confidence.';
+  'Top-tier customized sportswear built for comfort, durability, and game-day confidence.';
 
 const STAT_OLD_LABEL = 'Design to delivery';
 const STAT_NEW_VALUE = '3–4 weeks';
