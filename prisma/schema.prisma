@@ -319,3 +319,20 @@ model ContactMessage {
   @@index([status, createdAt])
   @@map("contact_messages")
 }
+
+/**
+ * The bytes of every uploaded file, keyed by the public path it is served from.
+ * The filesystem does not survive a rebuild or redeploy on most hosts, which
+ * silently destroys everything the client has uploaded. The database does
+ * survive, so it is the authority here; disk is only a cache that is refilled
+ * on demand.
+ */
+model UploadedFile {
+  path      String   @id @db.VarChar(512)
+  mimeType  String
+  size      Int
+  data      Bytes
+  createdAt DateTime @default(now())
+
+  @@map("uploaded_files")
+}

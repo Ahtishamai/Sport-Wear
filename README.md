@@ -195,6 +195,34 @@ useful on hosts where server logs are hard to reach:
 
 It returns 503 when something is wrong, so it also works as an uptime check.
 
+## Uploaded files
+
+Uploads are stored **in the database**, not only on disk.
+
+Most hosts replace the application directory on deploy, and `public/uploads` is
+gitignored, so anything the client had uploaded disappeared on the next build.
+The database is the one thing that survives, so it holds the bytes:
+
+- On upload, the file is written to disk **and** stored in `uploaded_files`.
+- On request, disk is used if the file is there. If it is not — the usual state
+  right after a deploy — the bytes are read from the database, written back to
+  disk, and served. Each image repairs itself on first view.
+- Deleting a media record deletes its stored bytes, so space is reclaimed.
+
+To warm every file at once instead of waiting for first view:
+
+```bash
+npm run uploads:restore
+```
+
+This applies to quote attachments too, so a customer's artwork is not lost to a
+redeploy either.
+
+`npm run db:limits` reports how much space stored uploads take. Watch it if the
+client uploads heavily; at that point move to object storage (S3, R2) and change
+only [`src/lib/upload.ts`](src/lib/upload.ts), the single module that touches
+storage.
+
 ---
 
 ## Database limits
@@ -297,10 +325,9 @@ scripts/make-placeholders.mjs regenerates placeholder imagery
 
 ## Deploying
 
-Uploads are written to `public/uploads`, which needs a persistent disk. On a VPS or a container
-with a volume this works as-is. On a serverless host (Vercel, Netlify) swap
-[`src/lib/upload.ts`](src/lib/upload.ts) for S3, R2 or UploadThing — it is the only module that
-touches the filesystem.
+Uploads survive deploys because the bytes live in the database — see *Uploaded files*. No
+persistent disk is required. For heavy media use, move to object storage by changing
+[`src/lib/upload.ts`](src/lib/upload.ts), the only module that touches storage.
 
 ```bash
 npm run build && npm start

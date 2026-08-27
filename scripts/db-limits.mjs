@@ -118,6 +118,21 @@ try {
   console.log('\nStorage');
   console.log(row('Database size', `${size[0]?.mb ?? 0} MB`, `${size[0]?.tables ?? 0} tables`));
 
+  // Uploaded files live in the database so they survive a rebuild, which means
+  // media is the one table that grows with use. Surface it explicitly.
+  const media = await prisma.$queryRawUnsafe(
+    `SELECT COUNT(*) AS files,
+            COALESCE(ROUND(SUM(size) / 1024 / 1024, 2), 0) AS mb
+     FROM uploaded_files`
+  );
+  console.log(
+    row(
+      'Stored uploads',
+      `${media[0]?.files ?? 0} files`,
+      `${media[0]?.mb ?? 0} MB — these survive redeploys`
+    )
+  );
+
   const biggest = await prisma.$queryRawUnsafe(
     `SELECT table_name AS name,
             ROUND((data_length + index_length) / 1024, 1) AS kb,

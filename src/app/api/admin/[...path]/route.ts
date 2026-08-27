@@ -259,6 +259,13 @@ export async function DELETE(_req: Request, ctx: Ctx) {
     }
 
     await m.delete({ where: { id } });
+
+    // Media rows own their bytes; drop them so deleting a file actually
+    // reclaims the space rather than orphaning a blob.
+    if (resource === 'media' && typeof row.url === 'string') {
+      await prisma.uploadedFile.deleteMany({ where: { path: row.url } });
+    }
+
     bump(cfg, row);
     return json({ ok: true });
   } catch (err) {

@@ -1,5 +1,6 @@
 import 'server-only';
 import { mkdir, writeFile } from 'node:fs/promises';
+import { prisma } from './db';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 
@@ -51,14 +52,39 @@ export async function saveUpload(
 
   const name = `${Date.now().toString(36)}-${randomUUID().slice(0, 8)}${ext.toLowerCase()}`;
   const buffer = Buffer.from(await file.arrayBuffer());
+  const url = `/uploads/${safeFolder}/${name}`;
+  const mimeType = file.type || 'application/octet-stream';
+
   await writeFile(path.join(dir, name), buffer);
 
-  return {
-    url: `/uploads/${safeFolder}/${name}`,
-    filename: file.name,
-    mimeType: file.type || 'application/octet-stream',
-    size: file.size,
-  };
+  // The filesystem does not survive a rebuild on most hosts, so the bytes are
+  // also kept in the database. That copy is the authority; disk is a cache the
+  // serving route refills on demand.
+  await prisma.uploadedFile.upsert({
+    where: { path: url },
+    create: { path: url, mimeType, size: file.size, data: buffer },
+    update: { mimeType, size: file.size, data: buffer },
+  });
+
+  return { url, filename: file.name, mimeType, size: file.size };
+}
+
+/**
+ * Writes a stored file back to disk. Called when a request finds the cache
+ * empty — after a deploy, the first view of each image restores it.
+ */
+export async function restoreFromDb(publicPath: string) {
+  const row = await prisma.uploadedFile.findUnique({ where: { path: publicPath } });
+  if (!row) return null;
+
+  const prefix = '/uploads/';
+  const rel = publicPath.startsWith(prefix) ? publicPath.slice(prefix.length) : publicPath;
+  const target = path.join(UPLOAD_ROOT, rel);
+  if (!path.resolve(target).startsWith(path.resolve(UPLOAD_ROOT))) return null;
+
+  await mkdir(path.dirname(target), { recursive: true });
+  await writeFile(target, Buffer.from(row.data));
+  return { buffer: Buffer.from(row.data), mimeType: row.mimeType };
 }
 
 /** Reads intrinsic dimensions for PNG / JPEG / WebP / GIF without a decoder dependency. */
