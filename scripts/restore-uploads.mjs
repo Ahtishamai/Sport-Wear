@@ -51,6 +51,20 @@ try {
     console.log(`  restored  ${f.path}`);
   }
 
+  // Anything uploaded before file bytes were kept in the database has no copy
+  // to restore from — it will not survive the next rebuild. Name those files so
+  // they can be re-uploaded deliberately rather than discovered as gaps later.
+  const media = await prisma.media.findMany({ select: { url: true, filename: true } });
+  const stored = new Set(files.map((f) => f.path));
+  const atRisk = media.filter((m) => !stored.has(m.url));
+
+  if (atRisk.length) {
+    console.log(`
+${atRisk.length} file(s) predate database storage and cannot be restored:`);
+    for (const m of atRisk) console.log(`  at risk  ${m.filename}  ${m.url}`);
+    console.log('  Re-upload these — new uploads are stored and survive rebuilds.');
+  }
+
   console.log(
     `\n${restored} restored, ${present} already present ` +
       `(${(bytes / 1024 / 1024).toFixed(2)} MB written)\n`

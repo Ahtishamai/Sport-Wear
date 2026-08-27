@@ -209,6 +209,10 @@ The database is the one thing that survives, so it holds the bytes:
   disk, and served. Each image repairs itself on first view.
 - Deleting a media record deletes its stored bytes, so space is reclaimed.
 
+`npm run uploads:restore` also names any media uploaded *before* this was in
+place — those have no stored copy and will not survive a rebuild, so re-upload
+them once.
+
 To warm every file at once instead of waiting for first view:
 
 ```bash

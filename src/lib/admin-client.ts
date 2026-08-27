@@ -44,8 +44,10 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
-  remove: (resource: string, id: string) =>
-    request<{ ok: true }>(`/api/admin/${resource}/${id}`, { method: 'DELETE' }),
+  remove: (resource: string, id: string, force = false) =>
+    request<{ ok: true }>(`/api/admin/${resource}/${id}${force ? '?force=1' : ''}`, {
+      method: 'DELETE',
+    }),
 
   reorder: (resource: string, order: { id: string; position: number }[]) =>
     request<{ ok: true }>(`/api/admin/${resource}/reorder`, {

@@ -58,15 +58,22 @@ export function MediaLibrary() {
     }
   }
 
-  async function remove(item: MediaItem) {
-    if (!window.confirm(`Delete ${item.filename}? Pages using it will show an empty slot.`)) return;
+  async function remove(item: MediaItem, force = false) {
+    if (!force && !window.confirm(`Delete ${item.filename}?`)) return;
     try {
-      await api.remove('media', item.id);
+      await api.remove('media', item.id, force);
       setItems((prev) => prev.filter((m) => m.id !== item.id));
       setSelected(null);
       toast('File removed from the library');
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Delete failed', 'error');
+      const message = e instanceof Error ? e.message : 'Delete failed';
+      // The server refuses to delete a file that pages still point at, and says
+      // where. Offer to go ahead rather than leaving the user stuck.
+      if (/still used in/i.test(message)) {
+        if (window.confirm(message + '\n\nDelete anyway?')) await remove(item, true);
+        return;
+      }
+      toast(message, 'error');
     }
   }
 

@@ -200,6 +200,33 @@ export async function PATCH(req: Request, ctx: Ctx) {
     const existing = await m.findUnique({ where: { id } });
     if (!existing) return json({ error: 'Not found' }, 404);
 
+    // A full-document save (the page builder sends the whole blocks array)
+    // must not silently discard changes made since it loaded the page — for
+    // example an inline edit from the front of the site. Callers must either
+    // say which version they are replacing, or opt out on purpose.
+    if (body?.blocks !== undefined && !body?.expectedUpdatedAt && !body?.allowOverwrite) {
+      return badRequest(
+        'A full save must include expectedUpdatedAt so it cannot overwrite newer changes. ' +
+          'Pass allowOverwrite: true to replace the record regardless.'
+      );
+    }
+
+    if (body?.expectedUpdatedAt && existing.updatedAt) {
+      const seen = new Date(body.expectedUpdatedAt).getTime();
+      const now = new Date(existing.updatedAt).getTime();
+      if (Number.isFinite(seen) && seen !== now) {
+        return json(
+          {
+            error:
+              'This page changed somewhere else after you opened it. Reload to pick up those changes before saving, or your edits would overwrite them.',
+            reason: 'stale_write',
+            currentUpdatedAt: existing.updatedAt,
+          },
+          409
+        );
+      }
+    }
+
     const data = coerce(cfg, body ?? {});
 
     if (resource === 'users' && body?.password) {
@@ -258,6 +285,26 @@ export async function DELETE(_req: Request, ctx: Ctx) {
       }
     }
 
+    if (resource === 'media' && typeof row.url === 'string') {
+      const force = new URL(_req.url).searchParams.get('force') === '1';
+      const used = await findMediaUsage(row.url);
+
+      if (used.length && !force) {
+        return json(
+          {
+            error:
+              'That image is still used in ' +
+              used.length +
+              (used.length === 1 ? ' place. ' : ' places. ') +
+              'Replace it there first, or delete it anyway to leave those spots empty.',
+            reason: 'media_in_use',
+            usedBy: used.slice(0, 12),
+          },
+          409
+        );
+      }
+    }
+
     await m.delete({ where: { id } });
 
     // Media rows own their bytes; drop them so deleting a file actually
@@ -274,6 +321,50 @@ export async function DELETE(_req: Request, ctx: Ctx) {
 }
 
 // ------------------------------------------------------------------ helpers
+
+/**
+ * Everywhere a media URL is referenced. Deleting a file that is still in use
+ * leaves a dead image on a live page — and now that the bytes live in the
+ * database, that loss is permanent rather than merely until the next upload.
+ */
+async function findMediaUsage(url: string) {
+  const used: string[] = [];
+
+  const [pages, collections, images, packages, settings] = await Promise.all([
+    prisma.page.findMany({ select: { slug: true, blocks: true } }),
+    prisma.collection.findMany({
+      select: { handle: true, blocks: true, bannerUrl: true, thumbUrl: true },
+    }),
+    prisma.productImage.findMany({
+      where: { url },
+      select: { product: { select: { title: true } } },
+    }),
+    prisma.teamPackage.findMany({ where: { imageUrl: url }, select: { name: true } }),
+    prisma.setting.findMany(),
+  ]);
+
+  const mentions = (value: unknown) => JSON.stringify(value ?? '').includes(url);
+
+  for (const page of pages) {
+    if (mentions(page.blocks)) used.push('page: ' + page.slug);
+  }
+  for (const col of collections) {
+    if (col.bannerUrl === url || col.thumbUrl === url || mentions(col.blocks)) {
+      used.push('collection: ' + col.handle);
+    }
+  }
+  for (const img of images) {
+    used.push('product: ' + (img.product?.title ?? 'unknown'));
+  }
+  for (const pkg of packages) {
+    used.push('package: ' + pkg.name);
+  }
+  for (const setting of settings) {
+    if (mentions(setting.value)) used.push('site settings (logo or similar)');
+  }
+
+  return used;
+}
 
 async function syncProductRelations(productId: string, body: Record<string, any>) {
   if (Array.isArray(body?.images)) {

@@ -55,6 +55,8 @@ export function PageBuilder({ page }: { page: BuilderPage }) {
   const [device, setDevice] = useState<Device>('desktop');
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
+  // the version this editor loaded, so a save cannot overwrite newer changes
+  const version = useRef<string | null>((page as { updatedAt?: string }).updatedAt ?? null);
 
   const selectedBlock = useMemo(
     () => blocks.find((b) => b.id === selected) ?? null,
@@ -165,7 +167,8 @@ export function PageBuilder({ page }: { page: BuilderPage }) {
     if (saving) return;
     setSaving(true);
     try {
-      await api.update('pages', page.id, {
+      const res = await api.update<{ updatedAt: string }>('pages', page.id, {
+        expectedUpdatedAt: version.current,
         blocks,
         title: meta.title,
         ...(page.isSystem ? {} : { slug: meta.slug }),
@@ -176,10 +179,17 @@ export function PageBuilder({ page }: { page: BuilderPage }) {
         seoDescription: meta.seoDescription || null,
         ogImage: meta.ogImage || null,
       });
+      version.current = res.item?.updatedAt ?? version.current;
       setDirty(false);
       toast('Page saved');
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Save failed', 'error');
+      const message = e instanceof Error ? e.message : 'Save failed';
+      if (/changed somewhere else/i.test(message)) {
+        toast('Someone else changed this page — reloading so nothing is lost', 'error');
+        setTimeout(() => window.location.reload(), 1800);
+      } else {
+        toast(message, 'error');
+      }
     } finally {
       setSaving(false);
     }

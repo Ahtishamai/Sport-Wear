@@ -111,17 +111,9 @@ export async function POST(req: Request) {
     if (blockEdits.size) {
       const wanted = new Set(blockEdits.keys());
 
-      const [pages, collections] = await Promise.all([
-        prisma.page.findMany({ select: { id: true, slug: true, blocks: true } }),
-        prisma.collection.findMany({ select: { id: true, handle: true, blocks: true } }),
-      ]);
-
-      // -- pages
-      for (const page of pages) {
-        const blocks = Array.isArray(page.blocks) ? (page.blocks as Block[]) : [];
-        if (!blocks.some((b) => wanted.has(b?.id))) continue;
-
-        const next = blocks.map((b) => {
+      /** Applies this request's edits to whatever the record holds *now*. */
+      const merge = (blocks: Block[]) =>
+        blocks.map((b) => {
           const edits = blockEdits.get(b?.id);
           if (!edits) return b;
           let props = b.props ?? {};
@@ -129,14 +121,48 @@ export async function POST(req: Request) {
           return { ...b, props };
         });
 
-        await prisma.page.update({
-          where: { id: page.id },
-          data: { blocks: next as unknown as object },
-        });
+      const [pages, collections] = await Promise.all([
+        prisma.page.findMany({ select: { id: true, slug: true, blocks: true } }),
+        prisma.collection.findMany({ select: { id: true, handle: true, blocks: true } }),
+      ]);
+
+      // -- pages
+      for (const page of pages) {
+        const initial = Array.isArray(page.blocks) ? (page.blocks as Block[]) : [];
+        if (!initial.some((b) => wanted.has(b?.id))) continue;
+
+        // Re-read, merge and write under a version check. Two people saving at
+        // once used to mean the slower write silently threw away the faster
+        // one; re-applying to the current rows makes both survive.
+        let saved: Block[] | null = null;
+        for (let attempt = 0; attempt < 5 && !saved; attempt++) {
+          const fresh = await prisma.page.findUnique({
+            where: { id: page.id },
+            select: { blocks: true, updatedAt: true },
+          });
+          if (!fresh) break;
+
+          const next = merge(Array.isArray(fresh.blocks) ? (fresh.blocks as Block[]) : []);
+          const res = await prisma.page.updateMany({
+            where: { id: page.id, updatedAt: fresh.updatedAt },
+            data: { blocks: next as unknown as object },
+          });
+
+          if (res.count === 1) saved = next;
+          else await new Promise((r) => setTimeout(r, 40 * 2 ** attempt));
+        }
+
+        if (!saved) {
+          return json(
+            { error: 'That page is being saved by someone else. Try again in a moment.' },
+            409
+          );
+        }
+
         await prisma.pageRevision.create({
           data: {
             pageId: page.id,
-            blocks: next as unknown as object,
+            blocks: saved as unknown as object,
             authorId: user.id,
             label: 'Inline edit',
           },
@@ -145,26 +171,39 @@ export async function POST(req: Request) {
         revalidatePath(page.slug === 'home' ? '/' : `/${page.slug}`);
         if (page.slug === 'product-extras') revalidatePath('/products/[handle]', 'page');
         touched.push(page.slug);
-        blocks.forEach((b) => wanted.delete(b?.id));
+        initial.forEach((b) => wanted.delete(b?.id));
       }
 
       // -- collection page extras
       for (const col of collections) {
-        const blocks = Array.isArray(col.blocks) ? (col.blocks as Block[]) : [];
-        if (!blocks.some((b) => wanted.has(b?.id))) continue;
+        const initial = Array.isArray(col.blocks) ? (col.blocks as Block[]) : [];
+        if (!initial.some((b) => wanted.has(b?.id))) continue;
 
-        const next = blocks.map((b) => {
-          const edits = blockEdits.get(b?.id);
-          if (!edits) return b;
-          let props = b.props ?? {};
-          for (const e of edits) props = setPath(props, e.path, e.value);
-          return { ...b, props };
-        });
+        let ok = false;
+        for (let attempt = 0; attempt < 5 && !ok; attempt++) {
+          const fresh = await prisma.collection.findUnique({
+            where: { id: col.id },
+            select: { blocks: true, updatedAt: true },
+          });
+          if (!fresh) break;
 
-        await prisma.collection.update({
-          where: { id: col.id },
-          data: { blocks: next as unknown as object },
-        });
+          const next = merge(Array.isArray(fresh.blocks) ? (fresh.blocks as Block[]) : []);
+          const res = await prisma.collection.updateMany({
+            where: { id: col.id, updatedAt: fresh.updatedAt },
+            data: { blocks: next as unknown as object },
+          });
+
+          if (res.count === 1) ok = true;
+          else await new Promise((r) => setTimeout(r, 40 * 2 ** attempt));
+        }
+
+        if (!ok) {
+          return json(
+            { error: 'That collection is being saved by someone else. Try again in a moment.' },
+            409
+          );
+        }
+
         revalidatePath(`/collections/${col.handle}`);
         touched.push(`collections/${col.handle}`);
       }
