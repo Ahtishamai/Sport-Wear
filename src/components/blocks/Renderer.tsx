@@ -9,6 +9,7 @@ import {
 import { getSettings } from '@/lib/settings';
 import { FaqBlock } from './FaqBlock';
 import { ContactFormBlock } from './ContactFormBlock';
+import { OrderTrackingBlock } from './OrderTrackingBlock';
 import {
   CategoryCardsBlock,
   CollectionListBlock,
@@ -165,6 +166,23 @@ async function renderBlock(block: Block, index: number, ctx: RenderContext) {
             phoneHref: s.phoneHref,
             email: s.email,
             address: s.address,
+          }}
+        />
+      );
+    }
+
+    case 'orderTracking': {
+      const s = await getSettings();
+      return (
+        <OrderTrackingBlock
+          key={key}
+          p={p}
+          bid={block.id}
+          copy={{
+            heading: s.trackingHeading,
+            intro: s.trackingIntro,
+            placeholder: s.trackingPlaceholder,
+            help: s.trackingHelp,
           }}
         />
       );

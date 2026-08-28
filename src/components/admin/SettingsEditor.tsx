@@ -14,6 +14,34 @@ export function SettingsEditor({ settings }: { settings: SiteSettings }) {
   const [s, setS] = useState<SiteSettings>(settings);
   const [busy, setBusy] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [test, setTest] = useState<null | {
+    ok: boolean;
+    error?: string;
+    hint?: string;
+    orders?: number;
+    stages?: string[];
+    sample?: string;
+  }>(null);
+
+  // Checking the sheet before saving turns a dead tracking page into a fixable
+  // message while the admin is still looking at the field.
+  async function testSheet() {
+    setTesting(true);
+    setTest(null);
+    try {
+      const res = await fetch('/api/admin/track-test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sheetUrl: s.trackingSheetUrl, tab: s.trackingSheetTab }),
+      });
+      setTest(await res.json());
+    } catch {
+      setTest({ ok: false, error: 'Could not reach the server.' });
+    } finally {
+      setTesting(false);
+    }
+  }
 
   function set<K extends keyof SiteSettings>(k: K, v: SiteSettings[K]) {
     setS((p) => ({ ...p, [k]: v }));
@@ -261,6 +289,125 @@ export function SettingsEditor({ settings }: { settings: SiteSettings }) {
                 <p className="mt-1.5 text-[12px] text-[#8A8C93]">
                   {s.defaultSeoDescription.length} characters
                 </p>
+              </div>
+            </div>
+          </Card>
+
+          <Card
+            title="Order tracking"
+            description="Reads order status straight from a Google Sheet — no export step."
+          >
+            <div className="grid gap-4">
+              <Checkbox
+                label="Show order tracking on the site"
+                checked={s.trackingEnabled}
+                onChange={(e) => set('trackingEnabled', e.target.checked)}
+              />
+
+              <div>
+                <span className="field-label">Google Sheet link</span>
+                <Input
+                  value={s.trackingSheetUrl}
+                  onChange={(e) => set('trackingSheetUrl', e.target.value)}
+                  placeholder="https://docs.google.com/spreadsheets/d/…"
+                />
+                <p className="mt-1.5 text-[12px] text-[#8A8C93]">
+                  In Google Sheets: Share → General access → <b>Anyone with the link → Viewer</b>,
+                  then paste the address here.
+                </p>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <span className="field-label">Tab name</span>
+                  <Input
+                    value={s.trackingSheetTab}
+                    onChange={(e) => set('trackingSheetTab', e.target.value)}
+                    placeholder="Leave blank for the first tab"
+                  />
+                </div>
+                <div>
+                  <span className="field-label">Refresh every (minutes)</span>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={120}
+                    value={s.trackingCacheMinutes}
+                    onChange={(e) => set('trackingCacheMinutes', Number(e.target.value))}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Button variant="outline" onClick={testSheet} disabled={testing}>
+                  {testing ? 'Checking the sheet…' : 'Test connection'}
+                </Button>
+
+                {test && (
+                  <div
+                    className={
+                      'mt-3 border p-4 text-[13px] ' +
+                      (test.ok
+                        ? 'border-[#BFE3CC] bg-[#E4F4EA] text-[#1F6B41]'
+                        : 'border-[#F3C6C8] bg-[#FBE7E8] text-[#C42027]')
+                    }
+                  >
+                    {test.ok ? (
+                      <>
+                        <b>Connected.</b> Found {test.orders} orders.
+                        <div className="mt-1.5">
+                          Stages: {(test.stages ?? []).join(' → ') || 'none detected'}
+                        </div>
+                        {test.sample && <div className="mt-1">First order: {test.sample}</div>}
+                      </>
+                    ) : (
+                      <>
+                        <b>{test.error}</b>
+                        {test.hint && <div className="mt-1.5">{test.hint}</div>}
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <span className="field-label">Heading</span>
+                <Input
+                  value={s.trackingHeading}
+                  onChange={(e) => set('trackingHeading', e.target.value)}
+                />
+              </div>
+              <div>
+                <span className="field-label">Intro</span>
+                <Textarea
+                  rows={2}
+                  value={s.trackingIntro}
+                  onChange={(e) => set('trackingIntro', e.target.value)}
+                />
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <span className="field-label">Input placeholder</span>
+                  <Input
+                    value={s.trackingPlaceholder}
+                    onChange={(e) => set('trackingPlaceholder', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <span className="field-label">Help line</span>
+                  <Input
+                    value={s.trackingHelp}
+                    onChange={(e) => set('trackingHelp', e.target.value)}
+                  />
+                </div>
+              </div>
+              <div>
+                <span className="field-label">Message when an order is not found</span>
+                <Textarea
+                  rows={2}
+                  value={s.trackingNotFound}
+                  onChange={(e) => set('trackingNotFound', e.target.value)}
+                />
               </div>
             </div>
           </Card>

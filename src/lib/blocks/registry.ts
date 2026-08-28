@@ -723,6 +723,26 @@ export const BLOCKS: BlockDefinition[] = [
     },
   },
   {
+    type: 'orderTracking',
+    label: 'Order tracking',
+    group: 'Conversion',
+    glyph: '⌕',
+    description:
+      'Order-number lookup with a production progress bar. Reads the Google Sheet configured in Site settings.',
+    fields: [
+      { name: 'eyebrow', label: 'Eyebrow', type: 'text', width: 'half' },
+      { name: 'heading', label: 'Heading', type: 'text', width: 'half' },
+      { name: 'body', label: 'Intro', type: 'textarea', rows: 2 },
+      bgField,
+    ],
+    defaults: {
+      eyebrow: 'Order status',
+      heading: 'Track your order',
+      body: 'Enter your order number to check the status of your order.',
+      background: 'white',
+    },
+  },
+  {
     type: 'faq',
     label: 'FAQ accordion',
     group: 'Conversion',

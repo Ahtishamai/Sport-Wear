@@ -7,6 +7,7 @@ import type { CollectionCard, ReviewItem } from '@/components/blocks/sections';
 import type { FaqItem } from '@/components/blocks/FaqBlock';
 import { FaqBlock } from '@/components/blocks/FaqBlock';
 import { ContactFormBlock } from '@/components/blocks/ContactFormBlock';
+import { OrderTrackingBlock } from '@/components/blocks/OrderTrackingBlock';
 import {
   CategoryCardsBlock,
   CollectionListBlock,
@@ -185,6 +186,19 @@ function PreviewBlock({
       return <TimelineBlock p={p} bid={block.id} />;
     case 'contactForm':
       return <ContactFormBlock p={p} bid={block.id} details={data.contact} />;
+    case 'orderTracking':
+      return (
+        <OrderTrackingBlock
+          p={p}
+          bid={block.id}
+          copy={{
+            heading: 'Track your order',
+            intro: 'Enter your order number to check the status of your order.',
+            placeholder: 'e.g. DS20439',
+            help: 'Your order number is on your confirmation email.',
+          }}
+        />
+      );
     case 'mapEmbed':
       return <MapEmbedBlock p={p} bid={block.id} />;
     case 'spacer':

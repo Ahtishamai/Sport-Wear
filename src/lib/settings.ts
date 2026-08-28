@@ -29,6 +29,16 @@ export type SiteSettings = {
   defaultSeoDescription: string;
   gtmId: string;
   ga4Id: string;
+  // ---- order tracking (Google Sheet) ----
+  trackingEnabled: boolean;
+  trackingSheetUrl: string;
+  trackingSheetTab: string;
+  trackingCacheMinutes: number;
+  trackingHeading: string;
+  trackingIntro: string;
+  trackingPlaceholder: string;
+  trackingNotFound: string;
+  trackingHelp: string;
 };
 
 export const DEFAULT_SETTINGS: SiteSettings = {
@@ -69,6 +79,16 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     'Custom sublimated baseball and softball uniforms with a free digital mockup in 24 hours, 3–4 week turnaround and no art or setup fees.',
   gtmId: '',
   ga4Id: '',
+  trackingEnabled: false,
+  trackingSheetUrl: '',
+  trackingSheetTab: '',
+  trackingCacheMinutes: 5,
+  trackingHeading: 'Track your order',
+  trackingIntro: 'Enter your order number to check the status of your order.',
+  trackingPlaceholder: 'e.g. DS20439',
+  trackingNotFound:
+    'We could not find that order number. Check it against your confirmation email, or call us and we will look it up.',
+  trackingHelp: 'Your order number is on your confirmation email, in the form DS20439.',
 };
 
 const SETTINGS_KEY = 'site';
