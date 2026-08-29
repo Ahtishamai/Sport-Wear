@@ -85,7 +85,7 @@ export async function CatalogView({
         )}
       </section>
 
-      <div className="gutter grid gap-10 pb-[88px] pt-8 lg:grid-cols-[250px_1fr]">
+      <div className="gutter grid gap-10 pb-[88px] pt-8 lg:grid-cols-[260px_1fr] xl:grid-cols-[340px_1fr]">
         <Suspense fallback={<div />}>
           <CatalogSidebar
             facets={facets.collections}
