@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { prisma, plain } from '@/lib/db';
 import { AdminPage, Card } from '@/components/admin/ui';
+import { DeleteRecord } from '@/components/admin/DeleteRecord';
 import { QuoteStatusForm } from '@/components/admin/QuoteStatusForm';
 import { formatDateTime, money } from '@/lib/utils';
 
@@ -24,6 +25,15 @@ export default async function QuoteDetail({ params }: { params: Promise<{ id: st
       title={q.reference}
       back={{ href: '/admin/quotes', label: 'All quote requests' }}
       description={`Received ${formatDateTime(q.createdAt)}`}
+      actions={
+        <DeleteRecord
+          resource="quotes"
+          id={q.id}
+          name={`request ${q.reference}`}
+          redirectTo="/admin/quotes"
+          variant="button"
+        />
+      }
     >
       <div className="grid gap-5 lg:grid-cols-[1.5fr_1fr] lg:items-start">
         <div className="space-y-5">

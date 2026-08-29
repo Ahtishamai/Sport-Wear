@@ -71,6 +71,14 @@ export const BLOCKS: BlockDefinition[] = [
       { name: 'image', label: 'Background photo', type: 'image' },
       { name: 'primary', label: 'Primary button', type: 'list', fields: linkFields },
       { name: 'secondary', label: 'Secondary button', type: 'list', fields: linkFields },
+      {
+        name: 'trackLabel',
+        label: 'Track-order link',
+        type: 'text',
+        width: 'half',
+        help: 'Shown under the buttons. Leave empty to hide it.',
+      },
+      { name: 'trackHref', label: 'Track-order link URL', type: 'text', width: 'half' },
       { name: 'proof', label: 'Proof line', type: 'text', width: 'half' },
       { name: 'height', label: 'Height (px)', type: 'number', width: 'half', min: 380, max: 1000 },
       {
@@ -90,6 +98,8 @@ export const BLOCKS: BlockDefinition[] = [
       image: '/media/hero-field.png',
       primary: [{ label: 'Get my free mockup', href: '#quote' }],
       secondary: [{ label: 'Explore collections', href: '/collections' }],
+      trackLabel: 'Track order',
+      trackHref: '/track-order',
       proof: '1,000+ happy customers',
       height: 720,
       cornerYear: '',

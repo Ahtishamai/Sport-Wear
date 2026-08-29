@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { prisma, plain } from '@/lib/db';
 import { AdminPage, Badge, Table, Td, Th } from '@/components/admin/ui';
 import { formatDateTime, money } from '@/lib/utils';
+import { DeleteRecord } from '@/components/admin/DeleteRecord';
 
 export const dynamic = 'force-dynamic';
 
@@ -93,6 +94,7 @@ export default async function QuotesIndex({
             <Th>Estimate</Th>
             <Th>Status</Th>
             <Th>Received</Th>
+            <Th />
           </tr>
         </thead>
         <tbody>
@@ -121,6 +123,14 @@ export default async function QuotesIndex({
               </Td>
               <Td className="whitespace-nowrap text-[12px] text-[#8A8C93]">
                 {formatDateTime(qr.createdAt)}
+              </Td>
+              <Td className="text-right">
+                <span className="flex items-center justify-end gap-3 whitespace-nowrap text-[12px] font-semibold">
+                  <Link href={`/admin/quotes/${qr.id}`} className="text-ink hover:underline">
+                    Open
+                  </Link>
+                  <DeleteRecord resource="quotes" id={qr.id} name={`request ${qr.reference}`} />
+                </span>
               </Td>
             </tr>
           ))}

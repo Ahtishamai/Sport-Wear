@@ -120,6 +120,18 @@ export function HeroBlock({ p, bid, priority }: BlockComponentProps) {
             </CtaLink>
           )}
         </div>
+        {p.trackLabel && (
+          <p className="mt-4">
+            <CtaLink
+              href={p.trackHref || '/track-order'}
+              className="text-[14px] font-semibold text-white/85 underline underline-offset-4 transition-colors after:ml-1.5 after:no-underline after:content-['→'] hover:text-brand"
+              bid={bid}
+              path="trackLabel"
+            >
+              {p.trackLabel}
+            </CtaLink>
+          </p>
+        )}
         {p.proof && (
           <div className="mt-7 flex items-center gap-3 md:mt-8">
             <span className="text-[15px] tracking-[1px] text-brand" aria-hidden="true">
