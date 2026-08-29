@@ -98,8 +98,15 @@ export const getSettings = cache(async (): Promise<SiteSettings> => {
     const row = await prisma.setting.findUnique({ where: { key: SETTINGS_KEY } });
     if (!row) return DEFAULT_SETTINGS;
     return { ...DEFAULT_SETTINGS, ...(plain(row.value) as Partial<SiteSettings>) };
-  } catch {
+  } catch (err) {
     // DB not reachable yet (first boot / no migration) — fall back to defaults.
+    // Log it: falling back silently makes a broken DATABASE_URL look like a
+    // content problem, because the whole site then renders with placeholder
+    // settings and nothing appears in the server log to say why.
+    console.error(
+      '[settings] could not read site settings, using defaults:',
+      err instanceof Error ? err.message : err
+    );
     return DEFAULT_SETTINGS;
   }
 });
