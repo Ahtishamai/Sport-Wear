@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { prisma, plain } from '@/lib/db';
 import { AdminPage, Badge, LinkButton, Table, Td, Th } from '@/components/admin/ui';
 import { money } from '@/lib/utils';
+import { ProductRowActions } from '@/components/admin/ProductRowActions';
 
 export const dynamic = 'force-dynamic';
 
@@ -93,13 +94,7 @@ export default async function ProductsIndex({
                 )}
               </Td>
               <Td className="text-right">
-                <Link
-                  href={`/products/${p.handle}`}
-                  target="_blank"
-                  className="text-[12px] font-semibold text-[#8A8C93] hover:text-ink"
-                >
-                  View
-                </Link>
+                <ProductRowActions id={p.id} handle={p.handle} title={p.title} />
               </Td>
             </tr>
           ))}

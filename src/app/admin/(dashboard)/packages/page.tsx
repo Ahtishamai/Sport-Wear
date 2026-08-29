@@ -1,8 +1,8 @@
+'use client';
+
 import { AdminPage } from '@/components/admin/ui';
 import { ResourceManager } from '@/components/admin/ResourceManager';
 import type { Field } from '@/lib/blocks/types';
-
-export const dynamic = 'force-dynamic';
 
 const FIELDS: Field[] = [
   { name: 'tag', label: 'Tag', type: 'text', width: 'half', default: 'Deal 1', help: 'Small label above the name.' },

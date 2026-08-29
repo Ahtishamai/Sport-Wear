@@ -1,8 +1,8 @@
+'use client';
+
 import { AdminPage } from '@/components/admin/ui';
 import { ResourceManager } from '@/components/admin/ResourceManager';
 import type { Field } from '@/lib/blocks/types';
-
-export const dynamic = 'force-dynamic';
 
 const FIELDS: Field[] = [
   { name: 'question', label: 'Question', type: 'text', default: '' },
