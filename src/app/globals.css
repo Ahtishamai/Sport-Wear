@@ -41,8 +41,8 @@
   --shadow-review: 0 12px 30px -22px rgb(16 17 20 / 0.4);
   --shadow-stickybar: 0 -8px 24px -18px rgb(16 17 20 / 0.5);
 
-  --animate-marq: marq var(--marq-duration, 28s) linear infinite;
-  --animate-revscroll: revscroll var(--rev-duration, 46s) linear infinite;
+  --animate-marq: marq 28s linear infinite;
+  --animate-revscroll: revscroll 46s linear infinite;
   --animate-slide-in: slideIn 0.28s ease;
   --animate-fade-in: fadeIn 0.2s ease;
 }

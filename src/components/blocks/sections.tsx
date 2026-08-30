@@ -328,7 +328,7 @@ export function MarqueeBlock({ p }: BlockComponentProps) {
       <div
         data-marquee
         className="animate-marq flex w-max items-center gap-6 whitespace-nowrap"
-        style={{ '--marq-duration': `${Number(p.speed) || 28}s` } as React.CSSProperties}
+        style={{ animationDuration: `${Number(p.speed) || 28}s` }}
       >
         {row.map((t, i) => (
           <span key={i} className="flex items-center gap-6">
@@ -385,7 +385,7 @@ export function ReviewsBlock({
         <div
           data-marquee
           className="animate-revscroll flex w-max gap-5"
-          style={{ '--rev-duration': `${Number(p.speed) || 46}s` } as React.CSSProperties}
+          style={{ animationDuration: `${Number(p.speed) || 46}s` }}
         >
           {row.map((r, i) => (
             <article

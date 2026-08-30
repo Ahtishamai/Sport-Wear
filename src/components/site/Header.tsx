@@ -11,49 +11,52 @@ import { edSetting } from '@/components/blocks/primitives';
 export type NavLink = { id: string; label: string; href: string; newTab?: boolean };
 
 /**
- * Announcement bar. On phones the three messages would stack into three lines
- * and eat most of the first screen, so below `md` they scroll as a single-line
- * marquee instead; from `md` up they sit centred as designed.
+ * Announcement bar — a continuous marquee at every width.
+ *
+ * The list is rendered six times and the animation travels exactly half the
+ * track, so the loop is seamless with no jump at the wrap. Half the track has
+ * to be at least as wide as the viewport or a gap appears at the wrap-around;
+ * six copies covers displays up to ~3500px, where four fell short on
+ * ultra-wide monitors. Each copy carries its own trailing gap as padding, so
+ * the halfway point lands exactly on a copy boundary.
  */
 export function AnnouncementBar({ items }: { items: string[] }) {
   if (!items.length) return null;
 
-  const Item = ({ text, index }: { text: string; index: number }) => (
-    <>
-      <span {...edSetting(`announcement.${index}`)}>{text}</span>
-      <span aria-hidden="true" className="text-brand">
-        ✦
-      </span>
-    </>
+  // Only the first copy is editable and announced; the rest exist purely to
+  // fill the track, so they carry no edit targets and no duplicate text for
+  // screen readers.
+  const Row = ({ live }: { live?: boolean }) => (
+    <div
+      aria-hidden={live ? undefined : true}
+      className="flex shrink-0 items-center gap-4 pr-4 md:gap-[26px] md:pr-[26px]"
+    >
+      {items.map((t, i) => (
+        <span key={i} className="flex items-center gap-4 md:gap-[26px]">
+          <span {...(live ? edSetting(`announcement.${i}`) : {})}>{t}</span>
+          <span aria-hidden="true" className="text-brand">
+            ✦
+          </span>
+        </span>
+      ))}
+    </div>
   );
 
   return (
     <div className="bg-ink text-white">
-      {/* phones — one scrolling line */}
-      <div className="overflow-hidden py-2 md:hidden">
+      <div className="marquee-mask pause-on-hover overflow-hidden py-2 md:py-[11px]">
         <div
           data-marquee
-          className="animate-marq flex w-max items-center gap-4 whitespace-nowrap text-[11px] font-semibold uppercase tracking-[.08em]"
-          style={{ '--marq-duration': '22s' } as React.CSSProperties}
+          className="animate-marq flex w-max whitespace-nowrap text-[11px] font-semibold uppercase tracking-[.08em] md:text-[13px] md:tracking-[.06em]"
+          style={{ animationDuration: '48s' }}
         >
-          {[...items, ...items].map((t, i) => (
-            <Item key={i} text={t} index={i % items.length} />
-          ))}
+          <Row live />
+          <Row />
+          <Row />
+          <Row />
+          <Row />
+          <Row />
         </div>
-      </div>
-
-      {/* tablet and up — centred, as designed */}
-      <div className="hidden flex-wrap items-center justify-center gap-x-[26px] gap-y-1 px-5 py-[11px] text-center text-[13px] font-semibold uppercase tracking-[.06em] md:flex">
-        {items.map((t, i) => (
-          <span key={i} className="flex items-center gap-[26px]">
-            <span {...edSetting(`announcement.${i}`)}>{t}</span>
-            {i < items.length - 1 && (
-              <span aria-hidden="true" className="text-brand">
-                ✦
-              </span>
-            )}
-          </span>
-        ))}
       </div>
     </div>
   );
