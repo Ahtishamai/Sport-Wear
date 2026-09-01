@@ -39,6 +39,12 @@ export type SiteSettings = {
   trackingPlaceholder: string;
   trackingNotFound: string;
   trackingHelp: string;
+  // ---- team stores & payments ----
+  paypalEnabled: boolean;
+  paypalMode: 'sandbox' | 'live';
+  paypalClientId: string;
+  storeCurrency: string;
+  storeOrderNote: string;
 };
 
 export const DEFAULT_SETTINGS: SiteSettings = {
@@ -89,6 +95,11 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   trackingNotFound:
     'We could not find that order number. Check it against your confirmation email, or call us and we will look it up.',
   trackingHelp: 'Your order number is on your confirmation email, in the form DS20439.',
+  paypalEnabled: false,
+  paypalMode: 'sandbox',
+  paypalClientId: '',
+  storeCurrency: 'USD',
+  storeOrderNote: 'Orders are produced once the store closes and ship to your team contact.',
 };
 
 const SETTINGS_KEY = 'site';

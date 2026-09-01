@@ -4,11 +4,17 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { api } from '@/lib/admin-client';
 import type { SiteSettings } from '@/lib/settings';
-import { AdminPage, Button, Card, Checkbox, Input, Textarea, useToast } from './ui';
+import { AdminPage, Button, Card, Checkbox, Input, Select, Textarea, useToast } from './ui';
 import { ImageField } from './MediaPicker';
 import { Icon } from '@/components/site/Icon';
 
-export function SettingsEditor({ settings }: { settings: SiteSettings }) {
+export function SettingsEditor({
+  settings,
+  paypalSecretSet,
+}: {
+  settings: SiteSettings;
+  paypalSecretSet: boolean;
+}) {
   const router = useRouter();
   const toast = useToast();
   const [s, setS] = useState<SiteSettings>(settings);
@@ -23,6 +29,37 @@ export function SettingsEditor({ settings }: { settings: SiteSettings }) {
     stages?: string[];
     sample?: string;
   }>(null);
+
+  // The secret is write-only: it is never sent to the browser, so this holds
+  // only what the admin types now. Blank on save means "keep what is stored".
+  const [secret, setSecret] = useState('');
+  const [secretSet, setSecretSet] = useState(paypalSecretSet);
+  const [payResult, setPayResult] = useState<null | {
+    ok: boolean;
+    message: string;
+    detail?: string;
+  }>(null);
+
+  async function testPayments() {
+    setTesting(true);
+    setPayResult(null);
+    try {
+      const res = await fetch('/api/admin/paypal-test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientId: s.paypalClientId,
+          mode: s.paypalMode,
+          secret,
+        }),
+      });
+      setPayResult(await res.json());
+    } catch {
+      setPayResult({ ok: false, message: 'Could not reach the server.' });
+    } finally {
+      setTesting(false);
+    }
+  }
 
   // Checking the sheet before saving turns a dead tracking page into a fixable
   // message while the admin is still looking at the field.
@@ -51,7 +88,11 @@ export function SettingsEditor({ settings }: { settings: SiteSettings }) {
   async function save() {
     setBusy(true);
     try {
-      await api.saveSettings(s);
+      await api.saveSettings({ ...s, ...(secret.trim() ? { paypalSecret: secret } : {}) });
+      if (secret.trim()) {
+        setSecret('');
+        setSecretSet(true);
+      }
       toast('Settings saved');
       setDirty(false);
       router.refresh();
@@ -290,6 +331,88 @@ export function SettingsEditor({ settings }: { settings: SiteSettings }) {
                   {s.defaultSeoDescription.length} characters
                 </p>
               </div>
+            </div>
+          </Card>
+
+          <Card
+            title="Payments"
+            description="Card and PayPal checkout for team stores. Quote requests are unaffected."
+          >
+            <div className="grid gap-4">
+              <Checkbox
+                label="Accept payments in team stores"
+                checked={s.paypalEnabled}
+                onChange={(e) => set('paypalEnabled', e.target.checked)}
+              />
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <span className="field-label">Environment</span>
+                  <Select
+                    value={s.paypalMode}
+                    onChange={(e) => set('paypalMode', e.target.value === 'live' ? 'live' : 'sandbox')}
+                  >
+                    <option value="sandbox">Sandbox — test money only</option>
+                    <option value="live">Live — real money</option>
+                  </Select>
+                </div>
+                <div>
+                  <span className="field-label">Currency</span>
+                  <Input
+                    value={s.storeCurrency}
+                    onChange={(e) => set('storeCurrency', e.target.value.toUpperCase())}
+                    placeholder="USD"
+                    maxLength={8}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <span className="field-label">PayPal client ID</span>
+                <Input
+                  value={s.paypalClientId}
+                  onChange={(e) => set('paypalClientId', e.target.value.trim())}
+                  placeholder="AY…"
+                />
+                <p className="mt-1.5 text-[12px] text-[#8A8C93]">
+                  From developer.paypal.com → Apps &amp; Credentials. Make sure it comes from the
+                  same environment selected above.
+                </p>
+              </div>
+
+              <div>
+                <span className="field-label">PayPal secret</span>
+                <Input
+                  type="password"
+                  autoComplete="new-password"
+                  value={secret}
+                  onChange={(e) => setSecret(e.target.value)}
+                  placeholder={secretSet ? 'Saved — type to replace' : 'EL…'}
+                />
+                <p className="mt-1.5 text-[12px] text-[#8A8C93]">
+                  {secretSet
+                    ? 'A secret is saved. It is never shown again — leave this blank to keep it.'
+                    : 'Stored separately from the rest of the settings and never sent back to the browser.'}
+                </p>
+              </div>
+
+              <Button variant="ghost" size="sm" onClick={testPayments} disabled={testing}>
+                {testing ? 'Checking…' : 'Test connection'}
+              </Button>
+
+              {payResult && (
+                <div
+                  className={
+                    'border px-4 py-3 text-[13px] ' +
+                    (payResult.ok
+                      ? 'border-[#BFE3CC] bg-[#E4F4EA] text-[#1F8A4C]'
+                      : 'border-[#F3C6C8] bg-[#FBE7E8] text-[#C42027]')
+                  }
+                >
+                  <p className="font-semibold">{payResult.message}</p>
+                  {payResult.detail && <p className="mt-1">{payResult.detail}</p>}
+                </div>
+              )}
             </div>
           </Card>
 

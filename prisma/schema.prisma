@@ -336,3 +336,126 @@ model UploadedFile {
 
   @@map("uploaded_files")
 }
+
+// ---------------------------------------------------------------- team stores
+//
+// A team store is a small, self-contained shop at its own URL (for example
+// /mid-illini-bandits): the team's designs, an add-to-cart flow, per-item
+// personalisation and a PayPal checkout. Separate from the quote catalogue,
+// which sells nothing directly.
+
+enum StoreStatus {
+  DRAFT
+  OPEN
+  CLOSED
+}
+
+model TeamStore {
+  id             String      @id @default(cuid())
+  slug           String      @unique
+  name           String
+  intro          String?     @db.Text
+  logoUrl        String?     @db.VarChar(512)
+  heroUrl        String?     @db.VarChar(512)
+  accent         String?     @db.VarChar(16)
+  status         StoreStatus @default(DRAFT)
+  opensAt        DateTime?
+  closesAt       DateTime?
+  passcode       String?     @db.VarChar(64)
+  shipNote       String?     @db.Text
+  contactNote    String?     @db.Text
+  seoTitle       String?
+  seoDescription String?     @db.Text
+
+  items  TeamStoreItem[]
+  orders StoreOrder[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("team_stores")
+}
+
+model TeamStoreItem {
+  id          String        @id @default(cuid())
+  storeId     String
+  store       TeamStore     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  name        String
+  category    String        @default("Apparel")
+  description String?       @db.Text
+  price       Decimal       @db.Decimal(10, 2)
+  images      Json?
+  sizes       Json?
+  options     Json?
+  allowName   Boolean       @default(true)
+  namePrice   Decimal       @default(0) @db.Decimal(10, 2)
+  allowNumber Boolean       @default(true)
+  numberPrice Decimal       @default(0) @db.Decimal(10, 2)
+  position    Int           @default(0)
+  status      PublishStatus @default(PUBLISHED)
+
+  orderItems StoreOrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([storeId])
+  @@map("team_store_items")
+}
+
+enum StoreOrderStatus {
+  PENDING
+  PAID
+  FULFILLED
+  CANCELLED
+  REFUNDED
+}
+
+model StoreOrder {
+  id           String           @id @default(cuid())
+  reference    String           @unique
+  storeId      String
+  store        TeamStore        @relation(fields: [storeId], references: [id])
+  customerName String
+  email        String
+  phone        String?
+  shipTo       Json?
+  notes        String?          @db.Text
+  subtotal     Decimal          @db.Decimal(10, 2)
+  shipping     Decimal          @default(0) @db.Decimal(10, 2)
+  total        Decimal          @db.Decimal(10, 2)
+  currency     String           @default("USD") @db.VarChar(8)
+  status       StoreOrderStatus @default(PENDING)
+
+  paypalOrderId   String? @unique @db.VarChar(64)
+  paypalCaptureId String? @db.VarChar(64)
+  paidAt          DateTime?
+
+  items StoreOrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([storeId])
+  @@index([status])
+  @@map("store_orders")
+}
+
+model StoreOrderItem {
+  id           String         @id @default(cuid())
+  orderId      String
+  order        StoreOrder     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  itemId       String?
+  item         TeamStoreItem? @relation(fields: [itemId], references: [id], onDelete: SetNull)
+  itemName     String
+  size         String?        @db.VarChar(32)
+  nameOnItem   String?        @db.VarChar(64)
+  numberOnItem String?        @db.VarChar(8)
+  options      Json?
+  quantity     Int            @default(1)
+  unitPrice    Decimal        @db.Decimal(10, 2)
+  lineTotal    Decimal        @db.Decimal(10, 2)
+
+  @@index([orderId])
+  @@map("store_order_items")
+}

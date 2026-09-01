@@ -4,6 +4,7 @@ import { badRequest, json, serverError, unauthorized } from '@/lib/api';
 import { getSession, hashPassword } from '@/lib/auth';
 import { coerce, ensureSlug, RESOURCES, type ResourceConfig } from '@/lib/resources';
 import { saveSettings } from '@/lib/settings';
+import { savePaymentSecret, paypalSecretSummary } from '@/lib/payments';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -106,9 +107,16 @@ export async function POST(req: Request, ctx: Ctx) {
 
     // ---- settings (singleton) ----
     if (resource === 'settings') {
-      const value = await saveSettings(body ?? {});
+      // The PayPal secret is stored apart from site settings and never sent
+      // back to the browser. An empty value means "leave it alone", so the
+      // form can be saved without the admin re-entering it.
+      const { paypalSecret, ...rest } = (body ?? {}) as Record<string, unknown>;
+      if (typeof paypalSecret === 'string' && paypalSecret.trim()) {
+        await savePaymentSecret(paypalSecret);
+      }
+      const value = await saveSettings(rest);
       revalidatePath('/', 'layout');
-      return json({ settings: value });
+      return json({ settings: value, paypalSecret: await paypalSecretSummary() });
     }
 
     const cfg = RESOURCES[resource];

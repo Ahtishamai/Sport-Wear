@@ -4,6 +4,8 @@ import { prisma } from '@/lib/db';
 import { getPage } from '@/lib/queries';
 import { getSettings } from '@/lib/settings';
 import { BlockRenderer } from '@/components/blocks/Renderer';
+import { getTeamStore, getStoreSlugs } from '@/lib/store-queries';
+import { StoreFront } from '@/components/store/StoreFront';
 
 export const revalidate = 300;
 
@@ -15,7 +17,10 @@ export async function generateStaticParams() {
       where: { status: 'PUBLISHED' },
       select: { slug: true },
     });
-    return pages.filter((p) => !RESERVED.has(p.slug)).map((p) => ({ slug: p.slug }));
+    const stores = await getStoreSlugs();
+    return [...pages.map((p) => p.slug), ...stores]
+      .filter((slug) => !RESERVED.has(slug))
+      .map((slug) => ({ slug }));
   } catch {
     return [];
   }
@@ -28,7 +33,18 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const [page, s] = await Promise.all([getPage(slug), getSettings()]);
-  if (!page) return {};
+  if (!page) {
+    const store = await getTeamStore(slug);
+    if (!store) return {};
+    return {
+      title: store.seoTitle || `${store.header.name} team store`,
+      description:
+        store.seoDescription ||
+        `Order ${store.header.name} custom uniforms and team apparel online.`,
+      alternates: { canonical: `/${slug}` },
+      robots: { index: false, follow: true },
+    };
+  }
   return {
     title: page.seoTitle || page.title,
     description: page.seoDescription || s.defaultSeoDescription,
@@ -46,7 +62,14 @@ export default async function CmsPage({ params }: { params: Promise<{ slug: stri
   if (RESERVED.has(slug)) notFound();
 
   const page = await getPage(slug);
-  if (!page) notFound();
+
+  // A slug with no CMS page may belong to a team store, which lives at the
+  // root so teams can be given a short link such as /mid-illini-bandits.
+  if (!page) {
+    const store = await getTeamStore(slug);
+    if (!store) notFound();
+    return <StoreFront store={store.header} items={store.items} />;
+  }
 
   return (
     <BlockRenderer

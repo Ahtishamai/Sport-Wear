@@ -29,6 +29,13 @@ const NAV: { group: string; items: { label: string; href: string; icon: string }
     ],
   },
   {
+    group: 'Team stores',
+    items: [
+      { label: 'Stores', href: '/admin/stores', icon: 'shield' },
+      { label: 'Store orders', href: '/admin/store-orders', icon: 'truck' },
+    ],
+  },
+  {
     group: 'Content',
     items: [
       { label: 'Pages', href: '/admin/pages', icon: 'chat' },

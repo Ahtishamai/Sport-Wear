@@ -202,6 +202,75 @@ export const RESOURCES: Record<string, ResourceConfig> = {
     searchFields: ['name', 'email', 'subject'],
   },
 
+  stores: {
+    model: 'teamStore',
+    fields: [
+      'slug',
+      'name',
+      'intro',
+      'logoUrl',
+      'heroUrl',
+      'accent',
+      'status',
+      'opensAt',
+      'closesAt',
+      'passcode',
+      'shipNote',
+      'contactNote',
+      'seoTitle',
+      'seoDescription',
+    ],
+    slugField: 'slug',
+    slugFrom: 'name',
+    defaultOrder: { createdAt: 'desc' },
+    // A store lives at the site root, so its own page and the home page (which
+    // may link to it) both need refreshing.
+    revalidate: (row) => ['/', `/${row.slug}`],
+    searchFields: ['name', 'slug'],
+  },
+
+  storeItems: {
+    model: 'teamStoreItem',
+    fields: [
+      'storeId',
+      'name',
+      'category',
+      'description',
+      'price',
+      'images',
+      'sizes',
+      'options',
+      'allowName',
+      'namePrice',
+      'allowNumber',
+      'numberPrice',
+      'position',
+      'status',
+    ],
+    defaultOrder: { position: 'asc' },
+    decimals: ['price', 'namePrice', 'numberPrice'],
+    ints: ['position'],
+    bools: ['allowName', 'allowNumber'],
+    jsons: ['images', 'sizes', 'options'],
+    include: { store: { select: { slug: true, name: true } } },
+    revalidate: (row) => (row.store?.slug ? [`/${row.store.slug}`] : []),
+    searchFields: ['name', 'category'],
+  },
+
+  storeOrders: {
+    model: 'storeOrder',
+    // Orders are created by the checkout, never by hand: only fulfilment
+    // fields can be edited here.
+    fields: ['status', 'notes'],
+    defaultOrder: { createdAt: 'desc' },
+    include: {
+      store: { select: { slug: true, name: true } },
+      items: true,
+    },
+    revalidate: () => [],
+    searchFields: ['reference', 'customerName', 'email'],
+  },
+
   users: {
     model: 'user',
     fields: ['email', 'name', 'role'],
