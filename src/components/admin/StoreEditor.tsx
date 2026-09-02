@@ -241,6 +241,9 @@ export function StoreEditor({ store }: { store: EditableStore }) {
   // Everything used to sit on one long page. Edits live in `f`, so moving
   // between tabs keeps unsaved work and Save still writes all of it.
   const [tab, setTab] = useState<TabKey>('store');
+  // Which design is expanded. One at a time: the point is to stop the page
+  // being a wall of open forms.
+  const [openDesign, setOpenDesign] = useState<number | null>(null);
 
   const set = <K extends keyof EditableStore>(key: K, value: EditableStore[K]) =>
     setF((prev) => ({ ...prev, [key]: value }));
@@ -281,14 +284,18 @@ export function StoreEditor({ store }: { store: EditableStore }) {
     setF((prev) => ({ ...prev, categories: prev.categories.filter((_, i) => i !== index) }));
   }
 
-  const moveItem = (index: number, dir: -1 | 1) =>
+  const moveItem = (index: number, dir: -1 | 1) => {
+    const target = index + dir;
+    if (target < 0 || target >= f.items.length) return;
+    // Follow the design that was open, so reordering does not expand a
+    // different one under the cursor.
+    setOpenDesign((cur) => (cur === index ? target : cur === target ? index : cur));
     setF((prev) => {
       const next = [...prev.items];
-      const target = index + dir;
-      if (target < 0 || target >= next.length) return prev;
       [next[index], next[target]] = [next[target], next[index]];
       return { ...prev, items: next };
     });
+  };
 
   const setItem = (index: number, patch: Partial<EditableStoreItem>) =>
     setF((prev) => ({
@@ -395,6 +402,7 @@ export function StoreEditor({ store }: { store: EditableStore }) {
         return;
       }
     }
+    setOpenDesign((cur) => (cur === index ? null : cur !== null && cur > index ? cur - 1 : cur));
     setF((prev) => ({ ...prev, items: prev.items.filter((_, i) => i !== index) }));
   }
 
@@ -629,15 +637,16 @@ export function StoreEditor({ store }: { store: EditableStore }) {
                 variant="ink"
                 size="sm"
                 disabled={f.categories.length === 0}
-                onClick={() =>
+                onClick={() => {
+                  setOpenDesign(f.items.length);
                   setF((prev) => ({
                     ...prev,
                     items: [
                       ...prev.items,
                       blankItem(prev.items.length, prev.categories[0]?.tempId ?? ''),
                     ],
-                  }))
-                }
+                  }));
+                }}
               >
                 + Add a design
               </Button>
@@ -652,7 +661,7 @@ export function StoreEditor({ store }: { store: EditableStore }) {
                 No designs yet. Add a shirt, pants or anything else this team can order.
               </p>
             ) : (
-              <div className="space-y-5">
+              <div className="space-y-2">
                 {f.items.map((item, i) => (
                   <ItemFields
                     key={item.id ?? `new-${i}`}
@@ -664,6 +673,8 @@ export function StoreEditor({ store }: { store: EditableStore }) {
                     onRemove={() => removeItem(i)}
                     onMove={(dir) => moveItem(i, dir)}
                     onPickImage={() => setPicking({ kind: 'item', index: i })}
+                    open={openDesign === i}
+                    onToggle={() => setOpenDesign((cur) => (cur === i ? null : i))}
                   />
                 ))}
               </div>
@@ -737,6 +748,8 @@ function ItemFields({
   onRemove,
   onMove,
   onPickImage,
+  open,
+  onToggle,
 }: {
   item: EditableStoreItem;
   categories: EditableCategory[];
@@ -746,16 +759,35 @@ function ItemFields({
   onRemove: () => void;
   onMove: (dir: -1 | 1) => void;
   onPickImage: () => void;
+  open: boolean;
+  onToggle: () => void;
 }) {
+  const section = categories.find((c) => c.tempId === item.categoryKey)?.name || 'no section';
+
   return (
-    <div className="border border-[#E3E3DF] p-4">
-      <div className="mb-3 flex items-center justify-between gap-3 border-b border-[#EFEFEC] pb-3">
-        <span className="text-[12px] font-bold uppercase tracking-[.1em] text-[#8A8C93]">
-          {position + 1}. {item.name || 'Untitled design'}
-          {' · '}
-          {categories.find((c) => c.tempId === item.categoryKey)?.name || 'no section'}
-        </span>
-        <span className="flex gap-1.5">
+    <div className="border border-[#E3E3DF]">
+      {/* Collapsed, a design is one summary row. A store with twenty designs
+          was otherwise an unreadable wall of open forms. */}
+      <div className="flex items-center gap-3 px-4 py-3">
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={open}
+          className="flex min-w-0 flex-1 items-center gap-3 text-left"
+        >
+          <span className="w-5 shrink-0 text-[12px] text-[#8A8C93]">{open ? '▾' : '▸'}</span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-[14px] font-semibold">
+              {position + 1}. {item.name || 'Untitled design'}
+            </span>
+            <span className="mt-0.5 block text-[12px] text-[#8A8C93]">
+              {section} · ${Number(item.price) || 0}
+              {item.status !== 'PUBLISHED' && ' · Draft'}
+            </span>
+          </span>
+        </button>
+
+        <span className="flex shrink-0 gap-1.5">
           <Button variant="ghost" size="sm" onClick={() => onMove(-1)} disabled={position === 0}>
             ↑
           </Button>
@@ -767,8 +799,14 @@ function ItemFields({
           >
             ↓
           </Button>
+          <Button variant="ghost" size="sm" onClick={onToggle}>
+            {open ? 'Close' : 'Edit'}
+          </Button>
         </span>
       </div>
+
+      {!open ? null : (
+      <div className="border-t border-[#EFEFEC] p-4">
       <div className="grid gap-4 sm:grid-cols-2">
         <Input label="Design name" value={item.name} onChange={(v) => onChange({ name: v })} />
         <Select
@@ -914,6 +952,8 @@ function ItemFields({
           Remove this design
         </button>
       </div>
+      </div>
+      )}
     </div>
   );
 }
