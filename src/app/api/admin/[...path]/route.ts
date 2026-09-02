@@ -4,7 +4,7 @@ import { badRequest, json, serverError, unauthorized } from '@/lib/api';
 import { getSession, hashPassword } from '@/lib/auth';
 import { coerce, ensureSlug, RESOURCES, type ResourceConfig } from '@/lib/resources';
 import { saveSettings } from '@/lib/settings';
-import { savePaymentSecret, paypalSecretSummary } from '@/lib/payments';
+import { savePaymentSecret, clearPaymentSecret, paypalSecretSummary } from '@/lib/payments';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -110,8 +110,13 @@ export async function POST(req: Request, ctx: Ctx) {
       // The PayPal secret is stored apart from site settings and never sent
       // back to the browser. An empty value means "leave it alone", so the
       // form can be saved without the admin re-entering it.
+      // '' (or absent) keeps the stored secret, a string replaces it, and an
+      // explicit null removes it — the form has no way to show what is saved,
+      // so "leave blank to keep" needs a separate way to actually clear.
       const { paypalSecret, ...rest } = (body ?? {}) as Record<string, unknown>;
-      if (typeof paypalSecret === 'string' && paypalSecret.trim()) {
+      if (paypalSecret === null) {
+        await clearPaymentSecret();
+      } else if (typeof paypalSecret === 'string' && paypalSecret.trim()) {
         await savePaymentSecret(paypalSecret);
       }
       const value = await saveSettings(rest);

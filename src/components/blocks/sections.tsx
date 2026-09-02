@@ -31,8 +31,12 @@ export type BlockComponentProps = { p: P; bid?: string; priority?: boolean };
 // -------------------------------------------------------------------- hero
 
 export function HeroBlock({ p, bid, priority }: BlockComponentProps) {
-  const primary = p.primary?.[0];
-  const secondary = p.secondary?.[0];
+  // Both fields are lists, so the hero takes as many buttons as are added
+  // rather than only the first of each.
+  const primary: { label?: string; href?: string }[] = Array.isArray(p.primary) ? p.primary : [];
+  const secondary: { label?: string; href?: string }[] = Array.isArray(p.secondary)
+    ? p.secondary
+    : [];
   const height = Math.max(380, Number(p.height) || 720);
   return (
     <section
@@ -104,20 +108,31 @@ export function HeroBlock({ p, bid, priority }: BlockComponentProps) {
           </p>
         )}
         <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-3.5 md:mt-8">
-          {primary?.label && (
-            <CtaLink href={primary.href} className="btn btn-yellow btn-lg w-full sm:w-auto" bid={bid} path="primary.0.label">
-              {primary.label}
-            </CtaLink>
+          {primary.map((b, i) =>
+            b?.label ? (
+              <CtaLink
+                key={`p-${i}`}
+                href={b.href}
+                className="btn btn-yellow btn-lg w-full sm:w-auto"
+                bid={bid}
+                path={`primary.${i}.label`}
+              >
+                {b.label}
+              </CtaLink>
+            ) : null
           )}
-          {secondary?.label && (
-            <CtaLink
-              href={secondary.href}
-              className="btn btn-ghost-light btn-lg w-full sm:w-auto"
-              bid={bid}
-              path="secondary.0.label"
-            >
-              {secondary.label}
-            </CtaLink>
+          {secondary.map((b, i) =>
+            b?.label ? (
+              <CtaLink
+                key={`s-${i}`}
+                href={b.href}
+                className="btn btn-ghost-light btn-lg w-full sm:w-auto"
+                bid={bid}
+                path={`secondary.${i}.label`}
+              >
+                {b.label}
+              </CtaLink>
+            ) : null
           )}
         </div>
         {p.proof && (

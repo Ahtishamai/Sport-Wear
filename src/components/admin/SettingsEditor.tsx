@@ -34,6 +34,12 @@ export function SettingsEditor({
   // only what the admin types now. Blank on save means "keep what is stored".
   const [secret, setSecret] = useState('');
   const [secretSet, setSecretSet] = useState(paypalSecretSet);
+  // A client ID only works with the secret from the same PayPal app, so
+  // changing one without the other is a silent mismatch.
+  const [originalClientId] = useState(settings.paypalClientId);
+  const clientIdChanged =
+    s.paypalClientId.trim() !== originalClientId.trim() && s.paypalClientId.trim() !== '';
+  const secretLooksStale = secretSet && clientIdChanged && !secret.trim();
   const [payResult, setPayResult] = useState<null | {
     ok: boolean;
     message: string;
@@ -394,6 +400,13 @@ export function SettingsEditor({
                     ? 'A secret is saved. It is never shown again — leave this blank to keep it.'
                     : 'Stored separately from the rest of the settings and never sent back to the browser.'}
                 </p>
+                {secretLooksStale && (
+                  <p className="mt-2 border border-[#F0DCA8] bg-[#FDF6E3] px-3 py-2 text-[12px] text-[#8A6D1B]">
+                    You changed the client ID but not the secret. Paste the secret from the
+                    <b> same PayPal app</b> — the saved one belongs to the previous client ID and
+                    will be rejected.
+                  </p>
+                )}
               </div>
 
               <Button variant="ghost" size="sm" onClick={testPayments} disabled={testing}>

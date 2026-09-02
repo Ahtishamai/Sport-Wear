@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { cn, money } from '@/lib/utils';
 import { Icon } from '@/components/site/Icon';
-import { CartProvider, useCart } from './CartProvider';
+import { CartProvider, linePrice, useCart } from './CartProvider';
 
 export type StoreItem = {
   id: string;
@@ -106,6 +106,51 @@ function StoreBody({
             {store.shipNote}
           </p>
         )}
+      </div>
+
+      <CartBar slug={store.slug} />
+    </>
+  );
+}
+
+/**
+ * Floating checkout bar.
+ *
+ * The only other way to reach checkout is the button in the header, which
+ * scrolls away after the first row of designs. This stays put once there is
+ * something in the cart, and leaves room at the foot of the page so it never
+ * covers the last row.
+ */
+function CartBar({ slug }: { slug: string }) {
+  const { lines, count } = useCart();
+  if (count === 0) return null;
+
+  const subtotal = lines.reduce((sum, l) => sum + linePrice(l), 0);
+
+  return (
+    <>
+      {/* Keeps the last row of designs clear of the bar. */}
+      <div aria-hidden="true" className="h-[92px]" />
+
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-hairline bg-white/95 backdrop-blur-sm">
+        <div className="gutter flex items-center justify-between gap-4 py-3.5">
+          <div className="min-w-0">
+            <span className="block text-[13px] font-semibold">
+              {count} {count === 1 ? 'item' : 'items'} in your cart
+            </span>
+            <span className="block text-[12px] text-muted">
+              {money(subtotal)} before name and number
+            </span>
+          </div>
+
+          <Link
+            href={`/${slug}/checkout`}
+            className="flex shrink-0 items-center gap-2 rounded-[3px] bg-brand px-6 py-3.5 font-display text-[13px] font-extrabold uppercase tracking-[.1em] text-ink transition-colors hover:bg-ink hover:text-white"
+          >
+            Checkout
+            <Icon name="check" size={15} strokeWidth={3} />
+          </Link>
+        </div>
       </div>
     </>
   );
