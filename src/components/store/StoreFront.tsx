@@ -215,14 +215,14 @@ function ItemCard({ item, canBuy }: { item: StoreItem; canBuy: boolean }) {
 
   return (
     <article className="flex flex-col border border-hairline bg-white">
-      <div className="relative aspect-square bg-plate">
+      <div className="relative aspect-[4/3] bg-plate">
         {image ? (
           <Image
             src={image}
             alt={item.name}
             fill
-            sizes="(max-width:768px) 100vw, 300px"
-            className="object-cover"
+            sizes="(max-width:768px) 100vw, 320px"
+            className="object-contain p-2"
           />
         ) : null}
       </div>

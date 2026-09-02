@@ -334,6 +334,7 @@ export function StoreEditor({ store }: { store: EditableStore }) {
 
       // Categories are saved first so every design has a real id to point at.
       const categoryIds = new Map<string, string>();
+      const savedCategories: EditableCategory[] = [];
       for (const [i, cat] of f.categories.entries()) {
         if (!cat.name.trim()) continue;
         const body = { storeId, name: cat.name.trim(), position: i };
@@ -341,9 +342,11 @@ export function StoreEditor({ store }: { store: EditableStore }) {
           ? ((await api.update('storeCategories', cat.id, body)) as { item: { id: string } })
           : ((await api.create('storeCategories', body)) as { item: { id: string } });
         categoryIds.set(cat.tempId, row.item.id);
+        savedCategories.push({ ...cat, id: row.item.id, tempId: row.item.id, position: i });
       }
 
       // Items are saved one by one against the generic resource endpoint.
+      const savedItems: EditableStoreItem[] = [];
       for (const [i, item] of f.items.entries()) {
         const categoryId = categoryIds.get(item.categoryKey) ?? null;
         const body = {
@@ -365,9 +368,28 @@ export function StoreEditor({ store }: { store: EditableStore }) {
           status: item.status,
         };
         if (!item.name.trim()) continue;
-        if (item.id) await api.update('storeItems', item.id, body);
-        else await api.create('storeItems', body);
+        const row = item.id
+          ? ((await api.update('storeItems', item.id, body)) as { item: { id: string } })
+          : ((await api.create('storeItems', body)) as { item: { id: string } });
+        savedItems.push({
+          ...item,
+          id: row.item.id,
+          categoryKey: categoryId ?? '',
+          position: i,
+        });
       }
+
+      // Write the new ids straight back into the form. Without this a second
+      // Save saw every design as new again and created a fresh copy of the
+      // whole store — the page reloads to the same URL, so this component is
+      // not remounted and would otherwise keep the id-less state forever.
+      setF((prev) => ({
+        ...prev,
+        id: storeId,
+        slug: saved.item.slug,
+        categories: savedCategories,
+        items: savedItems,
+      }));
 
       toast(isNew ? 'Store created' : 'Store saved');
       router.push(`/admin/stores/${saved.item.slug}`);
