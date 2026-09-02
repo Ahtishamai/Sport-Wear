@@ -83,7 +83,12 @@ function StoreBody({
         ) : (
           groups.map(([category, list]) => (
             <section key={category} className="mb-12 last:mb-0">
-              <h2 className="h-section mb-6 text-[22px]">{category}</h2>
+              <h2
+                className="h-section mb-8 text-center"
+                style={{ fontSize: 'clamp(26px,3.6vw,42px)' }}
+              >
+                {category}
+              </h2>
               <div
                 className="grid gap-[18px]"
                 style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(258px, 1fr))' }}
