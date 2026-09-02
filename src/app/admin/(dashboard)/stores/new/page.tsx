@@ -15,6 +15,13 @@ const EMPTY: EditableStore = {
   contactNote: '',
   seoTitle: '',
   seoDescription: '',
+  // A starting set so a new store is usable straight away; rename, reorder or
+  // remove them like any other section.
+  categories: [
+    { name: 'Shirts', position: 0, tempId: 'seed-shirts' },
+    { name: 'Pants', position: 1, tempId: 'seed-pants' },
+    { name: 'Hoodies', position: 2, tempId: 'seed-hoodies' },
+  ],
   items: [],
 };
 

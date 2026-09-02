@@ -125,6 +125,7 @@ export type CaptureResult = {
   amount: number;
   currency: string;
   payerEmail: string | null;
+  payerName: string | null;
 };
 
 export async function capturePayPalOrder(paypalOrderId: string): Promise<CaptureResult> {
@@ -154,5 +155,10 @@ export async function capturePayPalOrder(paypalOrderId: string): Promise<Capture
     amount: Number(capture.amount?.value ?? 0),
     currency: String(capture.amount?.currency_code ?? cfg.currency),
     payerEmail: json?.payer?.email_address ?? null,
+    payerName:
+      [json?.payer?.name?.given_name, json?.payer?.name?.surname]
+        .filter(Boolean)
+        .join(' ')
+        .trim() || null,
   };
 }

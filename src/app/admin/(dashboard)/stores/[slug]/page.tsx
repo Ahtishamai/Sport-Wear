@@ -23,7 +23,10 @@ export default async function EditStorePage({
 
   const store = await prisma.teamStore.findUnique({
     where: { slug },
-    include: { items: { orderBy: [{ position: 'asc' }, { createdAt: 'asc' }] } },
+    include: {
+      categories: { orderBy: { position: 'asc' } },
+      items: { orderBy: [{ position: 'asc' }, { createdAt: 'asc' }] },
+    },
   });
   if (!store) notFound();
 
@@ -41,9 +44,17 @@ export default async function EditStorePage({
     contactNote: store.contactNote ?? '',
     seoTitle: store.seoTitle ?? '',
     seoDescription: store.seoDescription ?? '',
+    categories: store.categories.map((c) => ({
+      id: c.id,
+      name: c.name,
+      position: c.position,
+      // Saved categories key off their real id; only new ones need a temp key.
+      tempId: c.id,
+    })),
     items: store.items.map((i) => ({
       id: i.id,
       name: i.name,
+      categoryKey: i.categoryId ?? '',
       category: i.category,
       description: i.description ?? '',
       price: Number(i.price),

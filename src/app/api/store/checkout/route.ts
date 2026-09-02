@@ -30,14 +30,14 @@ export async function POST(req: Request) {
   }
 
   const slug = String(body?.store ?? '').trim();
+  // Who the buyer is comes from PayPal on capture, so the store page does not
+  // ask for it. Anything sent here is optional and only used if present.
   const customerName = String(body?.customerName ?? '').trim().slice(0, 120);
   const email = String(body?.email ?? '').trim().slice(0, 160);
   const phone = String(body?.phone ?? '').trim().slice(0, 40);
   const notes = String(body?.notes ?? '').trim().slice(0, 800);
 
   if (!slug) return badRequest('Missing store.');
-  if (!customerName) return badRequest('Enter your name.');
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return badRequest('Enter a valid email address.');
 
   try {
     const cfg = await getPayPalConfig();

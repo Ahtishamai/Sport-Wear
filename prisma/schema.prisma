@@ -367,8 +367,9 @@ model TeamStore {
   seoTitle       String?
   seoDescription String?     @db.Text
 
-  items  TeamStoreItem[]
-  orders StoreOrder[]
+  items      TeamStoreItem[]
+  categories StoreCategory[]
+  orders     StoreOrder[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -376,10 +377,29 @@ model TeamStore {
   @@map("team_stores")
 }
 
+model StoreCategory {
+  id       String        @id @default(cuid())
+  storeId  String
+  store    TeamStore     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  name     String
+  position Int           @default(0)
+
+  items TeamStoreItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([storeId, name])
+  @@index([storeId])
+  @@map("store_categories")
+}
+
 model TeamStoreItem {
   id          String        @id @default(cuid())
   storeId     String
   store       TeamStore     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  categoryId  String?
+  categoryRef StoreCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   name        String
   category    String        @default("Apparel")
   description String?       @db.Text
@@ -400,6 +420,7 @@ model TeamStoreItem {
   updatedAt DateTime @updatedAt
 
   @@index([storeId])
+  @@index([categoryId])
   @@map("team_store_items")
 }
 

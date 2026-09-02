@@ -20,9 +20,20 @@ import {
 } from './ui';
 import { MediaPicker } from './MediaPicker';
 
+export type EditableCategory = {
+  id?: string;
+  name: string;
+  position: number;
+  /** Set for rows added in this session, so designs can point at them before
+   *  they have a database id. */
+  tempId: string;
+};
+
 export type EditableStoreItem = {
   id?: string;
   name: string;
+  /** Either a saved category id, or the tempId of one added in this session. */
+  categoryKey: string;
   category: string;
   description: string;
   price: number | string;
@@ -51,6 +62,7 @@ export type EditableStore = {
   contactNote: string;
   seoTitle: string;
   seoDescription: string;
+  categories: EditableCategory[];
   items: EditableStoreItem[];
 };
 
@@ -145,9 +157,10 @@ function Checkbox({
 
 const DEFAULT_SIZES = ['YS', 'YM', 'YL', 'S', 'M', 'L', 'XL', '2XL', '3XL'];
 
-const blankItem = (position: number): EditableStoreItem => ({
+const blankItem = (position: number, categoryKey: string): EditableStoreItem => ({
   name: '',
-  category: 'Shirts',
+  categoryKey,
+  category: '',
   description: '',
   price: 0,
   images: [],
@@ -175,6 +188,42 @@ export function StoreEditor({ store }: { store: EditableStore }) {
 
   const set = <K extends keyof EditableStore>(key: K, value: EditableStore[K]) =>
     setF((prev) => ({ ...prev, [key]: value }));
+
+  const newKey = () => 'new-' + Math.random().toString(36).slice(2, 9);
+
+  const setCategory = (index: number, patch: Partial<EditableCategory>) =>
+    setF((prev) => ({
+      ...prev,
+      categories: prev.categories.map((c, i) => (i === index ? { ...c, ...patch } : c)),
+    }));
+
+  const moveCategory = (index: number, dir: -1 | 1) =>
+    setF((prev) => {
+      const next = [...prev.categories];
+      const target = index + dir;
+      if (target < 0 || target >= next.length) return prev;
+      [next[index], next[target]] = [next[target], next[index]];
+      return { ...prev, categories: next };
+    });
+
+  async function removeCategory(index: number) {
+    const cat = f.categories[index];
+    const used = f.items.filter((i) => i.categoryKey === cat.tempId).length;
+    if (used > 0) {
+      toast(`Move or remove the ${used} design(s) in “${cat.name}” first.`, 'error');
+      return;
+    }
+    if (cat.id && !window.confirm(`Delete the “${cat.name}” section?`)) return;
+    if (cat.id) {
+      try {
+        await api.remove('storeCategories', cat.id);
+      } catch (e) {
+        toast(e instanceof Error ? e.message : 'Delete failed', 'error');
+        return;
+      }
+    }
+    setF((prev) => ({ ...prev, categories: prev.categories.filter((_, i) => i !== index) }));
+  }
 
   const moveItem = (index: number, dir: -1 | 1) =>
     setF((prev) => {
@@ -220,12 +269,26 @@ export function StoreEditor({ store }: { store: EditableStore }) {
 
       const storeId = saved.item.id;
 
+      // Categories are saved first so every design has a real id to point at.
+      const categoryIds = new Map<string, string>();
+      for (const [i, cat] of f.categories.entries()) {
+        if (!cat.name.trim()) continue;
+        const body = { storeId, name: cat.name.trim(), position: i };
+        const row = cat.id
+          ? ((await api.update('storeCategories', cat.id, body)) as { item: { id: string } })
+          : ((await api.create('storeCategories', body)) as { item: { id: string } });
+        categoryIds.set(cat.tempId, row.item.id);
+      }
+
       // Items are saved one by one against the generic resource endpoint.
       for (const [i, item] of f.items.entries()) {
+        const categoryId = categoryIds.get(item.categoryKey) ?? null;
         const body = {
           storeId,
+          categoryId,
           name: item.name,
-          category: item.category,
+          category:
+            f.categories.find((c) => c.tempId === item.categoryKey)?.name.trim() || 'Other',
           description: item.description,
           price: item.price,
           images: item.images,
@@ -346,20 +409,96 @@ export function StoreEditor({ store }: { store: EditableStore }) {
           </Card>
 
           <Card
-            title="Designs"
+            title="Sections"
+            description="The tabs down the store page. Designs are added under one of these."
             actions={
               <Button
                 variant="ink"
                 size="sm"
                 onClick={() =>
-                  setF((prev) => ({ ...prev, items: [...prev.items, blankItem(prev.items.length)] }))
+                  setF((prev) => ({
+                    ...prev,
+                    categories: [
+                      ...prev.categories,
+                      { name: '', position: prev.categories.length, tempId: newKey() },
+                    ],
+                  }))
+                }
+              >
+                + Add a section
+              </Button>
+            }
+          >
+            {f.categories.length === 0 ? (
+              <p className="py-5 text-center text-[14px] text-[#8A8C93]">
+                No sections yet. Add Shirts, Pants, Hoodies — whatever this team is ordering.
+              </p>
+            ) : (
+              <ul className="space-y-2">
+                {f.categories.map((cat, i) => (
+                  <li key={cat.tempId} className="flex items-center gap-2">
+                    <span className="w-6 shrink-0 text-[12px] font-bold text-[#8A8C93]">
+                      {i + 1}.
+                    </span>
+                    <input
+                      className="field !py-2 text-[14px]"
+                      placeholder="Shirts"
+                      value={cat.name}
+                      onChange={(e) => setCategory(i, { name: e.target.value })}
+                    />
+                    <span className="shrink-0 text-[12px] text-[#8A8C93]">
+                      {f.items.filter((it) => it.categoryKey === cat.tempId).length}
+                    </span>
+                    <Button variant="ghost" size="sm" onClick={() => moveCategory(i, -1)} disabled={i === 0}>
+                      ↑
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => moveCategory(i, 1)}
+                      disabled={i === f.categories.length - 1}
+                    >
+                      ↓
+                    </Button>
+                    <button
+                      type="button"
+                      onClick={() => removeCategory(i)}
+                      className="shrink-0 text-[12px] font-semibold text-[#C42027] hover:underline"
+                    >
+                      Remove
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+
+          <Card
+            title="Designs"
+            actions={
+              <Button
+                variant="ink"
+                size="sm"
+                disabled={f.categories.length === 0}
+                onClick={() =>
+                  setF((prev) => ({
+                    ...prev,
+                    items: [
+                      ...prev.items,
+                      blankItem(prev.items.length, prev.categories[0]?.tempId ?? ''),
+                    ],
+                  }))
                 }
               >
                 + Add a design
               </Button>
             }
           >
-            {f.items.length === 0 ? (
+            {f.categories.length === 0 ? (
+              <p className="py-6 text-center text-[14px] text-[#8A8C93]">
+                Add a section first — designs live under one.
+              </p>
+            ) : f.items.length === 0 ? (
               <p className="py-6 text-center text-[14px] text-[#8A8C93]">
                 No designs yet. Add a shirt, pants or anything else this team can order.
               </p>
@@ -369,6 +508,7 @@ export function StoreEditor({ store }: { store: EditableStore }) {
                   <ItemFields
                     key={item.id ?? `new-${i}`}
                     item={item}
+                    categories={f.categories}
                     position={i}
                     total={f.items.length}
                     onChange={(patch) => setItem(i, patch)}
@@ -518,6 +658,7 @@ function ImageField({
 
 function ItemFields({
   item,
+  categories,
   position,
   total,
   onChange,
@@ -526,6 +667,7 @@ function ItemFields({
   onPickImage,
 }: {
   item: EditableStoreItem;
+  categories: EditableCategory[];
   position: number;
   total: number;
   onChange: (patch: Partial<EditableStoreItem>) => void;
@@ -538,6 +680,8 @@ function ItemFields({
       <div className="mb-3 flex items-center justify-between gap-3 border-b border-[#EFEFEC] pb-3">
         <span className="text-[12px] font-bold uppercase tracking-[.1em] text-[#8A8C93]">
           {position + 1}. {item.name || 'Untitled design'}
+          {' · '}
+          {categories.find((c) => c.tempId === item.categoryKey)?.name || 'no section'}
         </span>
         <span className="flex gap-1.5">
           <Button variant="ghost" size="sm" onClick={() => onMove(-1)} disabled={position === 0}>
@@ -555,11 +699,15 @@ function ItemFields({
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <Input label="Design name" value={item.name} onChange={(v) => onChange({ name: v })} />
-        <Input
-          label="Group"
-          value={item.category}
-          onChange={(v) => onChange({ category: v })}
-          help="Shirts, Pants, Hats… designs are grouped by this."
+        <Select
+          label="Section"
+          value={item.categoryKey}
+          onChange={(v) => onChange({ categoryKey: v })}
+          options={categories.map((c) => ({
+            label: c.name || 'Untitled section',
+            value: c.tempId,
+          }))}
+          help="This design shows only under this section."
         />
       </div>
 

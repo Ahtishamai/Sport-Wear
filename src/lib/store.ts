@@ -121,14 +121,8 @@ export async function priceCart(
       throw new StoreError(`Choose a quantity between 1 and 99 for ${item.name}.`);
     }
 
-    // Size must be one the item actually offers.
-    const sizes = (item.sizes as string[] | null) ?? [];
-    let size: string | null = null;
-    if (sizes.length) {
-      size = clean(raw.size, 32);
-      if (!size) throw new StoreError(`Choose a size for ${item.name}.`);
-      if (!sizes.includes(size)) throw new StoreError(`That size is not available for ${item.name}.`);
-    }
+    const size = clean(raw.size, 32);
+    if (!size) throw new StoreError(`Enter a size for ${item.name}.`);
 
     // Same for any design / colourway options the item defines.
     const optionDefs = (item.options as { name: string; values: string[] }[] | null) ?? [];

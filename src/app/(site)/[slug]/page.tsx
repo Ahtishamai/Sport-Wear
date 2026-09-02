@@ -68,7 +68,7 @@ export default async function CmsPage({ params }: { params: Promise<{ slug: stri
   if (!page) {
     const store = await getTeamStore(slug);
     if (!store) notFound();
-    return <StoreFront store={store.header} items={store.items} />;
+    return <StoreFront store={store.header} items={store.items} sections={store.sections} />;
   }
 
   return (

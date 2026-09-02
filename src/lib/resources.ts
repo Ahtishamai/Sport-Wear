@@ -229,10 +229,21 @@ export const RESOURCES: Record<string, ResourceConfig> = {
     searchFields: ['name', 'slug'],
   },
 
+  storeCategories: {
+    model: 'storeCategory',
+    fields: ['storeId', 'name', 'position'],
+    defaultOrder: { position: 'asc' },
+    ints: ['position'],
+    include: { store: { select: { slug: true } } },
+    revalidate: (row) => (row.store?.slug ? [`/${row.store.slug}`] : []),
+    searchFields: ['name'],
+  },
+
   storeItems: {
     model: 'teamStoreItem',
     fields: [
       'storeId',
+      'categoryId',
       'name',
       'category',
       'description',

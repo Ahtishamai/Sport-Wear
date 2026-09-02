@@ -40,16 +40,12 @@ function CheckoutBody({
   orderNote,
 }: Props) {
   const { lines, update, remove, clear, ready } = useCart();
-  const [customerName, setCustomerName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
   const [done, setDone] = useState<string | null>(null);
 
   const subtotal = lines.reduce((sum, l) => sum + linePrice(l), 0);
 
-  const missing = validate(lines, customerName, email);
+  const missing = validate(lines);
   const canPay = paymentsReady && lines.length > 0 && missing.length === 0;
 
   if (!ready) return <div className="gutter py-24" />;
@@ -59,8 +55,8 @@ function CheckoutBody({
       <div className="gutter py-24 text-center">
         <h1 className="h-display text-[34px]">Thank you — order {done} is confirmed</h1>
         <p className="mx-auto mt-4 max-w-[520px] text-[16px] leading-relaxed text-body">
-          A confirmation is on its way to {email}. You can follow production at any time using your
-          order number.
+          A confirmation is on its way to the email on your PayPal account. You can follow
+          production at any time using your order number.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Link href="/track-order" className="btn btn-yellow btn-lg">
@@ -112,48 +108,10 @@ function CheckoutBody({
       <aside className="lg:sticky lg:top-[96px]">
         <div className="border border-hairline bg-white p-6">
           <h2 className="font-display text-[15px] font-extrabold uppercase tracking-[.12em]">
-            Your details
+            Order summary
           </h2>
 
-          <label className="mt-4 block">
-            <span className="field-label">Your name</span>
-            <input
-              className="field"
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              autoComplete="name"
-            />
-          </label>
-          <label className="mt-3 block">
-            <span className="field-label">Email</span>
-            <input
-              className="field"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-            />
-          </label>
-          <label className="mt-3 block">
-            <span className="field-label">Phone (optional)</span>
-            <input
-              className="field"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              autoComplete="tel"
-            />
-          </label>
-          <label className="mt-3 block">
-            <span className="field-label">Notes (optional)</span>
-            <textarea
-              className="field"
-              rows={2}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-            />
-          </label>
-
-          <dl className="mt-6 border-t border-hairline pt-4 text-[14px]">
+          <dl className="mt-4 text-[14px]">
             <div className="flex justify-between py-1">
               <dt className="text-body">Subtotal</dt>
               <dd className="font-semibold">{money(subtotal)}</dd>
@@ -191,10 +149,6 @@ function CheckoutBody({
                 onError={setError}
                 buildOrder={() => ({
                   store: slug,
-                  customerName,
-                  email,
-                  phone,
-                  notes,
                   lines: lines.map((l) => ({
                     itemId: l.itemId,
                     size: l.size,
@@ -219,12 +173,10 @@ function CheckoutBody({
   );
 }
 
-function validate(lines: CartLine[], name: string, email: string): string[] {
+function validate(lines: CartLine[]): string[] {
   const out: string[] = [];
-  if (!name.trim()) out.push('Enter your name.');
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) out.push('Enter a valid email address.');
   for (const l of lines) {
-    if (l.sizes.length && !l.size) out.push(`Choose a size for ${l.name}.`);
+    if (!l.size.trim()) out.push(`Enter a size for ${l.name}.`);
     for (const opt of l.options ?? []) {
       if (!l.chosenOptions?.[opt.name]) {
         out.push(`Choose ${opt.name.toLowerCase()} for ${l.name}.`);
@@ -295,23 +247,24 @@ function LineRow({
             </label>
           ))}
 
-          {line.sizes.length > 0 && (
-            <label className="block">
-              <span className="field-label">Size</span>
-              <select
-                className="field !py-2 text-[14px]"
-                value={line.size}
-                onChange={(e) => onChange({ size: e.target.value })}
-              >
-                <option value="">Choose…</option>
+          <label className="block">
+            <span className="field-label">Size</span>
+            <input
+              className="field !py-2 text-[14px] uppercase"
+              list={`sizes-${line.key}`}
+              maxLength={32}
+              value={line.size}
+              onChange={(e) => onChange({ size: e.target.value })}
+              placeholder={line.sizes.length ? line.sizes.slice(0, 3).join(' / ') : 'e.g. Adult L'}
+            />
+            {line.sizes.length > 0 && (
+              <datalist id={`sizes-${line.key}`}>
                 {line.sizes.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
+                  <option key={s} value={s} />
                 ))}
-              </select>
-            </label>
-          )}
+              </datalist>
+            )}
+          </label>
 
           <label className="block">
             <span className="field-label">Quantity</span>

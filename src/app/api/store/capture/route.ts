@@ -66,6 +66,10 @@ export async function POST(req: Request) {
         status: 'PAID',
         paidAt: new Date(),
         paypalCaptureId: capture.captureId,
+        // The store page does not ask who the buyer is, so take it from the
+        // PayPal account that paid — without overwriting anything already set.
+        customerName: order.customerName || capture.payerName || 'PayPal customer',
+        email: order.email || capture.payerEmail || '',
       },
     });
 

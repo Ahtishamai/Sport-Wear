@@ -9,9 +9,11 @@ export const getTeamStore = cache(async (slug: string) => {
   const store = await prisma.teamStore.findUnique({
     where: { slug },
     include: {
+      categories: { orderBy: { position: 'asc' } },
       items: {
         where: { status: 'PUBLISHED' },
         orderBy: [{ position: 'asc' }, { createdAt: 'asc' }],
+        include: { categoryRef: { select: { id: true, name: true, position: true } } },
       },
     },
   });
@@ -33,7 +35,8 @@ export const getTeamStore = cache(async (slug: string) => {
   const items: StoreItem[] = store.items.map((i) => ({
     id: i.id,
     name: i.name,
-    category: i.category,
+    // A design with no category yet still has to land somewhere.
+    category: i.categoryRef?.name ?? i.category ?? 'Other',
     description: i.description,
     price: Number(i.price),
     images: ((i.images as { url: string; alt?: string }[] | null) ?? []).filter((x) => x?.url),
@@ -47,7 +50,18 @@ export const getTeamStore = cache(async (slug: string) => {
     numberPrice: Number(i.numberPrice),
   }));
 
-  return { store, header, items, seoTitle: store.seoTitle, seoDescription: store.seoDescription };
+  // Sections follow the order set on the categories themselves, not the order
+  // designs happen to be in.
+  const sections = store.categories.map((c) => c.name);
+
+  return {
+    store,
+    header,
+    items,
+    sections,
+    seoTitle: store.seoTitle,
+    seoDescription: store.seoDescription,
+  };
 });
 
 /** Slugs that must resolve to a team store, used by the root [slug] route. */

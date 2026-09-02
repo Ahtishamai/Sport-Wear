@@ -33,18 +33,34 @@ export type StoreHeader = {
   closedReason: string | null;
 };
 
-export function StoreFront({ store, items }: { store: StoreHeader; items: StoreItem[] }) {
+export function StoreFront({
+  store,
+  items,
+  sections,
+}: {
+  store: StoreHeader;
+  items: StoreItem[];
+  sections: string[];
+}) {
   return (
     <CartProvider slug={store.slug}>
-      <StoreBody store={store} items={items} />
+      <StoreBody store={store} items={items} sections={sections} />
     </CartProvider>
   );
 }
 
-function StoreBody({ store, items }: { store: StoreHeader; items: StoreItem[] }) {
+function StoreBody({
+  store,
+  items,
+  sections,
+}: {
+  store: StoreHeader;
+  items: StoreItem[];
+  sections: string[];
+}) {
   const { count } = useCart();
   const open = !store.closedReason;
-  const groups = groupByCategory(items);
+  const groups = groupByCategory(items, sections);
 
   return (
     <>
@@ -93,17 +109,19 @@ function StoreBody({ store, items }: { store: StoreHeader; items: StoreItem[] })
 /**
  * Groups the designs into the stacked sections of the page.
  *
- * Items arrive in the order set in the admin, and a section takes its place
- * from the first design in it — so dragging a shirt to the top puts Shirts
- * above Pants and Hoodies.
+ * `sections` is the category order set in the admin, so Shirts sits above
+ * Pants and Hoodies because that is how the categories are ordered — not
+ * because of which design happens to come first. Anything whose category was
+ * deleted still gets shown, after the named sections.
  */
-function groupByCategory(items: StoreItem[]): [string, StoreItem[]][] {
+function groupByCategory(items: StoreItem[], sections: string[]): [string, StoreItem[]][] {
   const map = new Map<string, StoreItem[]>();
+  for (const name of sections) map.set(name, []);
   for (const i of items) {
-    const key = i.category || 'Apparel';
+    const key = i.category || 'Other';
     map.set(key, [...(map.get(key) ?? []), i]);
   }
-  return [...map.entries()];
+  return [...map.entries()].filter(([, list]) => list.length > 0);
 }
 
 function StoreHero({
@@ -217,15 +235,41 @@ function ItemCard({ item, canBuy }: { item: StoreItem; canBuy: boolean }) {
           <p className="mt-1.5 text-[13px] leading-relaxed text-body">{item.description}</p>
         )}
 
-        <div className="mt-auto flex items-center justify-between gap-3 pt-5">
-          <span className="font-display text-[20px] font-black">{money(item.price)}</span>
+        <div className="mt-auto pt-5">
+          <div className="flex items-baseline gap-2">
+            <span className="font-display text-[24px] font-black leading-none">
+              {money(item.price)}
+            </span>
+            {(item.allowName || item.allowNumber) && (
+              <span className="text-[12px] text-muted">+ personalisation</span>
+            )}
+          </div>
+
           <button
             type="button"
             onClick={addToCart}
             disabled={!canBuy}
-            className={cn('btn btn-ink shrink-0', !canBuy && 'cursor-not-allowed opacity-50')}
+            className={cn(
+              'mt-3.5 flex w-full items-center justify-center gap-2 rounded-[3px] px-5 py-3.5',
+              'font-display text-[13px] font-extrabold uppercase tracking-[.1em]',
+              'transition-colors duration-150',
+              added
+                ? 'bg-[#1F8A4C] text-white'
+                : canBuy
+                  ? 'bg-ink text-white hover:bg-brand hover:text-ink'
+                  : 'cursor-not-allowed bg-plate text-faint'
+            )}
           >
-            {added ? 'Added ✓' : canBuy ? 'Add to cart' : 'Closed'}
+            {added ? (
+              <>
+                <Icon name="check" size={15} strokeWidth={3} />
+                Added
+              </>
+            ) : canBuy ? (
+              'Add to cart'
+            ) : (
+              'Ordering closed'
+            )}
           </button>
         </div>
       </div>
