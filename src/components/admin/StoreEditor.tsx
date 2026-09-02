@@ -155,6 +155,59 @@ function Checkbox({
   return <UiCheckbox label={label} checked={checked} onChange={(e) => onChange(e.target.checked)} />;
 }
 
+type TabKey = 'store' | 'sections' | 'designs';
+
+function Tabs({
+  tab,
+  onChange,
+  counts,
+}: {
+  tab: TabKey;
+  onChange: (t: TabKey) => void;
+  counts: { sections: number; designs: number };
+}) {
+  const items: { key: TabKey; label: string; count?: number }[] = [
+    { key: 'store', label: 'Store details' },
+    { key: 'sections', label: 'Sections', count: counts.sections },
+    { key: 'designs', label: 'Designs', count: counts.designs },
+  ];
+
+  return (
+    <div role="tablist" className="mb-5 flex gap-1 border-b border-[#E3E3DF]">
+      {items.map((t) => {
+        const active = tab === t.key;
+        return (
+          <button
+            key={t.key}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            onClick={() => onChange(t.key)}
+            className={
+              'relative -mb-px border-b-2 px-4 py-2.5 text-[13px] font-semibold transition-colors ' +
+              (active
+                ? 'border-ink text-ink'
+                : 'border-transparent text-[#8A8C93] hover:text-ink')
+            }
+          >
+            {t.label}
+            {typeof t.count === 'number' && (
+              <span
+                className={
+                  'ml-2 rounded-full px-1.5 py-0.5 text-[11px] font-bold ' +
+                  (active ? 'bg-ink text-white' : 'bg-[#EFEFEC] text-[#6B6D74]')
+                }
+              >
+                {t.count}
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 const DEFAULT_SIZES = ['YS', 'YM', 'YL', 'S', 'M', 'L', 'XL', '2XL', '3XL'];
 
 const blankItem = (position: number, categoryKey: string): EditableStoreItem => ({
@@ -185,6 +238,9 @@ export function StoreEditor({ store }: { store: EditableStore }) {
   const [picking, setPicking] = useState<{ kind: 'logo' | 'hero' | 'item'; index?: number } | null>(
     null
   );
+  // Everything used to sit on one long page. Edits live in `f`, so moving
+  // between tabs keeps unsaved work and Save still writes all of it.
+  const [tab, setTab] = useState<TabKey>('store');
 
   const set = <K extends keyof EditableStore>(key: K, value: EditableStore[K]) =>
     setF((prev) => ({ ...prev, [key]: value }));
@@ -379,8 +435,15 @@ export function StoreEditor({ store }: { store: EditableStore }) {
         </p>
       )}
 
-      <div className="grid gap-5 lg:grid-cols-[1.55fr_1fr] lg:items-start">
-        <div className="space-y-5">
+      <Tabs
+        tab={tab}
+        onChange={setTab}
+        counts={{ sections: f.categories.length, designs: f.items.length }}
+      />
+
+      {tab === 'store' && (
+        <div className="grid gap-5 lg:grid-cols-[1.55fr_1fr] lg:items-start">
+          <div className="space-y-5">
           <Card title="The team">
             <div className="grid gap-4">
               <Input
@@ -407,120 +470,7 @@ export function StoreEditor({ store }: { store: EditableStore }) {
               />
             </div>
           </Card>
-
-          <Card
-            title="Sections"
-            description="The tabs down the store page. Designs are added under one of these."
-            actions={
-              <Button
-                variant="ink"
-                size="sm"
-                onClick={() =>
-                  setF((prev) => ({
-                    ...prev,
-                    categories: [
-                      ...prev.categories,
-                      { name: '', position: prev.categories.length, tempId: newKey() },
-                    ],
-                  }))
-                }
-              >
-                + Add a section
-              </Button>
-            }
-          >
-            {f.categories.length === 0 ? (
-              <p className="py-5 text-center text-[14px] text-[#8A8C93]">
-                No sections yet. Add Shirts, Pants, Hoodies — whatever this team is ordering.
-              </p>
-            ) : (
-              <ul className="space-y-2">
-                {f.categories.map((cat, i) => (
-                  <li key={cat.tempId} className="flex items-center gap-2">
-                    <span className="w-6 shrink-0 text-[12px] font-bold text-[#8A8C93]">
-                      {i + 1}.
-                    </span>
-                    <input
-                      className="field !py-2 text-[14px]"
-                      placeholder="Shirts"
-                      value={cat.name}
-                      onChange={(e) => setCategory(i, { name: e.target.value })}
-                    />
-                    <span className="shrink-0 text-[12px] text-[#8A8C93]">
-                      {f.items.filter((it) => it.categoryKey === cat.tempId).length}
-                    </span>
-                    <Button variant="ghost" size="sm" onClick={() => moveCategory(i, -1)} disabled={i === 0}>
-                      ↑
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => moveCategory(i, 1)}
-                      disabled={i === f.categories.length - 1}
-                    >
-                      ↓
-                    </Button>
-                    <button
-                      type="button"
-                      onClick={() => removeCategory(i)}
-                      className="shrink-0 text-[12px] font-semibold text-[#C42027] hover:underline"
-                    >
-                      Remove
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
-
-          <Card
-            title="Designs"
-            actions={
-              <Button
-                variant="ink"
-                size="sm"
-                disabled={f.categories.length === 0}
-                onClick={() =>
-                  setF((prev) => ({
-                    ...prev,
-                    items: [
-                      ...prev.items,
-                      blankItem(prev.items.length, prev.categories[0]?.tempId ?? ''),
-                    ],
-                  }))
-                }
-              >
-                + Add a design
-              </Button>
-            }
-          >
-            {f.categories.length === 0 ? (
-              <p className="py-6 text-center text-[14px] text-[#8A8C93]">
-                Add a section first — designs live under one.
-              </p>
-            ) : f.items.length === 0 ? (
-              <p className="py-6 text-center text-[14px] text-[#8A8C93]">
-                No designs yet. Add a shirt, pants or anything else this team can order.
-              </p>
-            ) : (
-              <div className="space-y-5">
-                {f.items.map((item, i) => (
-                  <ItemFields
-                    key={item.id ?? `new-${i}`}
-                    item={item}
-                    categories={f.categories}
-                    position={i}
-                    total={f.items.length}
-                    onChange={(patch) => setItem(i, patch)}
-                    onRemove={() => removeItem(i)}
-                    onMove={(dir) => moveItem(i, dir)}
-                    onPickImage={() => setPicking({ kind: 'item', index: i })}
-                  />
-                ))}
-              </div>
-            )}
-          </Card>
-        </div>
+          </div>
 
         <div className="space-y-5">
           <Card title="Availability">
@@ -597,10 +547,132 @@ export function StoreEditor({ store }: { store: EditableStore }) {
               />
             </div>
           </Card>
+          </div>
         </div>
-      </div>
+      )}
 
-      <MediaPicker
+      {tab === 'sections' && (
+        <div className="max-w-[780px]">
+          <Card
+            title="Sections"
+            description="The tabs down the store page. Designs are added under one of these."
+            actions={
+              <Button
+                variant="ink"
+                size="sm"
+                onClick={() =>
+                  setF((prev) => ({
+                    ...prev,
+                    categories: [
+                      ...prev.categories,
+                      { name: '', position: prev.categories.length, tempId: newKey() },
+                    ],
+                  }))
+                }
+              >
+                + Add a section
+              </Button>
+            }
+          >
+            {f.categories.length === 0 ? (
+              <p className="py-5 text-center text-[14px] text-[#8A8C93]">
+                No sections yet. Add Shirts, Pants, Hoodies — whatever this team is ordering.
+              </p>
+            ) : (
+              <ul className="space-y-2">
+                {f.categories.map((cat, i) => (
+                  <li key={cat.tempId} className="flex items-center gap-2">
+                    <span className="w-6 shrink-0 text-[12px] font-bold text-[#8A8C93]">
+                      {i + 1}.
+                    </span>
+                    <input
+                      className="field !py-2 text-[14px]"
+                      placeholder="Shirts"
+                      value={cat.name}
+                      onChange={(e) => setCategory(i, { name: e.target.value })}
+                    />
+                    <span className="shrink-0 text-[12px] text-[#8A8C93]">
+                      {f.items.filter((it) => it.categoryKey === cat.tempId).length}
+                    </span>
+                    <Button variant="ghost" size="sm" onClick={() => moveCategory(i, -1)} disabled={i === 0}>
+                      ↑
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => moveCategory(i, 1)}
+                      disabled={i === f.categories.length - 1}
+                    >
+                      ↓
+                    </Button>
+                    <button
+                      type="button"
+                      onClick={() => removeCategory(i)}
+                      className="shrink-0 text-[12px] font-semibold text-[#C42027] hover:underline"
+                    >
+                      Remove
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        </div>
+      )}
+
+      {tab === 'designs' && (
+        <div>
+          <Card
+            title="Designs"
+            actions={
+              <Button
+                variant="ink"
+                size="sm"
+                disabled={f.categories.length === 0}
+                onClick={() =>
+                  setF((prev) => ({
+                    ...prev,
+                    items: [
+                      ...prev.items,
+                      blankItem(prev.items.length, prev.categories[0]?.tempId ?? ''),
+                    ],
+                  }))
+                }
+              >
+                + Add a design
+              </Button>
+            }
+          >
+            {f.categories.length === 0 ? (
+              <p className="py-6 text-center text-[14px] text-[#8A8C93]">
+                Add a section first — designs live under one.
+              </p>
+            ) : f.items.length === 0 ? (
+              <p className="py-6 text-center text-[14px] text-[#8A8C93]">
+                No designs yet. Add a shirt, pants or anything else this team can order.
+              </p>
+            ) : (
+              <div className="space-y-5">
+                {f.items.map((item, i) => (
+                  <ItemFields
+                    key={item.id ?? `new-${i}`}
+                    item={item}
+                    categories={f.categories}
+                    position={i}
+                    total={f.items.length}
+                    onChange={(patch) => setItem(i, patch)}
+                    onRemove={() => removeItem(i)}
+                    onMove={(dir) => moveItem(i, dir)}
+                    onPickImage={() => setPicking({ kind: 'item', index: i })}
+                  />
+                ))}
+              </div>
+            )}
+          </Card>
+        </div>
+      )}
+
+            <MediaPicker
         open={picking !== null}
         folder="stores"
         onClose={() => setPicking(null)}
