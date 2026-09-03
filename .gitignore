@@ -10,3 +10,4 @@ next-env.d.ts
 !/public/uploads/.gitkeep
 .DS_Store
 .env.backup-*
+.env.test

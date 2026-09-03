@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { prisma, plain } from '@/lib/db';
 import { AdminPage, Badge, Table, Td, Th } from '@/components/admin/ui';
 import { formatDateTime, money } from '@/lib/utils';
+import { DeleteRecord } from '@/components/admin/DeleteRecord';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,6 +36,7 @@ export default async function StoreOrdersIndex({
         ? {
             OR: [
               { reference: { contains: q } },
+              { invoiceNumber: { contains: q } },
               { customerName: { contains: q } },
               { email: { contains: q } },
             ],
@@ -60,7 +62,7 @@ export default async function StoreOrdersIndex({
           <input
             name="q"
             defaultValue={q ?? ''}
-            placeholder="Search reference, name, email…"
+            placeholder="Search reference, invoice #, name, email…"
             className="field !py-2 text-[13px]"
           />
         </form>
@@ -95,6 +97,7 @@ export default async function StoreOrdersIndex({
             <Th>Reference</Th>
             <Th>Store</Th>
             <Th>Customer</Th>
+            <Th>Invoice #</Th>
             <Th>Items</Th>
             <Th>Total</Th>
             <Th>Status</Th>
@@ -115,6 +118,9 @@ export default async function StoreOrdersIndex({
                 <span className="block font-medium">{o.customerName}</span>
                 <span className="block text-[12px] text-[#8A8C93]">{o.email}</span>
               </Td>
+              <Td className="whitespace-nowrap text-[13px]">
+                {o.invoiceNumber ? <code>{o.invoiceNumber}</code> : '—'}
+              </Td>
               <Td className="text-[13px]">{o._count.items}</Td>
               <Td className="whitespace-nowrap font-semibold">{money(Number(o.total))}</Td>
               <Td>
@@ -124,12 +130,16 @@ export default async function StoreOrdersIndex({
                 {formatDateTime(o.createdAt)}
               </Td>
               <Td className="text-right">
-                <Link
-                  href={`/admin/store-orders/${o.id}`}
-                  className="text-[12px] font-semibold text-ink hover:underline"
-                >
-                  Open
-                </Link>
+                <span className="flex items-center justify-end gap-3 whitespace-nowrap text-[12px] font-semibold">
+                  <Link href={`/admin/store-orders/${o.id}`} className="text-ink hover:underline">
+                    Open
+                  </Link>
+                  <DeleteRecord
+                    resource="storeOrders"
+                    id={o.id}
+                    name={`order ${o.reference}`}
+                  />
+                </span>
               </Td>
             </tr>
           ))}

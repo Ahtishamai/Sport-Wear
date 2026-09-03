@@ -3,6 +3,7 @@ import { prisma, plain } from '@/lib/db';
 import { AdminPage, Badge, Card } from '@/components/admin/ui';
 import { formatDateTime, money } from '@/lib/utils';
 import { OrderStatusPicker } from '@/components/admin/OrderStatusPicker';
+import { DeleteRecord } from '@/components/admin/DeleteRecord';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,7 +34,18 @@ export default async function StoreOrderDetail({
       title={o.reference}
       back={{ href: '/admin/store-orders', label: 'All store orders' }}
       description={`${o.store.name} · placed ${formatDateTime(o.createdAt)}`}
-      actions={<OrderStatusPicker id={o.id} status={o.status} />}
+      actions={
+        <>
+          <OrderStatusPicker id={o.id} status={o.status} />
+          <DeleteRecord
+            resource="storeOrders"
+            id={o.id}
+            name={`order ${o.reference}`}
+            redirectTo="/admin/store-orders"
+            variant="button"
+          />
+        </>
+      }
     >
       <div className="grid gap-5 lg:grid-cols-[1.5fr_1fr] lg:items-start">
         <div className="space-y-5">
@@ -118,6 +130,13 @@ export default async function StoreOrderDetail({
                 </a>
               </Row>
               <Row label="Phone">{o.phone || '—'}</Row>
+              <Row label="Invoice #">
+                {o.invoiceNumber ? (
+                  <code className="text-[13px] font-semibold">{o.invoiceNumber}</code>
+                ) : (
+                  '—'
+                )}
+              </Row>
             </dl>
           </Card>
         </div>

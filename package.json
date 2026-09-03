@@ -13,7 +13,8 @@
     "db:studio": "prisma studio",
     "setup": "prisma generate && prisma db push && tsx prisma/seed.ts",
     "db:limits": "node -r dotenv/config scripts/db-limits.mjs",
-    "uploads:restore": "node -r dotenv/config scripts/restore-uploads.mjs"
+    "uploads:restore": "node -r dotenv/config scripts/restore-uploads.mjs",
+    "test:server": "node scripts/test-server.mjs"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

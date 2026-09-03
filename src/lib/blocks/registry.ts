@@ -71,19 +71,14 @@ export const BLOCKS: BlockDefinition[] = [
       { name: 'image', label: 'Background photo', type: 'image' },
       {
         name: 'slides',
-        label: 'Slides',
+        label: 'Extra photos',
         type: 'list',
-        help: 'Extra slides shown after the one above. Add one and the hero becomes a slider; the buttons stay put while the photo and copy change.',
-        fields: [
-          { name: 'image', label: 'Photo', type: 'image' },
-          { name: 'badge', label: 'Badge', type: 'text' },
-          { name: 'heading', label: 'Headline', type: 'textarea', rows: 2 },
-          { name: 'body', label: 'Sub-headline', type: 'textarea', rows: 2 },
-        ],
+        help: 'Add photos here and the hero cycles through them. The badge, headline and sub-headline above stay the same on every one.',
+        fields: [{ name: 'image', label: 'Photo', type: 'image' }],
       },
       {
         name: 'slideSeconds',
-        label: 'Seconds per slide',
+        label: 'Seconds per photo',
         type: 'number',
         width: 'half',
         min: 2,

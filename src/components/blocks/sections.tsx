@@ -40,24 +40,21 @@ export function HeroBlock({ p, bid, priority }: BlockComponentProps) {
     : [];
   const height = Math.max(380, Number(p.height) || 720);
 
-  const extra = (Array.isArray(p.slides) ? p.slides : []).filter(
-    (s: any) => s && (s.image || s.heading)
-  );
+  // The block's own photo is the first slide; `slides` adds more photos. The
+  // words are the block's and do not change between them.
+  const extra = (Array.isArray(p.slides) ? p.slides : []).filter((s: any) => s?.image);
   const slides: HeroSlide[] = [
-    { image: p.image, badge: p.badge, heading: p.heading, body: p.body, path: '' },
-    ...extra.map((s: any, i: number) => ({
-      image: s.image,
-      badge: s.badge,
-      heading: s.heading,
-      body: s.body,
-      path: `slides.${i}`,
-    })),
+    { image: p.image, path: 'image' },
+    ...extra.map((s: any, i: number) => ({ image: s.image, path: `slides.${i}.image` })),
   ];
 
   return (
     <HeroSlider
       slides={slides}
       bid={bid}
+      badge={p.badge}
+      heading={p.heading}
+      body={p.body}
       height={height}
       seconds={Math.max(2, Number(p.slideSeconds) || 6)}
       parallax={p.parallax !== false}

@@ -40,6 +40,7 @@ function CheckoutBody({
   orderNote,
 }: Props) {
   const { lines, update, remove, clear, ready } = useCart();
+  const [invoiceNumber, setInvoiceNumber] = useState('');
   const [error, setError] = useState('');
   const [done, setDone] = useState<string | null>(null);
 
@@ -111,7 +112,23 @@ function CheckoutBody({
             Order summary
           </h2>
 
-          <dl className="mt-4 text-[14px]">
+          <label className="mt-4 block">
+            <span className="field-label">Invoice number (optional)</span>
+            <input
+              className="field !py-2.5 text-[14px] uppercase"
+              maxLength={64}
+              value={invoiceNumber}
+              onChange={(e) => setInvoiceNumber(e.target.value)}
+              placeholder="e.g. DS20439"
+              autoComplete="off"
+            />
+            <span className="mt-1.5 block text-[12px] text-muted">
+              Paying against an invoice we sent you? Put its number here and we will match your
+              payment to it.
+            </span>
+          </label>
+
+          <dl className="mt-5 border-t border-hairline pt-4 text-[14px]">
             <div className="flex justify-between py-1">
               <dt className="text-body">Subtotal</dt>
               <dd className="font-semibold">{money(subtotal)}</dd>
@@ -149,6 +166,7 @@ function CheckoutBody({
                 onError={setError}
                 buildOrder={() => ({
                   store: slug,
+                  invoiceNumber,
                   lines: lines.map((l) => ({
                     itemId: l.itemId,
                     size: l.size,

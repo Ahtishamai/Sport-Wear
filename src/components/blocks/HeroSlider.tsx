@@ -6,27 +6,26 @@ import { cn } from '@/lib/utils';
 
 export type HeroSlide = {
   image?: string;
-  badge?: string;
-  heading?: string;
-  body?: string;
-  /** Prefix for inline edits, e.g. `slides.0`. Empty means the block's own
-   *  fields, which is the case when no slides have been added. */
+  /** Where an image swap is written: `image` for the block's own photo, or
+   *  `slides.0.image` for an extra one. */
   path: string;
 };
 
 /**
  * The hero, with or without a slider.
  *
- * One slide renders exactly as the hero always did — no controls, no timer, no
- * client work beyond mounting. The rotation only appears once a second slide
- * exists, so adding slides is what turns the feature on.
+ * Only the photograph changes. The badge, headline and sub-headline are the
+ * block's own and stay put across every slide, so there is one place to edit
+ * the words rather than a copy per photo.
  *
- * The buttons and proof line are passed in already rendered, so they stay put
- * while the artwork and copy change behind them.
+ * One photo renders exactly as the hero always did — no controls, no timer.
  */
 export function HeroSlider({
   slides,
   bid,
+  badge,
+  heading,
+  body,
   height,
   seconds,
   parallax,
@@ -35,6 +34,9 @@ export function HeroSlider({
 }: {
   slides: HeroSlide[];
   bid?: string;
+  badge?: string;
+  heading?: string;
+  body?: string;
   height: number;
   seconds: number;
   parallax: boolean;
@@ -67,11 +69,9 @@ export function HeroSlider({
     return () => q.removeEventListener('change', apply);
   }, []);
 
-  const active = slides[index] ?? slides[0];
-  const at = (slide: HeroSlide, field: string) =>
-    slide.path ? `${slide.path}.${field}` : field;
+  // The words never move, so they always edit the block's own fields.
   const edit = (field: string) =>
-    bid ? { 'data-edit': `block:${bid}:${at(active, field)}`, 'data-edit-kind': 'text' } : {};
+    bid ? { 'data-edit': `block:${bid}:${field}`, 'data-edit-kind': 'text' } : {};
 
   return (
     <section
@@ -93,7 +93,7 @@ export function HeroSlider({
             i === index ? 'opacity-100' : 'opacity-0'
           )}
           {...(bid && i === index
-            ? { 'data-edit': `block:${bid}:${at(s, 'image')}`, 'data-edit-kind': 'image' }
+            ? { 'data-edit': `block:${bid}:${s.path}`, 'data-edit-kind': 'image' }
             : {})}
         >
           {s.image ? (
@@ -129,12 +129,12 @@ export function HeroSlider({
       />
 
       <div className="gutter relative w-full" style={{ textShadow: '0 2px 18px rgba(16,17,20,.65)' }}>
-        {active.badge && (
+        {badge && (
           <span
             className="mb-5 inline-block bg-brand px-3 py-2 text-[10px] font-bold uppercase leading-snug tracking-[.12em] text-ink md:mb-6 md:px-[15px] md:py-[9px] md:text-[12px] md:tracking-[.16em]"
             {...edit('badge')}
           >
-            {active.badge}
+            {badge}
           </span>
         )}
 
@@ -143,15 +143,15 @@ export function HeroSlider({
           style={{ fontSize: 'clamp(30px,7vw,70px)' }}
           {...edit('heading')}
         >
-          {active.heading}
+          {heading}
         </h1>
 
-        {active.body && (
+        {body && (
           <p
             className="mt-5 max-w-[560px] text-[16px] leading-relaxed text-ondark md:mt-6 md:text-[19px]"
             {...edit('body')}
           >
-            {active.body}
+            {body}
           </p>
         )}
 

@@ -279,7 +279,7 @@ export const RESOURCES: Record<string, ResourceConfig> = {
       items: true,
     },
     revalidate: () => [],
-    searchFields: ['reference', 'customerName', 'email'],
+    searchFields: ['reference', 'invoiceNumber', 'customerName', 'email'],
   },
 
   users: {

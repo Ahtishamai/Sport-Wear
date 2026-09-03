@@ -16,9 +16,10 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: Request) {
   const ip = clientIp(req);
   // Generous on purpose: a whole team often orders from one school or
-  // workplace network, so they share an IP. Still bounded, because each
-  // attempt creates a pending order and a PayPal order.
-  if (!rateLimit(`store-checkout:${ip}`, 30, 10 * 60_000).ok) {
+  // workplace network, so they share an IP — twenty-five parents ordering
+  // after practice is a normal evening, not an attack. Still bounded, because
+  // each attempt creates a pending order and a PayPal order.
+  if (!rateLimit(`store-checkout:${ip}`, 60, 10 * 60_000).ok) {
     return json({ error: 'Too many attempts. Please wait a few minutes.' }, 429);
   }
 
@@ -36,6 +37,7 @@ export async function POST(req: Request) {
   const email = String(body?.email ?? '').trim().slice(0, 160);
   const phone = String(body?.phone ?? '').trim().slice(0, 40);
   const notes = String(body?.notes ?? '').trim().slice(0, 800);
+  const invoiceNumber = String(body?.invoiceNumber ?? '').trim().slice(0, 64);
 
   if (!slug) return badRequest('Missing store.');
 
@@ -62,6 +64,7 @@ export async function POST(req: Request) {
         customerName,
         email,
         phone: phone || null,
+        invoiceNumber: invoiceNumber || null,
         notes: notes || null,
         subtotal: cart.subtotal,
         shipping: cart.shipping,
