@@ -1,14 +1,17 @@
 import { prisma, plain } from '@/lib/db';
-import { badRequest, json, serverError, unauthorized } from '@/lib/api';
-import { getSession } from '@/lib/auth';
+import { badRequest, forbidden, json, serverError, unauthorized } from '@/lib/api';
+import { canUseArea } from '@/lib/permissions';
+import { getAccessor } from '@/lib/auth';
 import { imageSize, IMAGE_MIME, saveUpload } from '@/lib/upload';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
-  const user = await getSession();
+  const user = await getAccessor();
   if (!user) return unauthorized();
+  // Uploads land in the media library.
+  if (!canUseArea(user, 'content')) return forbidden();
 
   try {
     const form = await req.formData();

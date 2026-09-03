@@ -3,6 +3,7 @@
 import { AdminPage } from '@/components/admin/ui';
 import { ResourceManager } from '@/components/admin/ResourceManager';
 import type { Field } from '@/lib/blocks/types';
+import { AREAS } from '@/lib/permissions';
 
 const FIELDS: Field[] = [
   { name: 'name', label: 'Name', type: 'text', width: 'half', default: '' },
@@ -15,8 +16,18 @@ const FIELDS: Field[] = [
     default: 'EDITOR',
     options: [
       { label: 'Admin — full access', value: 'ADMIN' },
-      { label: 'Editor — content only', value: 'EDITOR' },
+      { label: 'Limited — only the areas ticked below', value: 'EDITOR' },
     ],
+  },
+  {
+    name: 'permissions',
+    label: 'Areas this account can use',
+    type: 'checklist',
+    default: ['orders'],
+    // Only meaningful for a limited account; an admin sees everything.
+    showIf: { field: 'role', equals: ['EDITOR'] },
+    options: AREAS.map((a) => ({ label: `${a.label} — ${a.description}`, value: a.key })),
+    help: 'Anything not ticked is hidden from the menu and refused by the server.',
   },
   {
     name: 'password',
@@ -37,7 +48,11 @@ export default function UsersAdmin() {
         title="Accounts"
         singularLabel="User"
         rowTitle={(r) => String(r.name)}
-        rowMeta={(r) => `${r.email} · ${r.role}`}
+        rowMeta={(r) =>
+          r.role === 'ADMIN'
+            ? `${r.email} · full access`
+            : `${r.email} · ${(Array.isArray(r.permissions) ? r.permissions : ['orders']).length} area(s)`
+        }
       />
     </AdminPage>
   );

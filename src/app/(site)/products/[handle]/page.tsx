@@ -75,7 +75,11 @@ export default async function ProductPage({ params }: { params: Promise<{ handle
         </ol>
       </nav>
 
-      <ProductDetail product={product} urgencyLine="In production now · 6 teams this week" />
+      <ProductDetail
+        product={product}
+        urgencyLine="In production now · 6 teams this week"
+        showPrices={settings.showPrices !== false}
+      />
 
       {pdpExtras && (
         <BlockRenderer blocks={pdpExtras.blocks} context={{ excludeProductId: product.id }} />
@@ -97,7 +101,7 @@ export default async function ProductPage({ params }: { params: Promise<{ handle
             style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))' }}
           >
             {related.map((p) => (
-              <ProductPlateCard key={p.id} p={p} />
+              <ProductPlateCard key={p.id} p={p} showPrice={settings.showPrices !== false} />
             ))}
           </div>
         </Section>

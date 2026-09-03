@@ -5,10 +5,14 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import type { SessionUser } from '@/lib/auth';
 import { Icon } from '@/components/site/Icon';
+import type { AreaKey } from '@/lib/permissions';
 import { cn } from '@/lib/utils';
 import { ToastProvider } from './ui';
 
-const NAV: { group: string; items: { label: string; href: string; icon: string }[] }[] = [
+const NAV: {
+  group: string;
+  items: { label: string; href: string; icon: string; area?: AreaKey }[];
+}[] = [
   {
     group: 'Overview',
     items: [{ label: 'Dashboard', href: '/admin', icon: 'star' }],
@@ -16,54 +20,63 @@ const NAV: { group: string; items: { label: string; href: string; icon: string }
   {
     group: 'Leads',
     items: [
-      { label: 'Quote requests', href: '/admin/quotes', icon: 'tag' },
-      { label: 'Contact messages', href: '/admin/contacts', icon: 'mail' },
+      { label: 'Quote requests', href: '/admin/quotes', icon: 'tag', area: 'orders' },
+      { label: 'Contact messages', href: '/admin/contacts', icon: 'mail', area: 'orders' },
     ],
   },
   {
     group: 'Catalog',
     items: [
-      { label: 'Products', href: '/admin/products', icon: 'shield' },
-      { label: 'Collections', href: '/admin/collections', icon: 'palette' },
-      { label: 'Team packages', href: '/admin/packages', icon: 'truck' },
+      { label: 'Products', href: '/admin/products', icon: 'shield', area: 'catalog' },
+      { label: 'Collections', href: '/admin/collections', icon: 'palette', area: 'catalog' },
+      { label: 'Team packages', href: '/admin/packages', icon: 'truck', area: 'catalog' },
     ],
   },
   {
     group: 'Team stores',
     items: [
-      { label: 'Stores', href: '/admin/stores', icon: 'shield' },
-      { label: 'Store orders', href: '/admin/store-orders', icon: 'truck' },
+      { label: 'Stores', href: '/admin/stores', icon: 'shield', area: 'stores' },
+      { label: 'Store orders', href: '/admin/store-orders', icon: 'truck', area: 'orders' },
     ],
   },
   {
     group: 'Content',
     items: [
-      { label: 'Pages', href: '/admin/pages', icon: 'chat' },
-      { label: 'Reviews', href: '/admin/reviews', icon: 'star' },
-      { label: 'FAQs', href: '/admin/faqs', icon: 'clock' },
-      { label: 'Media', href: '/admin/media', icon: 'art' },
+      { label: 'Pages', href: '/admin/pages', icon: 'chat', area: 'content' },
+      { label: 'Reviews', href: '/admin/reviews', icon: 'star', area: 'content' },
+      { label: 'FAQs', href: '/admin/faqs', icon: 'clock', area: 'content' },
+      { label: 'Media', href: '/admin/media', icon: 'art', area: 'content' },
     ],
   },
   {
     group: 'Settings',
     items: [
-      { label: 'Navigation', href: '/admin/navigation', icon: 'ruler' },
-      { label: 'Site settings', href: '/admin/settings', icon: 'factory' },
-      { label: 'Users', href: '/admin/users', icon: 'check' },
+      { label: 'Navigation', href: '/admin/navigation', icon: 'ruler', area: 'settings' },
+      { label: 'Site settings', href: '/admin/settings', icon: 'factory', area: 'settings' },
+      { label: 'Users', href: '/admin/users', icon: 'check', area: 'users' },
     ],
   },
 ];
 
 export function AdminShell({
   user,
+  areas,
   children,
 }: {
   user: SessionUser;
+  areas: AreaKey[];
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+
+  // Only show what this account can actually open. Groups left with nothing
+  // in them disappear rather than sitting there as empty headings.
+  const visibleNav = NAV.map((g) => ({
+    ...g,
+    items: g.items.filter((it) => !it.area || areas.includes(it.area)),
+  })).filter((g) => g.items.length > 0);
 
   const isActive = (href: string) =>
     href === '/admin' ? pathname === '/admin' : pathname.startsWith(href);
@@ -97,7 +110,7 @@ export function AdminShell({
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-5">
-          {NAV.map((g) => (
+          {visibleNav.map((g) => (
             <div key={g.group} className="mb-6">
               <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-[.16em] text-white/35">
                 {g.group}

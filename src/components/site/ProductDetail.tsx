@@ -13,10 +13,13 @@ export function ProductDetail({
   reviewCount = 128,
   rating = 4.9,
   urgencyLine,
+  showPrices = true,
 }: {
   product: Product;
   reviewCount?: number;
   rating?: number;
+  /** Off hides every figure on this page — see Admin → Site settings → Pricing. */
+  showPrices?: boolean;
   urgencyLine?: string | null;
 }) {
   const { open } = useQuote();
@@ -153,6 +156,7 @@ export function ProductDetail({
           </p>
 
           {/* price + volume tiers */}
+          {showPrices && (
           <div className="mt-7 border border-hairline bg-surface p-6">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
@@ -196,6 +200,7 @@ export function ProductDetail({
               ))}
             </div>
           </div>
+          )}
 
           {/* sport */}
           <Group label="Sport">
@@ -297,13 +302,15 @@ export function ProductDetail({
                 </span>
                 <span className="font-display text-[22px] font-black">{units}</span>
               </div>
-              <div className="text-right">
-                <span className="block text-[11px] font-bold uppercase tracking-[.14em] text-muted">
-                  Estimated
-                </span>
-                <span className="font-display text-[25px] font-black">{money(estTotal)}</span>
-                <span className="ml-2 text-[13px] text-muted">at {money(unitPrice)}/unit</span>
-              </div>
+              {showPrices && (
+                <div className="text-right">
+                  <span className="block text-[11px] font-bold uppercase tracking-[.14em] text-muted">
+                    Estimated
+                  </span>
+                  <span className="font-display text-[25px] font-black">{money(estTotal)}</span>
+                  <span className="ml-2 text-[13px] text-muted">at {money(unitPrice)}/unit</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -394,7 +401,7 @@ export function ProductDetail({
               {product.title}
             </div>
             <div className="text-[13px] text-muted">
-              {units} units · est. {money(estTotal)}
+              {units} units{showPrices ? ` · est. ${money(estTotal)}` : ''}
             </div>
           </div>
           <div className="flex items-center gap-4">

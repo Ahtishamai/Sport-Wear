@@ -13,6 +13,10 @@ export function badRequest(error: string, details?: unknown) {
   return NextResponse.json({ error, details }, { status: 400 });
 }
 
+export function forbidden() {
+  return json({ error: 'Your account does not have access to that.' }, 403);
+}
+
 export function unauthorized() {
   return NextResponse.json({ error: 'Not authorised' }, { status: 401 });
 }

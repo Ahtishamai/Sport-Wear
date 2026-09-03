@@ -1,5 +1,6 @@
-import { json, serverError, unauthorized } from '@/lib/api';
-import { getSession } from '@/lib/auth';
+import { forbidden, json, serverError, unauthorized } from '@/lib/api';
+import { canUseArea } from '@/lib/permissions';
+import { getAccessor } from '@/lib/auth';
 import { fetchSheetRows, mapColumns, toCsvUrl, TrackingError } from '@/lib/tracking';
 
 export const runtime = 'nodejs';
@@ -10,8 +11,10 @@ export const dynamic = 'force-dynamic';
  * rather than a dead tracking page.
  */
 export async function POST(req: Request) {
-  const user = await getSession();
+  const user = await getAccessor();
   if (!user) return unauthorized();
+  // Reads the tracking sheet configured in settings.
+  if (!canUseArea(user, 'settings')) return forbidden();
 
   try {
     const body = await req.json().catch(() => ({}));

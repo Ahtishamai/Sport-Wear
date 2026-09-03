@@ -284,7 +284,8 @@ export const RESOURCES: Record<string, ResourceConfig> = {
 
   users: {
     model: 'user',
-    fields: ['email', 'name', 'role'],
+    fields: ['email', 'name', 'role', 'permissions'],
+    jsons: ['permissions'],
     defaultOrder: { createdAt: 'asc' },
     revalidate: () => [],
     searchFields: ['name', 'email'],

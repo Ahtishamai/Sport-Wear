@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getCatalog, getCatalogFacets, getPriceBounds } from '@/lib/queries';
+import { getSettings } from '@/lib/settings';
 import { ProductCatalogCard } from '@/components/blocks/primitives';
 import { CatalogSidebar, CatalogToolbar } from './CatalogSidebar';
 import { QuoteButton } from './QuoteButton';
@@ -32,7 +33,12 @@ export async function CatalogView({
       : [searchParams.fabric]
     : [];
 
-  const [facets, bounds] = await Promise.all([getCatalogFacets(), getPriceBounds()]);
+  const [facets, bounds, settings] = await Promise.all([
+    getCatalogFacets(),
+    getPriceBounds(),
+    getSettings(),
+  ]);
+  const showPrice = settings.showPrices !== false;
   const maxPrice = Number(searchParams.max) || bounds.max;
 
   const products = await getCatalog({
@@ -122,7 +128,7 @@ export async function CatalogView({
               style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(258px, 1fr))' }}
             >
               {products.map((p) => (
-                <ProductCatalogCard key={p.id} p={p} />
+                <ProductCatalogCard key={p.id} p={p} showPrice={showPrice} />
               ))}
             </div>
           )}

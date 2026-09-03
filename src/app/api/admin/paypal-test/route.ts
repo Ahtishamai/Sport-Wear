@@ -1,5 +1,6 @@
-import { getSession } from '@/lib/auth';
-import { json, unauthorized } from '@/lib/api';
+import { getAccessor } from '@/lib/auth';
+import { forbidden, json, unauthorized } from '@/lib/api';
+import { canUseArea } from '@/lib/permissions';
 import { getPaymentSecrets } from '@/lib/payments';
 
 export const runtime = 'nodejs';
@@ -46,8 +47,10 @@ async function tryAuth(mode: Mode, clientId: string, secret: string) {
  * than leaving someone to guess.
  */
 export async function POST(req: Request) {
-  const user = await getSession();
+  const user = await getAccessor();
   if (!user) return unauthorized();
+  // Touches payment credentials.
+  if (!canUseArea(user, 'settings')) return forbidden();
 
   const body = await req.json().catch(() => ({}) as Record<string, unknown>);
   const clientId = String((body as any)?.clientId ?? '').trim();

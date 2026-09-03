@@ -23,6 +23,8 @@ model User {
   name         String
   passwordHash String
   role         Role      @default(EDITOR)
+  /// Areas of the admin this account may use. Ignored for ADMIN, who sees all.
+  permissions  Json?
   lastLoginAt  DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt

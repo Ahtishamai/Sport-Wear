@@ -109,6 +109,31 @@ function FieldControl({
         </div>
       );
 
+    // A fixed set of values, several of which can be on at once — used for
+    // per-user permissions, where free text would let a typo silently grant
+    // or withhold access.
+    case 'checklist': {
+      const chosen: string[] = Array.isArray(value) ? (value as string[]) : [];
+      const toggle = (v: string) =>
+        onChange(chosen.includes(v) ? chosen.filter((x) => x !== v) : [...chosen, v]);
+      return (
+        <div>
+          {label}
+          <div className="space-y-1.5">
+            {(field.options ?? []).map((o) => (
+              <Checkbox
+                key={o.value}
+                label={o.label}
+                checked={chosen.includes(o.value)}
+                onChange={() => toggle(o.value)}
+              />
+            ))}
+          </div>
+          {help}
+        </div>
+      );
+    }
+
     case 'select':
       return (
         <div>

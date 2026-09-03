@@ -1,8 +1,9 @@
 import { revalidatePath } from 'next/cache';
 import { prisma, plain } from '@/lib/db';
-import { badRequest, json, serverError, unauthorized } from '@/lib/api';
-import { getSession, hashPassword } from '@/lib/auth';
+import { badRequest, forbidden, json, serverError, unauthorized } from '@/lib/api';
+import { getAccessor, hashPassword } from '@/lib/auth';
 import { coerce, ensureSlug, RESOURCES, type ResourceConfig } from '@/lib/resources';
+import { canUseResource } from '@/lib/permissions';
 import { saveSettings } from '@/lib/settings';
 import { savePaymentSecret, clearPaymentSecret, paypalSecretSummary } from '@/lib/payments';
 
@@ -40,10 +41,13 @@ function bump(cfg: ResourceConfig, row: Record<string, any>) {
 // ------------------------------------------------------------------ GET
 
 export async function GET(req: Request, ctx: Ctx) {
-  const user = await getSession();
+  const user = await getAccessor();
   if (!user) return unauthorized();
 
   const { path } = await ctx.params;
+  // The menu hides areas an account cannot use; this is what actually stops
+  // them being reached, since the endpoints are guessable.
+  if (!canUseResource(user, path[0])) return forbidden();
   const [resource, id] = path;
 
   if (resource === 'stats') return stats();
@@ -96,10 +100,13 @@ export async function GET(req: Request, ctx: Ctx) {
 // ------------------------------------------------------------------ POST
 
 export async function POST(req: Request, ctx: Ctx) {
-  const user = await getSession();
+  const user = await getAccessor();
   if (!user) return unauthorized();
 
   const { path } = await ctx.params;
+  // The menu hides areas an account cannot use; this is what actually stops
+  // them being reached, since the endpoints are guessable.
+  if (!canUseResource(user, path[0])) return forbidden();
   const [resource, action] = path;
 
   try {
@@ -197,10 +204,13 @@ export async function POST(req: Request, ctx: Ctx) {
 // ------------------------------------------------------------------ PATCH
 
 export async function PATCH(req: Request, ctx: Ctx) {
-  const user = await getSession();
+  const user = await getAccessor();
   if (!user) return unauthorized();
 
   const { path } = await ctx.params;
+  // The menu hides areas an account cannot use; this is what actually stops
+  // them being reached, since the endpoints are guessable.
+  if (!canUseResource(user, path[0])) return forbidden();
   const [resource, id] = path;
   const cfg = RESOURCES[resource];
   if (!cfg) return badRequest(`Unknown resource "${resource}"`);
@@ -273,10 +283,13 @@ export async function PATCH(req: Request, ctx: Ctx) {
 // ------------------------------------------------------------------ DELETE
 
 export async function DELETE(_req: Request, ctx: Ctx) {
-  const user = await getSession();
+  const user = await getAccessor();
   if (!user) return unauthorized();
 
   const { path } = await ctx.params;
+  // The menu hides areas an account cannot use; this is what actually stops
+  // them being reached, since the endpoints are guessable.
+  if (!canUseResource(user, path[0])) return forbidden();
   const [resource, id] = path;
   const cfg = RESOURCES[resource];
   if (!cfg) return badRequest(`Unknown resource "${resource}"`);

@@ -45,6 +45,8 @@ export type SiteSettings = {
   paypalClientId: string;
   storeCurrency: string;
   storeOrderNote: string;
+  /** Turn every price off across the catalogue, home page and product pages. */
+  showPrices: boolean;
 };
 
 export const DEFAULT_SETTINGS: SiteSettings = {
@@ -100,6 +102,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   paypalClientId: '',
   storeCurrency: 'USD',
   storeOrderNote: 'Orders are produced once the store closes and ship to your team contact.',
+  showPrices: true,
 };
 
 const SETTINGS_KEY = 'site';

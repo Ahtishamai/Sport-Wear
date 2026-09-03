@@ -68,6 +68,13 @@ export function normalizeBlocks(blocks: unknown): Block[] {
   );
 }
 
+/** One place that answers "are prices on?", read per request via the cached
+ *  settings query rather than threaded through every block. */
+async function pricesShown() {
+  const s = await getSettings();
+  return s.showPrices !== false;
+}
+
 async function renderBlock(block: Block, index: number, ctx: RenderContext) {
   const p = (block.props ?? {}) as Record<string, any>;
   const key = block.id || `${block.type}-${index}`;
@@ -105,12 +112,28 @@ async function renderBlock(block: Block, index: number, ctx: RenderContext) {
         limit: p.limit,
         excludeId: ctx.excludeProductId,
       });
-      return <ProductGridBlock key={key} p={p} bid={block.id} products={products} />;
+      return (
+        <ProductGridBlock
+          key={key}
+          p={p}
+          bid={block.id}
+          products={products}
+          showPrice={await pricesShown()}
+        />
+      );
     }
 
     case 'packagesGrid': {
       const packages = await getPackages(Number(p.limit) || 4);
-      return <PackagesGridBlock key={key} p={p} bid={block.id} packages={packages} />;
+      return (
+        <PackagesGridBlock
+          key={key}
+          p={p}
+          bid={block.id}
+          packages={packages}
+          showPrice={await pricesShown()}
+        />
+      );
     }
 
     case 'collectionList': {

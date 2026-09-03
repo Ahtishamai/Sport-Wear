@@ -85,6 +85,40 @@ export async function requireSession(): Promise<SessionUser> {
 
 export class AuthError extends Error {}
 
+/**
+ * The signed-in user with their current permissions, read fresh from the
+ * database.
+ *
+ * Permissions deliberately do not live in the session token: revoking someone's
+ * access has to take effect on their next request, not whenever their week-old
+ * cookie happens to expire.
+ */
+export async function getAccessor(): Promise<
+  (SessionUser & { permissions: unknown }) | null
+> {
+  const s = await getSession();
+  if (!s) return null;
+  try {
+    const row = await prisma.user.findUnique({
+      where: { id: s.id },
+      select: { id: true, email: true, name: true, role: true, permissions: true },
+    });
+    // Deleted since the cookie was issued.
+    if (!row) return null;
+    return {
+      id: row.id,
+      email: row.email,
+      name: row.name,
+      role: row.role as 'ADMIN' | 'EDITOR',
+      permissions: row.permissions,
+    };
+  } catch {
+    // If the lookup fails, fall back to the session with no extra areas rather
+    // than granting everything.
+    return { ...s, permissions: [] };
+  }
+}
+
 export async function login(email: string, password: string) {
   const user = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
   if (!user) return null;

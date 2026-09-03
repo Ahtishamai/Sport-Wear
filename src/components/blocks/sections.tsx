@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import { HeroSlider, type HeroSlide } from './HeroSlider';
 import { cn } from '@/lib/utils';
 import { Icon } from '@/components/site/Icon';
 import { QuoteButton } from '@/components/site/QuoteButton';
@@ -38,128 +39,70 @@ export function HeroBlock({ p, bid, priority }: BlockComponentProps) {
     ? p.secondary
     : [];
   const height = Math.max(380, Number(p.height) || 720);
+
+  const extra = (Array.isArray(p.slides) ? p.slides : []).filter(
+    (s: any) => s && (s.image || s.heading)
+  );
+  const slides: HeroSlide[] = [
+    { image: p.image, badge: p.badge, heading: p.heading, body: p.body, path: '' },
+    ...extra.map((s: any, i: number) => ({
+      image: s.image,
+      badge: s.badge,
+      heading: s.heading,
+      body: s.body,
+      path: `slides.${i}`,
+    })),
+  ];
+
   return (
-    <section
-      className="hero-band relative flex items-center overflow-hidden bg-ink py-16 md:py-0"
-      // Phones hug the content (padding does the work); the designed fixed
-      // height applies from tablet up — see .hero-band.
-      style={{ ['--hero-height' as string]: `${height}px` }}
-      data-hero
-      data-reveal-root
+    <HeroSlider
+      slides={slides}
+      bid={bid}
+      height={height}
+      seconds={Math.max(2, Number(p.slideSeconds) || 6)}
+      parallax={p.parallax !== false}
+      priority={priority}
     >
-      <div className="absolute inset-0" {...edImage(bid, 'image')}>
-        {p.image ? (
-          <Image
-            src={p.image}
-            alt=""
-            fill
-            priority={priority}
-            sizes="100vw"
-            data-parallax={p.parallax === false ? undefined : '0.18'}
-            className="h-full w-full object-cover"
-            style={{ transform: 'scale(1.14)' }}
-          />
-        ) : null}
+      <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-3.5 md:mt-8">
+        {primary.map((b, i) =>
+          b?.label ? (
+            <CtaLink
+              key={`p-${i}`}
+              href={b.href}
+              className="btn btn-yellow btn-lg w-full sm:w-auto"
+              bid={bid}
+              path={`primary.${i}.label`}
+            >
+              {b.label}
+            </CtaLink>
+          ) : null
+        )}
+        {secondary.map((b, i) =>
+          b?.label ? (
+            <CtaLink
+              key={`s-${i}`}
+              href={b.href}
+              className="btn btn-ghost-light btn-lg w-full sm:w-auto"
+              bid={bid}
+              path={`secondary.${i}.label`}
+            >
+              {b.label}
+            </CtaLink>
+          ) : null
+        )}
       </div>
-      {/* The designed left-to-right scrim only protects text that sits in the
-          left column. On phones the copy spans the full width, so it gets a
-          top-to-bottom scrim instead. */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 md:hidden"
-        style={{
-          background:
-            'linear-gradient(180deg, rgba(16,17,20,.82) 0%, rgba(16,17,20,.74) 55%, rgba(16,17,20,.86) 100%)',
-        }}
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 hidden md:block"
-        style={{
-          background:
-            'linear-gradient(90deg, rgba(16,17,20,.92) 0%, rgba(16,17,20,.72) 42%, rgba(16,17,20,.35) 100%)',
-        }}
-      />
-      <div
-        className="gutter relative w-full"
-        style={{ textShadow: '0 2px 18px rgba(16,17,20,.65)' }}
-      >
-        {p.badge && (
-          <span
-            className="mb-5 inline-block bg-brand px-3 py-2 text-[10px] font-bold uppercase leading-snug tracking-[.12em] text-ink md:mb-6 md:px-[15px] md:py-[9px] md:text-[12px] md:tracking-[.16em]"
-            {...edText(bid, 'badge')}
-          >
-            {p.badge}
+
+      {p.proof && (
+        <div className="mt-7 flex items-center gap-3 md:mt-8">
+          <span className="text-[15px] tracking-[1px] text-brand" aria-hidden="true">
+            ★★★★★
           </span>
-        )}
-        <h1
-          className="h-display max-w-[900px] text-white"
-          style={{ fontSize: 'clamp(30px,7vw,70px)' }}
-          {...edText(bid, 'heading')}
-        >
-          {p.heading}
-        </h1>
-        {p.body && (
-          <p
-            className="mt-5 max-w-[560px] text-[16px] leading-relaxed text-ondark md:mt-6 md:text-[19px]"
-            {...edText(bid, 'body')}
-          >
-            {p.body}
-          </p>
-        )}
-        <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-3.5 md:mt-8">
-          {primary.map((b, i) =>
-            b?.label ? (
-              <CtaLink
-                key={`p-${i}`}
-                href={b.href}
-                className="btn btn-yellow btn-lg w-full sm:w-auto"
-                bid={bid}
-                path={`primary.${i}.label`}
-              >
-                {b.label}
-              </CtaLink>
-            ) : null
-          )}
-          {secondary.map((b, i) =>
-            b?.label ? (
-              <CtaLink
-                key={`s-${i}`}
-                href={b.href}
-                className="btn btn-ghost-light btn-lg w-full sm:w-auto"
-                bid={bid}
-                path={`secondary.${i}.label`}
-              >
-                {b.label}
-              </CtaLink>
-            ) : null
-          )}
-        </div>
-        {p.proof && (
-          <div className="mt-7 flex items-center gap-3 md:mt-8">
-            <span className="text-[15px] tracking-[1px] text-brand" aria-hidden="true">
-              ★★★★★
-            </span>
-            <span className="text-[14px] font-semibold text-white" {...edText(bid, 'proof')}>
-              {p.proof}
-            </span>
-          </div>
-        )}
-      </div>
-      {(p.cornerYear || p.cornerLabel) && (
-        <div className="absolute bottom-0 left-0 bg-brand px-5 py-[13px]">
-          <div className="font-display text-[22px] font-black leading-none" {...edText(bid, 'cornerYear')}>
-            {p.cornerYear}
-          </div>
-          <div
-            className="mt-1 text-[11px] font-bold uppercase tracking-[.14em] text-brand-on"
-            {...edText(bid, 'cornerLabel')}
-          >
-            {p.cornerLabel}
-          </div>
+          <span className="text-[14px] font-semibold text-white" {...edText(bid, 'proof')}>
+            {p.proof}
+          </span>
         </div>
       )}
-    </section>
+    </HeroSlider>
   );
 }
 
@@ -538,7 +481,8 @@ export function ProductGridBlock({
   p,
   bid,
   products,
-}: BlockComponentProps & { products: CardProduct[] }) {
+  showPrice = true,
+}: BlockComponentProps & { products: CardProduct[]; showPrice?: boolean }) {
   if (!products.length) return null;
   const catalog = p.cardStyle === 'catalog';
   return (
@@ -552,9 +496,9 @@ export function ProductGridBlock({
       >
         {products.map((pr) =>
           catalog ? (
-            <ProductCatalogCard key={pr.id} p={pr} />
+            <ProductCatalogCard key={pr.id} p={pr} showPrice={showPrice} />
           ) : (
-            <ProductPlateCard key={pr.id} p={pr} />
+            <ProductPlateCard key={pr.id} p={pr} showPrice={showPrice} />
           )
         )}
       </div>
@@ -578,7 +522,8 @@ export function PackagesGridBlock({
   p,
   bid,
   packages,
-}: BlockComponentProps & { packages: CardPackage[] }) {
+  showPrice = true,
+}: BlockComponentProps & { packages: CardPackage[]; showPrice?: boolean }) {
   if (!packages.length) return null;
   return (
     <Section background={(p.background as Bg) ?? 'surface'} bordered={p.background !== 'ink'}>
@@ -594,7 +539,7 @@ export function PackagesGridBlock({
         style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}
       >
         {packages.map((pk) => (
-          <PackageCard key={pk.id} pk={pk} />
+          <PackageCard key={pk.id} pk={pk} showPrice={showPrice} />
         ))}
       </div>
     </Section>

@@ -24,6 +24,7 @@ export type FieldType =
   | 'link'
   | 'list'
   | 'tags'
+  | 'checklist'
   | 'icon';
 
 export type Field = {

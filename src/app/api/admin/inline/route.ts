@@ -1,7 +1,8 @@
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/db';
-import { badRequest, json, serverError, unauthorized } from '@/lib/api';
-import { getSession } from '@/lib/auth';
+import { badRequest, forbidden, json, serverError, unauthorized } from '@/lib/api';
+import { canUseArea, canUseResource } from '@/lib/permissions';
+import { getAccessor } from '@/lib/auth';
 import { parseEditTarget, setPath } from '@/lib/blocks/paths';
 import { saveSettings, type SiteSettings } from '@/lib/settings';
 import type { Block } from '@/lib/blocks/types';
@@ -54,7 +55,7 @@ function toMoney(raw: unknown) {
  * came from, so the client never needs to know which page or record owns it.
  */
 export async function POST(req: Request) {
-  const user = await getSession();
+  const user = await getAccessor();
   if (!user) return unauthorized();
 
   try {
@@ -80,9 +81,14 @@ export async function POST(req: Request) {
         value = value.replace(/ /g, ' ');
       }
 
+      // Each target kind lives in a different area, so an editor limited to
+      // orders cannot use the front-end editor to reach settings or the
+      // catalogue.
       if (target.kind === 'setting') {
+        if (!canUseArea(user, 'settings')) return forbidden();
         settingEdits[target.path] = value;
       } else if (target.kind === 'record') {
+        if (!canUseResource(user, target.model)) return forbidden();
         const key = `${target.model}:${target.id}`;
         const entry = recordEdits.get(key) ?? {
           model: target.model,
@@ -92,6 +98,7 @@ export async function POST(req: Request) {
         entry.edits.push({ field: target.field, value });
         recordEdits.set(key, entry);
       } else {
+        if (!canUseArea(user, 'content')) return forbidden();
         const list = blockEdits.get(target.id) ?? [];
         list.push({ path: target.path, value });
         blockEdits.set(target.id, list);

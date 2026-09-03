@@ -341,6 +341,22 @@ export function SettingsEditor({
           </Card>
 
           <Card
+            title="Pricing"
+            description="Turn every price off across the site at once."
+          >
+            <Checkbox
+              label="Show prices on the site"
+              checked={s.showPrices !== false}
+              onChange={(e) => set('showPrices', e.target.checked)}
+            />
+            <p className="mt-2 text-[12px] text-[#8A8C93]">
+              When this is off, prices disappear from product pages, collection pages, the home
+              page and the team packages — visitors are asked for a quote instead. Team store
+              checkout is unaffected, since people are paying there.
+            </p>
+          </Card>
+
+          <Card
             title="Payments"
             description="Card and PayPal checkout for team stores. Quote requests are unaffected."
           >

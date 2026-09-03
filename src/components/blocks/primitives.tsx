@@ -253,7 +253,7 @@ export type CardProduct = {
   image?: string | null;
 };
 
-export function ProductPlateCard({ p }: { p: CardProduct }) {
+export function ProductPlateCard({ p, showPrice = true }: { p: CardProduct; showPrice?: boolean }) {
   return (
     <Link href={`/products/${p.handle}`} className="group block">
       <div className="zoom-wrap relative h-[300px] border border-hairline bg-surface sm:h-[400px]">
@@ -272,15 +272,24 @@ export function ProductPlateCard({ p }: { p: CardProduct }) {
       <h3 className="mt-5 text-center font-display text-[19px] font-extrabold uppercase leading-tight">
         {p.title}
       </h3>
-      <p className="mt-1.5 text-center text-[16px] font-semibold text-muted">
-        From{' '}
-        <span className="font-display text-[22px] font-black text-ink">{money(p.basePrice)}</span>
-      </p>
+      {showPrice && (
+        <p className="mt-1.5 text-center text-[16px] font-semibold text-muted">
+          From{' '}
+          <span className="font-display text-[22px] font-black text-ink">{money(p.basePrice)}</span>
+        </p>
+      )}
     </Link>
   );
 }
 
-export function ProductCatalogCard({ p }: { p: CardProduct }) {
+export function ProductCatalogCard({
+  p,
+  showPrice = true,
+}: {
+  p: CardProduct;
+  /** Off hides the figure — Admin → Site settings → Pricing. */
+  showPrice?: boolean;
+}) {
   return (
     <Link
       href={`/products/${p.handle}`}
@@ -309,10 +318,14 @@ export function ProductCatalogCard({ p }: { p: CardProduct }) {
         <p className="mt-1.5 text-[13px] text-muted">{p.categoryLabel}</p>
         <div className="mt-auto flex items-end justify-between gap-3 pt-5">
           <div>
-            <span className="block text-[12px] font-medium text-faint">From</span>
-            <span className="font-display text-[23px] font-black leading-none">
-              {money(p.basePrice)}
-            </span>
+            {showPrice && (
+              <>
+                <span className="block text-[12px] font-medium text-faint">From</span>
+                <span className="font-display text-[23px] font-black leading-none">
+                  {money(p.basePrice)}
+                </span>
+              </>
+            )}
           </div>
           <span className="btn btn-outline px-4 py-2.5 text-[11px] group-hover:border-ink group-hover:bg-brand group-hover:text-ink">
             View details
@@ -335,7 +348,7 @@ export type CardPackage = {
   highlight: boolean;
 };
 
-export function PackageCard({ pk }: { pk: CardPackage }) {
+export function PackageCard({ pk, showPrice = true }: { pk: CardPackage; showPrice?: boolean }) {
   const hl = pk.highlight;
   return (
     <article
@@ -387,16 +400,20 @@ export function PackageCard({ pk }: { pk: CardPackage }) {
             </li>
           ))}
         </ul>
-        <div className="mt-7 flex items-baseline gap-2">
-          <span
-            className="font-display text-[46px] font-black leading-none"
-            {...edRecord('teamPackage', pk.id, 'price')}
-          >
-            {money(pk.price)}
-          </span>
-          <span className="text-[13px] font-semibold text-muted">/ player</span>
-        </div>
-        {pk.note && (
+        {showPrice && (
+          <div className="mt-7 flex items-baseline gap-2">
+            <span
+              className="font-display text-[46px] font-black leading-none"
+              {...edRecord('teamPackage', pk.id, 'price')}
+            >
+              {money(pk.price)}
+            </span>
+            <span className="text-[13px] font-semibold text-muted">/ player</span>
+          </div>
+        )}
+        {/* The note qualifies the price ("with rolling bag $500"), so it goes
+            when the price does. */}
+        {showPrice && pk.note && (
           <p
             className="mt-2 text-[13px] font-medium"
             style={{ color: hl ? 'rgba(16,17,20,.66)' : '#8A8C93' }}
@@ -406,7 +423,7 @@ export function PackageCard({ pk }: { pk: CardPackage }) {
           </p>
         )}
         <QuoteButton
-          subject={`${pk.tag} — ${money(pk.price)}/player`}
+          subject={showPrice ? `${pk.tag} — ${money(pk.price)}/player` : pk.tag}
           className="btn mt-6 w-full py-[18px] text-[14px]"
           style={
             hl

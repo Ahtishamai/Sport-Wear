@@ -297,6 +297,17 @@ export function StoreEditor({ store }: { store: EditableStore }) {
     });
   };
 
+  /** Insert a fresh design straight after this one and open it, so a long
+   *  list can be worked through without returning to the top. */
+  const addDesignBelow = (index: number) => {
+    setF((prev) => {
+      const next = [...prev.items];
+      next.splice(index + 1, 0, blankItem(index + 1, prev.items[index]?.categoryKey || prev.categories[0]?.tempId || ''));
+      return { ...prev, items: next };
+    });
+    setOpenDesign(index + 1);
+  };
+
   const setItem = (index: number, patch: Partial<EditableStoreItem>) =>
     setF((prev) => ({
       ...prev,
@@ -392,7 +403,12 @@ export function StoreEditor({ store }: { store: EditableStore }) {
       }));
 
       toast(isNew ? 'Store created' : 'Store saved');
-      router.push(`/admin/stores/${saved.item.slug}`);
+      // Only navigate when the address actually changed. Pushing the same URL
+      // scrolls back to the top, which undoes the point of a Save button next
+      // to the design being edited.
+      if (saved.item.slug !== store.slug) {
+        router.push(`/admin/stores/${saved.item.slug}`);
+      }
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Save failed');
@@ -697,6 +713,9 @@ export function StoreEditor({ store }: { store: EditableStore }) {
                     onPickImage={() => setPicking({ kind: 'item', index: i })}
                     open={openDesign === i}
                     onToggle={() => setOpenDesign((cur) => (cur === i ? null : i))}
+                    onSave={save}
+                    onAddBelow={() => addDesignBelow(i)}
+                    saving={busy}
                   />
                 ))}
               </div>
@@ -772,6 +791,9 @@ function ItemFields({
   onPickImage,
   open,
   onToggle,
+  onSave,
+  onAddBelow,
+  saving,
 }: {
   item: EditableStoreItem;
   categories: EditableCategory[];
@@ -783,6 +805,9 @@ function ItemFields({
   onPickImage: () => void;
   open: boolean;
   onToggle: () => void;
+  onSave: () => void;
+  onAddBelow: () => void;
+  saving: boolean;
 }) {
   const section = categories.find((c) => c.tempId === item.categoryKey)?.name || 'no section';
 
@@ -956,7 +981,7 @@ function ItemFields({
         </p>
       </div>
 
-      <div className="mt-4 flex items-center justify-between border-t border-[#EFEFEC] pt-3">
+      <div className="mt-4 flex flex-wrap items-end justify-between gap-4 border-t border-[#EFEFEC] pt-3">
         <Select
           label="Status"
           value={item.status}
@@ -966,13 +991,22 @@ function ItemFields({
             { label: 'Draft', value: 'DRAFT' },
           ]}
         />
-        <button
-          type="button"
-          onClick={onRemove}
-          className="text-[12px] font-semibold text-[#C42027] hover:underline"
-        >
-          Remove this design
-        </button>
+
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            type="button"
+            onClick={onRemove}
+            className="mr-1 text-[12px] font-semibold text-[#C42027] hover:underline"
+          >
+            Remove this design
+          </button>
+          <Button variant="ghost" size="sm" onClick={onAddBelow}>
+            + Add another design
+          </Button>
+          <Button variant="yellow" size="sm" onClick={onSave} disabled={saving}>
+            {saving ? 'Saving…' : 'Save store'}
+          </Button>
+        </div>
       </div>
       </div>
       )}
