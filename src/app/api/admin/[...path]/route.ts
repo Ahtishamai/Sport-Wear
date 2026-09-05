@@ -6,6 +6,7 @@ import { coerce, ensureSlug, RESOURCES, type ResourceConfig } from '@/lib/resour
 import { canUseResource } from '@/lib/permissions';
 import { saveSettings } from '@/lib/settings';
 import { savePaymentSecret, clearPaymentSecret, paypalSecretSummary } from '@/lib/payments';
+import { saveMailConfig, mailConfigSummary, type MailConfig } from '@/lib/mail';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -120,15 +121,24 @@ export async function POST(req: Request, ctx: Ctx) {
       // '' (or absent) keeps the stored secret, a string replaces it, and an
       // explicit null removes it — the form has no way to show what is saved,
       // so "leave blank to keep" needs a separate way to actually clear.
-      const { paypalSecret, ...rest } = (body ?? {}) as Record<string, unknown>;
+      const { paypalSecret, smtp, ...rest } = (body ?? {}) as Record<string, unknown>;
       if (paypalSecret === null) {
         await clearPaymentSecret();
       } else if (typeof paypalSecret === 'string' && paypalSecret.trim()) {
         await savePaymentSecret(paypalSecret);
       }
+      // The mail server, its login and its password travel together and are
+      // stored in their own row, so they never reach the site layout.
+      if (smtp && typeof smtp === 'object') {
+        await saveMailConfig(smtp as Partial<MailConfig> & { pass?: string | null });
+      }
       const value = await saveSettings(rest);
       revalidatePath('/', 'layout');
-      return json({ settings: value, paypalSecret: await paypalSecretSummary() });
+      return json({
+        settings: value,
+        paypalSecret: await paypalSecretSummary(),
+        smtp: await mailConfigSummary(),
+      });
     }
 
     const cfg = RESOURCES[resource];

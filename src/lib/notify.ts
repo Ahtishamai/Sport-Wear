@@ -1,12 +1,19 @@
 import 'server-only';
 import { money } from './utils';
+import { getMailConfig, isMailReady, sendMail, type MailConfig } from './mail';
+import { getSettings } from './settings';
 
 /**
  * Lead notifications.
  *
- * SMTP is optional — with no credentials configured the lead is still stored and
- * this logs a one-line summary so nothing is silently lost. Wire a provider
- * (Resend, Postmark, SES…) here when the client picks one; the shape is stable.
+ * Email is optional — with nothing configured the lead is still stored and this
+ * logs a one-line summary so nothing is silently lost.
+ *
+ * The mail server comes from Site settings → Email, the same one order
+ * confirmations use, because a shop that has set up sending once should not
+ * have to do it again for quote requests. `SMTP_*` environment variables still
+ * work and take precedence, for deployments that were configured that way
+ * before the settings screen existed.
  */
 
 type QuoteLike = {
@@ -34,10 +41,23 @@ type ContactLike = {
   message: string;
 };
 
-const to = () => process.env.NOTIFY_EMAIL || process.env.ADMIN_EMAIL || '';
-
-function smtpConfigured() {
-  return Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
+/** The environment-variable form, kept working for existing deployments. */
+function envMail(): MailConfig | null {
+  const host = process.env.SMTP_HOST;
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  if (!host || !user || !pass) return null;
+  const port = Number(process.env.SMTP_PORT) || 587;
+  return {
+    host,
+    port,
+    secure: port === 465,
+    user,
+    pass,
+    fromName: '',
+    fromEmail: process.env.SMTP_FROM || user,
+    replyTo: '',
+  };
 }
 
 export async function notifyQuote(q: QuoteLike) {
@@ -59,7 +79,7 @@ export async function notifyQuote(q: QuoteLike) {
     .filter(Boolean)
     .join('\n');
 
-  await deliver(`Quote request ${q.reference} — ${q.team}`, lines);
+  await deliver(`Quote request ${q.reference} — ${q.team}`, lines, q.email);
 }
 
 export async function notifyContact(c: ContactLike) {
@@ -74,42 +94,41 @@ export async function notifyContact(c: ContactLike) {
     .filter(Boolean)
     .join('\n');
 
-  await deliver(`Contact — ${c.name}`, lines);
+  await deliver(`Contact — ${c.name}`, lines, c.email);
 }
 
-async function deliver(subject: string, body: string) {
-  if (!smtpConfigured() || !to()) {
+/**
+ * @param replyTo the person who filled the form, so hitting reply answers them
+ *                rather than the website's own mailbox.
+ */
+async function deliver(subject: string, body: string, replyTo?: string) {
+  let settings;
+  try {
+    settings = await getSettings();
+  } catch {
+    settings = null;
+  }
+
+  const to =
+    process.env.NOTIFY_EMAIL || process.env.ADMIN_EMAIL || settings?.email || '';
+
+  // Environment variables win when present; otherwise the admin's settings.
+  const override = envMail();
+  const canSend = override !== null || isMailReady(await getMailConfig());
+
+  if (!canSend || !to) {
     console.info(`[lead] ${subject}\n${body}\n`);
     return;
   }
 
-  // nodemailer is intentionally not a hard dependency — install it to enable SMTP:
-  //   npm i nodemailer && npm i -D @types/nodemailer
-  try {
-    const spec = 'nodemailer';
-    const mod = await import(/* webpackIgnore: true */ spec).catch(() => null);
-    if (!mod) {
-      console.info(`[lead] ${subject}\n${body}\n`);
-      return;
-    }
-    const nodemailer = (mod as { default?: unknown }).default ?? mod;
-    const transport = (
-      nodemailer as {
-        createTransport: (o: unknown) => { sendMail: (o: unknown) => Promise<unknown> };
-      }
-    ).createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT) || 587,
-      secure: Number(process.env.SMTP_PORT) === 465,
-      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-    });
-    await transport.sendMail({
-      from: process.env.SMTP_USER,
-      to: to(),
-      subject,
-      text: body,
-    });
-  } catch (err) {
-    console.error('[lead] notification failed', err);
+  const html =
+    '<pre style="font:400 14px/1.6 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;">' +
+    body.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') +
+    '</pre>';
+
+  const res = await sendMail({ to, subject, text: body, html, replyTo }, override ?? undefined);
+  if (!res.ok) {
+    // Never lose the lead to a mail problem.
+    console.error(`[lead] notification failed: ${res.error}\n${subject}\n${body}\n`);
   }
 }

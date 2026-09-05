@@ -4,6 +4,7 @@ import { AdminPage, Badge, Card } from '@/components/admin/ui';
 import { formatDateTime, money } from '@/lib/utils';
 import { OrderStatusPicker } from '@/components/admin/OrderStatusPicker';
 import { DeleteRecord } from '@/components/admin/DeleteRecord';
+import { ResendOrderEmail } from '@/components/admin/ResendOrderEmail';
 
 export const dynamic = 'force-dynamic';
 
@@ -119,6 +120,10 @@ export default async function StoreOrderDetail({
                 <code className="text-[12px]">{o.paypalCaptureId ?? '—'}</code>
               </Row>
             </dl>
+          </Card>
+
+          <Card title="Confirmation email">
+            <ResendOrderEmail orderId={o.id} reference={o.reference} email={o.email} />
           </Card>
 
           <Card title="Customer">

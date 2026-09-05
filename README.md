@@ -36,7 +36,7 @@ Sign in at **`/admin/login`** with the `ADMIN_EMAIL` / `ADMIN_PASSWORD` from you
 | `AUTH_SECRET` | yes | 32+ random chars. `openssl rand -base64 48` |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | seed only | The account the seed creates |
 | `NEXT_PUBLIC_SITE_URL` | prod | Used for canonicals, sitemap and JSON-LD |
-| `SMTP_*`, `NOTIFY_EMAIL` | optional | Lead notification email — see *Notifications* |
+| `SMTP_*`, `NOTIFY_EMAIL` | optional | Overrides the mail server set in the admin — see *Email* |
 
 > The database must be reachable at **build** time: product, collection and page routes are
 > pre-rendered by `generateStaticParams`.
@@ -145,15 +145,54 @@ Both endpoints are rate-limited per IP, have honeypot fields, and validate serve
 
 ### Notifications
 
-With no SMTP configured, every lead is stored and logged to the server console — nothing is lost.
-To send email, set `SMTP_*` and `NOTIFY_EMAIL`, then:
+Quote requests and contact messages are emailed using the mail server set in
+**Site settings → Email** — the same one order confirmations use. With nothing configured, every
+lead is still stored and logged to the server console, so nothing is lost.
 
-```bash
-npm i nodemailer && npm i -D @types/nodemailer
-```
+They go to `NOTIFY_EMAIL`, or `ADMIN_EMAIL`, or the contact address in Site settings, in that
+order. Reply-to is set to the person who filled the form, so replying answers them.
+
+`SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` still work and take precedence over the
+admin settings, for deployments configured before the settings screen existed.
 
 [`src/lib/notify.ts`](src/lib/notify.ts) is the single place to swap in Resend, Postmark, SES or a
 CRM webhook — the payload shape is already assembled.
+
+---
+
+## Email
+
+Set the mail server once in **Site settings → Email**: server, port, SSL, mailbox username and
+password, and the name and address it sends as. The password is held in its own `Setting` row,
+never in `SiteSettings`, and is never sent back to the browser — the same treatment as the PayPal
+secret, and for the same reason (`SiteSettings` is handed whole to the site layout).
+
+**Send a test to** checks what is on screen rather than what is saved, so a wrong port or password
+is caught before anything depends on it. It verifies the connection first, then actually sends,
+because a server can accept a login and still refuse the from address. Common SMTP failures are
+translated: `535` becomes "the mail server rejected that username or password", a TLS mismatch
+becomes "SSL is on, which is for port 465".
+
+### Order confirmations
+
+When a team-store payment settles, the shopper gets a confirmation: every design with its
+photograph, size, name and number on the item, any chosen options, quantities, line totals, the
+invoice number they typed at checkout, and the store's closing date. **Site settings → Order
+confirmation** switches it on or off, sets a blind-copy address for the shop, and edits the
+opening and closing lines.
+
+Preview it at `/api/admin/order-email/preview` — it renders the most recent real order, because
+made-up data hides what actually goes wrong. Add `?ref=DS12345` for a particular one.
+
+Each order also has a **Confirmation email** card with an editable address, for when it never
+arrived or the customer mistyped their address.
+
+The email is a stack of tables with inline styles — Outlook renders with Word and Gmail strips
+`<style>` — and every image is an absolute URL built from `NEXT_PUBLIC_SITE_URL`. **That variable
+is baked in at build time**, so if it is wrong the photographs will be broken in every email.
+
+A mail failure never breaks a checkout: the payment is captured and the order marked paid first,
+and sending is best-effort after that.
 
 ---
 

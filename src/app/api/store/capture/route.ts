@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db';
 import { badRequest, clientIp, json, rateLimit, serverError } from '@/lib/api';
 import { capturePayPalOrder, PayPalError } from '@/lib/paypal';
+import { sendOrderEmailQuietly } from '@/lib/emails/send-order';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -72,6 +73,12 @@ export async function POST(req: Request) {
         email: order.email || capture.payerEmail || '',
       },
     });
+
+    // The money is already taken and the order is already marked paid, so
+    // the confirmation must not be able to change the answer given here.
+    // A mail server that is down is a thing to fix later, not a failed
+    // checkout for someone who has just been charged.
+    await sendOrderEmailQuietly(order.id);
 
     return json({ ok: true, reference: order.reference, store: order.store.slug });
   } catch (err) {

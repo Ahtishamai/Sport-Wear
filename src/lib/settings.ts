@@ -47,6 +47,13 @@ export type SiteSettings = {
   storeOrderNote: string;
   /** Turn every price off across the catalogue, home page and product pages. */
   showPrices: boolean;
+  // ---- order email ----
+  /** The SMTP server itself lives in its own Setting row; see lib/mail.ts. */
+  orderEmailsEnabled: boolean;
+  /** Addresses that get a blind copy of every order, comma separated. */
+  orderEmailCopyTo: string;
+  orderEmailIntro: string;
+  orderEmailFooter: string;
 };
 
 export const DEFAULT_SETTINGS: SiteSettings = {
@@ -103,6 +110,12 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   storeCurrency: 'USD',
   storeOrderNote: 'Orders are produced once the store closes and ship to your team contact.',
   showPrices: true,
+  orderEmailsEnabled: true,
+  orderEmailCopyTo: '',
+  orderEmailIntro:
+    'Thanks for ordering with us. Everything below is confirmed and in the queue — we produce the whole team together once the store closes, then ship to your team contact.',
+  orderEmailFooter:
+    'Keep this email: your order number is how we find you. If anything looks wrong, just reply and we will sort it out.',
 };
 
 const SETTINGS_KEY = 'site';

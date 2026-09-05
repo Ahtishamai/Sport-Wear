@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { api } from '@/lib/admin-client';
 import type { SiteSettings } from '@/lib/settings';
+import type { MailSummary } from '@/lib/mail';
 import { AdminPage, Button, Card, Checkbox, Input, Select, Textarea, useToast } from './ui';
 import { ImageField } from './MediaPicker';
 import { Icon } from '@/components/site/Icon';
@@ -11,9 +12,11 @@ import { Icon } from '@/components/site/Icon';
 export function SettingsEditor({
   settings,
   paypalSecretSet,
+  mail,
 }: {
   settings: SiteSettings;
   paypalSecretSet: boolean;
+  mail: MailSummary;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -45,6 +48,47 @@ export function SettingsEditor({
     message: string;
     detail?: string;
   }>(null);
+
+  // The mail server. Its password is write-only for the same reason the
+  // PayPal secret is: it never leaves the server, so this holds only what
+  // is typed now, and blank on save means "keep the stored one".
+  const [smtp, setSmtpAll] = useState(() => {
+    const { passSet, ready, ...rest } = mail;
+    return rest;
+  });
+  const [smtpPass, setSmtpPass] = useState('');
+  const [smtpPassSet, setSmtpPassSet] = useState(mail.passSet);
+  const [smtpTestTo, setSmtpTestTo] = useState('');
+  const [mailTesting, setMailTesting] = useState(false);
+  const [mailResult, setMailResult] = useState<null | {
+    ok: boolean;
+    message: string;
+    detail?: string;
+  }>(null);
+
+  function setSmtp<K extends keyof typeof smtp>(k: K, v: (typeof smtp)[K]) {
+    setSmtpAll((p) => ({ ...p, [k]: v }));
+    setDirty(true);
+  }
+
+  // Tests what is on screen, not what is stored, so a wrong port or
+  // password is caught while the admin is still looking at the field.
+  async function testEmail() {
+    setMailTesting(true);
+    setMailResult(null);
+    try {
+      const res = await fetch('/api/admin/smtp-test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...smtp, pass: smtpPass, to: smtpTestTo }),
+      });
+      setMailResult(await res.json());
+    } catch {
+      setMailResult({ ok: false, message: 'Could not reach the server.' });
+    } finally {
+      setMailTesting(false);
+    }
+  }
 
   async function testPayments() {
     setTesting(true);
@@ -94,7 +138,15 @@ export function SettingsEditor({
   async function save() {
     setBusy(true);
     try {
-      await api.saveSettings({ ...s, ...(secret.trim() ? { paypalSecret: secret } : {}) });
+      await api.saveSettings({
+        ...s,
+        ...(secret.trim() ? { paypalSecret: secret } : {}),
+        smtp: { ...smtp, pass: smtpPass.trim() ? smtpPass : '' },
+      });
+      if (smtpPass.trim()) {
+        setSmtpPass('');
+        setSmtpPassSet(true);
+      }
       if (secret.trim()) {
         setSecret('');
         setSecretSet(true);
@@ -442,6 +494,187 @@ export function SettingsEditor({
                   {payResult.detail && <p className="mt-1">{payResult.detail}</p>}
                 </div>
               )}
+            </div>
+          </Card>
+
+          <Card
+            title="Email"
+            description="The mailbox your site sends from, and what an order confirmation says."
+          >
+            <div className="grid gap-4">
+              <div className="grid gap-3 sm:grid-cols-[2fr_1fr]">
+                <div>
+                  <span className="field-label">Mail server (SMTP)</span>
+                  <Input
+                    value={smtp.host}
+                    onChange={(e) => setSmtp('host', e.target.value.trim())}
+                    placeholder="smtp.hostinger.com"
+                  />
+                </div>
+                <div>
+                  <span className="field-label">Port</span>
+                  <Input
+                    type="number"
+                    value={String(smtp.port)}
+                    onChange={(e) => setSmtp('port', Number(e.target.value) || 587)}
+                    placeholder="465"
+                  />
+                </div>
+              </div>
+
+              <Checkbox
+                label="Use SSL (tick for port 465, leave clear for 587)"
+                checked={smtp.secure}
+                onChange={(e) => setSmtp('secure', e.target.checked)}
+              />
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <span className="field-label">Mailbox username</span>
+                  <Input
+                    value={smtp.user}
+                    onChange={(e) => setSmtp('user', e.target.value.trim())}
+                    placeholder="orders@design-sportswear.com"
+                    autoComplete="off"
+                  />
+                </div>
+                <div>
+                  <span className="field-label">Mailbox password</span>
+                  <Input
+                    type="password"
+                    autoComplete="new-password"
+                    value={smtpPass}
+                    onChange={(e) => setSmtpPass(e.target.value)}
+                    placeholder={smtpPassSet ? 'Saved — type to replace' : 'The mailbox password'}
+                  />
+                </div>
+              </div>
+              <p className="-mt-2 text-[12px] text-[#8A8C93]">
+                {smtpPassSet
+                  ? 'A password is saved. It is never shown again — leave this blank to keep it.'
+                  : 'Stored separately from the rest of the settings and never sent back to the browser.'}
+              </p>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <span className="field-label">Sends as (name)</span>
+                  <Input
+                    value={smtp.fromName}
+                    onChange={(e) => setSmtp('fromName', e.target.value)}
+                    placeholder={s.siteName}
+                  />
+                </div>
+                <div>
+                  <span className="field-label">Sends from (address)</span>
+                  <Input
+                    value={smtp.fromEmail}
+                    onChange={(e) => setSmtp('fromEmail', e.target.value.trim())}
+                    placeholder="orders@design-sportswear.com"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <span className="field-label">Replies go to</span>
+                <Input
+                  value={smtp.replyTo}
+                  onChange={(e) => setSmtp('replyTo', e.target.value.trim())}
+                  placeholder={s.email}
+                />
+                <p className="mt-1.5 text-[12px] text-[#8A8C93]">
+                  Leave blank and replies go to the sending address above.
+                </p>
+              </div>
+
+              <div className="border-t border-[#E7E7E9] pt-4">
+                <span className="field-label">Send a test to</span>
+                <div className="flex items-start gap-2">
+                  <div className="min-w-0 flex-1">
+                    <Input
+                      value={smtpTestTo}
+                      onChange={(e) => setSmtpTestTo(e.target.value.trim())}
+                      placeholder="your own address"
+                    />
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={testEmail}
+                    disabled={mailTesting}
+                    className="shrink-0 whitespace-nowrap"
+                  >
+                    {mailTesting ? 'Sending…' : smtpTestTo ? 'Send test' : 'Check connection'}
+                  </Button>
+                </div>
+                <p className="mt-1.5 text-[12px] text-[#8A8C93]">
+                  Uses what is typed above, saved or not — so you can get it right before saving.
+                </p>
+              </div>
+
+              {mailResult && (
+                <div
+                  className={
+                    'border px-4 py-3 text-[13px] ' +
+                    (mailResult.ok
+                      ? 'border-[#BFE3CC] bg-[#E4F4EA] text-[#1F8A4C]'
+                      : 'border-[#F3C6C8] bg-[#FBE7E8] text-[#C42027]')
+                  }
+                >
+                  <p className="font-semibold">{mailResult.message}</p>
+                  {mailResult.detail && <p className="mt-1">{mailResult.detail}</p>}
+                </div>
+              )}
+            </div>
+          </Card>
+
+          <Card
+            title="Order confirmation"
+            description="What a customer gets after paying in a team store."
+          >
+            <div className="grid gap-4">
+              <Checkbox
+                label="Email a confirmation when an order is paid"
+                checked={s.orderEmailsEnabled}
+                onChange={(e) => set('orderEmailsEnabled', e.target.checked)}
+              />
+
+              <div>
+                <span className="field-label">Send a copy to</span>
+                <Input
+                  value={s.orderEmailCopyTo}
+                  onChange={(e) => set('orderEmailCopyTo', e.target.value)}
+                  placeholder="orders@design-sportswear.com"
+                />
+                <p className="mt-1.5 text-[12px] text-[#8A8C93]">
+                  A blind copy of every order confirmation. Separate several addresses with commas.
+                </p>
+              </div>
+
+              <div>
+                <span className="field-label">Opening line</span>
+                <Textarea
+                  rows={3}
+                  value={s.orderEmailIntro}
+                  onChange={(e) => set('orderEmailIntro', e.target.value)}
+                />
+              </div>
+
+              <div>
+                <span className="field-label">Closing line</span>
+                <Textarea
+                  rows={2}
+                  value={s.orderEmailFooter}
+                  onChange={(e) => set('orderEmailFooter', e.target.value)}
+                />
+              </div>
+
+              <a
+                href="/api/admin/order-email/preview"
+                target="_blank"
+                rel="noopener"
+                className="text-[13px] font-semibold text-ink underline"
+              >
+                Preview the email
+              </a>
             </div>
           </Card>
 
