@@ -2,6 +2,7 @@ import 'server-only';
 import { cache } from 'react';
 import { prisma } from './db';
 import { storeClosedReason } from './store';
+import { formatStoreDeadline } from './utils';
 import type { StoreHeader, StoreItem } from '@/components/store/StoreFront';
 
 /** Loads a published team store and its items, shaped for the storefront. */
@@ -26,9 +27,8 @@ export const getTeamStore = cache(async (slug: string) => {
     logoUrl: store.logoUrl,
     heroUrl: store.heroUrl,
     shipNote: store.shipNote,
-    closesAt: store.closesAt
-      ? store.closesAt.toLocaleDateString('en-US', { dateStyle: 'long' })
-      : null,
+    closesAt: store.closesAt ? formatStoreDeadline(store.closesAt) : null,
+    closesAtISO: store.closesAt ? store.closesAt.toISOString() : null,
     closedReason: storeClosedReason(store),
   };
 

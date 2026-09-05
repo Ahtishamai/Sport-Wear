@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { cn, money } from '@/lib/utils';
 import { Icon } from '@/components/site/Icon';
 import { CartProvider, linePrice, useCart } from './CartProvider';
+import { StoreCountdown } from './StoreCountdown';
 
 export type StoreItem = {
   id: string;
@@ -30,6 +31,8 @@ export type StoreHeader = {
   heroUrl: string | null;
   shipNote: string | null;
   closesAt: string | null;
+  /** The raw instant, so the hero can count down to it in the browser. */
+  closesAtISO: string | null;
   closedReason: string | null;
 };
 
@@ -183,6 +186,8 @@ function StoreHero({
   count: number;
   open: boolean;
 }) {
+  const showClock = Boolean(store.closesAtISO) && open;
+
   return (
     <section className="relative overflow-hidden border-b border-hairline bg-ink text-white">
       {store.heroUrl && (
@@ -220,19 +225,32 @@ function StoreHero({
                 {store.intro}
               </p>
             )}
-            {store.closesAt && open && (
-              <p className="mt-3 text-[13px] font-semibold uppercase tracking-[.08em] text-brand">
-                Ordering closes {store.closesAt}
-              </p>
-            )}
           </div>
         </div>
 
-        {count > 0 && (
-          <Link href={`/${store.slug}/checkout`} className="btn btn-yellow btn-lg shrink-0">
-            <Icon name="check" size={16} />
-            Checkout · {count} {count === 1 ? 'item' : 'items'}
-          </Link>
+        {/* The deadline and the way out of the page share a column, so the
+            clock reads as pressure on the checkout button rather than as a
+            detail of the team name. The column is dropped entirely when it
+            would be empty, or the parent gap leaves a hole under the name. */}
+        {(showClock || count > 0) && (
+        <div className="flex w-full flex-col items-stretch gap-5 md:w-auto md:items-end">
+          {store.closesAtISO && open && (
+            <StoreCountdown
+              closesAtISO={store.closesAtISO}
+              closesAtLabel={store.closesAt}
+            />
+          )}
+
+          {count > 0 && (
+            <Link
+              href={`/${store.slug}/checkout`}
+              className="btn btn-yellow btn-lg shrink-0 md:self-end"
+            >
+              <Icon name="check" size={16} />
+              Checkout · {count} {count === 1 ? 'item' : 'items'}
+            </Link>
+          )}
+        </div>
         )}
       </div>
     </section>

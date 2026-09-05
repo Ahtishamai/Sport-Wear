@@ -1,6 +1,6 @@
 import 'server-only';
 import { prisma } from './db';
-import { slugify } from './utils';
+import { slugify, storeTimeToDate } from './utils';
 
 /**
  * Declarative admin resource map. One config per Shopify-style object; the
@@ -24,6 +24,8 @@ export type ResourceConfig = {
   ints?: string[];
   bools?: string[];
   jsons?: string[];
+  /** datetime-local fields, read as a US Eastern wall clock */
+  dates?: string[];
   /** rows that must never be deleted */
   protectedWhen?: (row: Record<string, any>) => boolean;
   searchFields?: string[];
@@ -220,6 +222,7 @@ export const RESOURCES: Record<string, ResourceConfig> = {
       'seoTitle',
       'seoDescription',
     ],
+    dates: ['opensAt', 'closesAt'],
     slugField: 'slug',
     slugFrom: 'name',
     defaultOrder: { createdAt: 'desc' },
@@ -317,6 +320,20 @@ export function coerce(cfg: ResourceConfig, input: Record<string, unknown>) {
 
     if (cfg.bools?.includes(key)) {
       data[key] = v === true || v === 'true' || v === 1 || v === '1';
+      continue;
+    }
+
+    if (cfg.dates?.includes(key)) {
+      if (v === '' || v === null || v === undefined) {
+        data[key] = null;
+        continue;
+      }
+      // A datetime-local field sends `2026-09-20T12:00` with no zone. Handing
+      // that to Prisma stores it as UTC, so a store set to close at noon would
+      // shut at 8am Eastern; read it on the store clock instead.
+      const d = typeof v === 'string' ? storeTimeToDate(v) : new Date(v as string);
+      if (!d || Number.isNaN(d.getTime())) throw new Error(`${key} is not a valid date`);
+      data[key] = d;
       continue;
     }
 

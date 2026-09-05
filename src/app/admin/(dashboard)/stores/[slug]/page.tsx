@@ -1,18 +1,15 @@
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/db';
+import { dateToStoreInput } from '@/lib/utils';
 import { StoreEditor, type EditableStore } from '@/components/admin/StoreEditor';
 
 export const dynamic = 'force-dynamic';
 
-/** datetime-local wants `YYYY-MM-DDTHH:mm` in local time, not an ISO string. */
-function toLocalInput(d: Date | null): string {
-  if (!d) return '';
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return (
-    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
-    `T${pad(d.getHours())}:${pad(d.getMinutes())}`
-  );
-}
+/**
+ * datetime-local wants `YYYY-MM-DDTHH:mm`, and the store clock is the one the
+ * admin means — not the timezone whichever machine renders this page is set to.
+ */
+const toLocalInput = dateToStoreInput;
 
 export default async function EditStorePage({
   params,

@@ -1,5 +1,6 @@
 import 'server-only';
 import { prisma } from './db';
+import { formatStoreDeadline } from './utils';
 
 /**
  * Team store pricing and cart validation.
@@ -76,10 +77,10 @@ export function storeClosedReason(store: {
   const now = Date.now();
   if (store.status === 'DRAFT') return 'This store is not open yet.';
   if (store.opensAt && now < store.opensAt.getTime()) {
-    return `This store opens on ${store.opensAt.toLocaleDateString('en-US', { dateStyle: 'long' })}.`;
+    return `This store opens on ${formatStoreDeadline(store.opensAt)}.`;
   }
   if (store.closesAt && now > store.closesAt.getTime()) {
-    return `Ordering closed on ${store.closesAt.toLocaleDateString('en-US', { dateStyle: 'long' })}.`;
+    return `Ordering closed on ${formatStoreDeadline(store.closesAt)}.`;
   }
   return 'This store is closed.';
 }

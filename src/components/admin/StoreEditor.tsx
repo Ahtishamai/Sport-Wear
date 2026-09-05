@@ -536,14 +536,14 @@ export function StoreEditor({ store }: { store: EditableStore }) {
                 type="datetime-local"
                 value={f.opensAt}
                 onChange={(v) => set('opensAt', v)}
-                help="Optional. Before this, the store shows as not yet open."
+                help="Optional, US Eastern. Before this, the store shows as not yet open."
               />
               <Input
                 label="Closes"
                 type="datetime-local"
                 value={f.closesAt}
                 onChange={(v) => set('closesAt', v)}
-                help="Optional. After this, ordering stops automatically."
+                help="Optional, US Eastern. The storefront counts down to it, then ordering stops."
               />
             </div>
           </Card>

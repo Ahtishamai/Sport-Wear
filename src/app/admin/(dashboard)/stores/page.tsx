@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { prisma, plain } from '@/lib/db';
 import { AdminPage, Badge, LinkButton, Table, Td, Th } from '@/components/admin/ui';
-import { formatDateTime } from '@/lib/utils';
+import { formatStoreDeadline } from '@/lib/utils';
 import { DeleteRecord } from '@/components/admin/DeleteRecord';
 
 export const dynamic = 'force-dynamic';
@@ -50,7 +50,7 @@ export default async function StoresIndex() {
               <Td className="text-[13px]">{s._count.items}</Td>
               <Td className="text-[13px]">{s._count.orders}</Td>
               <Td className="whitespace-nowrap text-[12px] text-[#8A8C93]">
-                {s.closesAt ? formatDateTime(s.closesAt) : '—'}
+                {s.closesAt ? formatStoreDeadline(s.closesAt) : '—'}
               </Td>
               <Td>
                 <Badge tone={TONE[s.status as keyof typeof TONE] ?? 'neutral'}>{s.status}</Badge>
