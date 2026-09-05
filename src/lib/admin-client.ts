@@ -2,7 +2,26 @@
 
 /** Thin fetch wrapper for the /api/admin endpoints. */
 
-export class ApiError extends Error {}
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly status = 0
+  ) {
+    super(message);
+  }
+}
+
+/**
+ * True when the server said the caller is not signed in.
+ *
+ * Sessions outlive the screens that use them: an editor left open in a tab
+ * still renders long after the cookie behind it has gone, and the first sign
+ * of trouble is a save. Callers use this to offer a way back in rather than
+ * showing a bare "Not authorised".
+ */
+export function isSessionExpired(err: unknown) {
+  return err instanceof ApiError && err.status === 401;
+}
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, {
@@ -13,7 +32,16 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
         : { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
   });
   const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new ApiError(json?.error || `Request failed (${res.status})`);
+  if (!res.ok) {
+    // Never navigate away on a 401. Whatever is on screen is unsaved work,
+    // and sending the page to the login screen would throw it away. Signing
+    // in elsewhere puts the cookie back and the same Save button then works.
+    const message =
+      res.status === 401
+        ? 'Your sign-in has expired, so nothing was saved. Sign in again in a new tab, then press Save here — your changes are still on this page.'
+        : json?.error || `Request failed (${res.status})`;
+    throw new ApiError(message, res.status);
+  }
   return json as T;
 }
 

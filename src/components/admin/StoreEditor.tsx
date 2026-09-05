@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { api } from '@/lib/admin-client';
+import { api, isSessionExpired } from '@/lib/admin-client';
 import { slugify } from '@/lib/utils';
 import {
   AdminPage,
@@ -235,6 +235,9 @@ export function StoreEditor({ store }: { store: EditableStore }) {
   const [f, setF] = useState<EditableStore>(store);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  // A save that failed only because the sign-in lapsed is worth telling
+  // apart: the work is still on screen and one sign-in brings it back.
+  const [expired, setExpired] = useState(false);
   const [picking, setPicking] = useState<{ kind: 'logo' | 'hero' | 'item'; index?: number } | null>(
     null
   );
@@ -317,6 +320,7 @@ export function StoreEditor({ store }: { store: EditableStore }) {
   async function save() {
     setBusy(true);
     setError('');
+    setExpired(false);
     try {
       const slug = (f.slug || slugify(f.name)).trim();
       if (!f.name.trim()) throw new Error('Give the store a team name.');
@@ -411,6 +415,7 @@ export function StoreEditor({ store }: { store: EditableStore }) {
       }
       router.refresh();
     } catch (e) {
+      setExpired(isSessionExpired(e));
       setError(e instanceof Error ? e.message : 'Save failed');
     } finally {
       setBusy(false);
@@ -478,6 +483,16 @@ export function StoreEditor({ store }: { store: EditableStore }) {
       {error && (
         <p role="alert" className="mb-4 border border-[#F3C6C8] bg-[#FBE7E8] px-4 py-3 text-[13px] text-[#C42027]">
           {error}
+          {expired && (
+            <a
+              href="/admin/login"
+              target="_blank"
+              rel="noopener"
+              className="ml-2 font-semibold underline"
+            >
+              Sign in again
+            </a>
+          )}
         </p>
       )}
 

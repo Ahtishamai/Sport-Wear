@@ -504,6 +504,7 @@ function handleWriteError(err: unknown) {
   if (
     message.includes('must be a number') ||
     message.includes('is not valid JSON') ||
+    message.includes('is not a valid date') ||
     message.includes('at least')
   ) {
     return badRequest(message);
