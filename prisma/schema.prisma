@@ -484,3 +484,34 @@ model StoreOrderItem {
   @@index([orderId])
   @@map("store_order_items")
 }
+
+/// A one-off payment against an invoice the shop has already sent.
+///
+/// Unlike a team-store order there is nothing here to price: the amount is the
+/// one the customer was invoiced, so they type it. It is bounded by the min and
+/// max in site settings, recorded before PayPal is called, and checked against
+/// what PayPal actually captured before the payment is marked PAID.
+model InvoicePayment {
+  id            String  @id @default(cuid())
+  reference     String  @unique @db.VarChar(32)
+  invoiceNumber String  @db.VarChar(64)
+  customerName  String  @default("") @db.VarChar(120)
+  email         String  @default("") @db.VarChar(160)
+  phone         String? @db.VarChar(40)
+  note          String? @db.Text
+
+  amount   Decimal          @db.Decimal(10, 2)
+  currency String           @default("USD") @db.VarChar(8)
+  status   StoreOrderStatus @default(PENDING)
+
+  paypalOrderId   String?   @unique @db.VarChar(64)
+  paypalCaptureId String?   @db.VarChar(64)
+  paidAt          DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([invoiceNumber])
+  @@map("invoice_payments")
+}

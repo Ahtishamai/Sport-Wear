@@ -173,6 +173,32 @@ because a server can accept a login and still refuse the from address. Common SM
 translated: `535` becomes "the mail server rejected that username or password", a TLS mismatch
 becomes "SSL is on, which is for port 465".
 
+## Pay for an order
+
+`/pay` lets a customer settle an invoice the shop has already sent: they type the invoice number
+and the amount from it, then pay with PayPal or any card. **Site settings → Pay for an order**
+switches the page on, sets the wording, and — the part that matters — the smallest and largest
+payment it will take.
+
+Everything else on the site prices itself from the database and ignores whatever the browser
+claims. This cannot: the figure owed is on a piece of paper only the customer is holding. That
+makes those two bounds the only real guard, so keep the ceiling near your largest genuine invoice.
+An open-ended amount field is a way for someone to test stolen cards a cent at a time, or to put a
+five-figure charge through and dispute it.
+
+The rest of the money path is the same as the team store: the amount is written down as PENDING
+before PayPal is called, and the capture is checked against it — same amount, same currency,
+actually completed — before anything is marked PAID. Capturing twice is a no-op, so a customer who
+refreshes is not charged again. A receipt goes out on success, using the mail server from
+**Site settings → Email**.
+
+Payments appear under **Invoice payments** in the admin, alongside store orders and visible to the
+same accounts. PENDING rows are people who opened PayPal and did not finish — normal in ones and
+twos, and worth looking at in a run, because that usually means something on the page is wrong
+rather than that customers changed their minds.
+
+---
+
 ### Order confirmations
 
 When a team-store payment settles, the shopper gets a confirmation: every design with its

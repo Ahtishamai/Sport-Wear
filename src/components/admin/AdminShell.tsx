@@ -37,6 +37,7 @@ const NAV: {
     items: [
       { label: 'Stores', href: '/admin/stores', icon: 'shield', area: 'stores' },
       { label: 'Store orders', href: '/admin/store-orders', icon: 'truck', area: 'orders' },
+      { label: 'Invoice payments', href: '/admin/payments', icon: 'check', area: 'orders' },
     ],
   },
   {

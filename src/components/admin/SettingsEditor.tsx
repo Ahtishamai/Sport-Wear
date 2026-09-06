@@ -679,6 +679,92 @@ export function SettingsEditor({
           </Card>
 
           <Card
+            title="Pay for an order"
+            description="The /pay page, where a customer settles an invoice you have already sent."
+          >
+            <div className="grid gap-4">
+              <Checkbox
+                label="Show the pay page"
+                checked={s.payEnabled}
+                onChange={(e) => set('payEnabled', e.target.checked)}
+              />
+
+              <div>
+                <span className="field-label">Heading</span>
+                <Input value={s.payHeading} onChange={(e) => set('payHeading', e.target.value)} />
+              </div>
+
+              <div>
+                <span className="field-label">Intro</span>
+                <Textarea
+                  rows={3}
+                  value={s.payIntro}
+                  onChange={(e) => set('payIntro', e.target.value)}
+                />
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <span className="field-label">Smallest payment</span>
+                  <Input
+                    type="number"
+                    value={String(s.payMin)}
+                    onChange={(e) => set('payMin', Number(e.target.value) || 0)}
+                  />
+                </div>
+                <div>
+                  <span className="field-label">Largest payment</span>
+                  <Input
+                    type="number"
+                    value={String(s.payMax)}
+                    onChange={(e) => set('payMax', Number(e.target.value) || 0)}
+                  />
+                </div>
+              </div>
+              <p className="-mt-2 text-[12px] text-[#8A8C93]">
+                The customer types the amount, so these are the only limit on it. Keep the ceiling
+                near your largest real invoice — an open-ended field invites card testing.
+              </p>
+
+              <div>
+                <span className="field-label">Note under the form</span>
+                <Textarea
+                  rows={2}
+                  value={s.payHelp}
+                  onChange={(e) => set('payHelp', e.target.value)}
+                />
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <span className="field-label">After paying — heading</span>
+                  <Input
+                    value={s.paySuccessTitle}
+                    onChange={(e) => set('paySuccessTitle', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <span className="field-label">After paying — message</span>
+                  <Textarea
+                    rows={2}
+                    value={s.paySuccessBody}
+                    onChange={(e) => set('paySuccessBody', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <a
+                href="/pay"
+                target="_blank"
+                rel="noopener"
+                className="text-[13px] font-semibold text-ink underline"
+              >
+                Open the pay page
+              </a>
+            </div>
+          </Card>
+
+          <Card
             title="Order tracking"
             description="Reads order status straight from a Google Sheet — no export step."
           >

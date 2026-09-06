@@ -1,6 +1,7 @@
 import 'server-only';
 import nodemailer, { type Transporter } from 'nodemailer';
 import { prisma } from './db';
+import { splitAddresses } from './utils';
 
 /**
  * Outgoing mail.
@@ -176,10 +177,5 @@ export async function verifyMail(override?: Partial<MailConfig>): Promise<MailRe
   }
 }
 
-/** Splits a comma or semicolon separated list of addresses. */
-export function addressList(raw: string): string[] {
-  return String(raw ?? '')
-    .split(/[,;]/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
+/** Splits a separated list of addresses. */
+export const addressList = splitAddresses;

@@ -285,6 +285,16 @@ export const RESOURCES: Record<string, ResourceConfig> = {
     searchFields: ['reference', 'invoiceNumber', 'customerName', 'email'],
   },
 
+  invoicePayments: {
+    model: 'invoicePayment',
+    // Payments are created by the pay page, never by hand: only the status
+    // can be changed here, to record a refund.
+    fields: ['status'],
+    defaultOrder: { createdAt: 'desc' },
+    revalidate: () => [],
+    searchFields: ['reference', 'invoiceNumber', 'customerName', 'email'],
+  },
+
   users: {
     model: 'user',
     fields: ['email', 'name', 'role', 'permissions'],

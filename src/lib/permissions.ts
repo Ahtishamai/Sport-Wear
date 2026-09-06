@@ -26,9 +26,9 @@ export const AREAS: Area[] = [
   {
     key: 'orders',
     label: 'Orders & leads',
-    description: 'Store orders, quote requests and contact messages.',
-    resources: ['storeOrders', 'quotes', 'contacts'],
-    paths: ['/admin/store-orders', '/admin/quotes', '/admin/contacts'],
+    description: 'Store orders, invoice payments, quote requests and contact messages.',
+    resources: ['storeOrders', 'invoicePayments', 'quotes', 'contacts'],
+    paths: ['/admin/store-orders', '/admin/payments', '/admin/quotes', '/admin/contacts'],
   },
   {
     key: 'stores',

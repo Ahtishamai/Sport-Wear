@@ -82,6 +82,46 @@ export function isEmail(v: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim());
 }
 
+/**
+ * Splits however someone pasted a list of addresses.
+ *
+ * Commas are the documented separator, but a list copied out of a spreadsheet
+ * column arrives on separate lines and one copied out of a mail client arrives
+ * semicolon-separated, so all three are accepted.
+ */
+export function splitAddresses(raw: string): string[] {
+  return String(raw ?? '')
+    .split(/[,;\s]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+/**
+ * Sorts a pasted list into what can be sent to and what cannot.
+ *
+ * Duplicates are dropped case-insensitively — the same person listed twice is
+ * a slip, not a request for two copies — while the casing they typed is kept,
+ * because that is what they will read back in the confirmation.
+ */
+export function checkAddresses(raw: string): { valid: string[]; invalid: string[] } {
+  const valid: string[] = [];
+  const invalid: string[] = [];
+  const seen = new Set<string>();
+
+  for (const address of splitAddresses(raw)) {
+    if (!isEmail(address)) {
+      if (!invalid.includes(address)) invalid.push(address);
+      continue;
+    }
+    const key = address.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    valid.push(address);
+  }
+
+  return { valid, invalid };
+}
+
 /* ------------------------------------------------------------- store clock */
 
 /**
@@ -158,4 +198,55 @@ export function formatStoreDeadline(d: Date | string): string {
     minute: '2-digit',
     timeZoneName: 'short',
   }).format(date);
+}
+
+/**
+ * Reads a payment amount the way a person writes one.
+ *
+ * Used by the pay page and by the endpoint behind it, from one place on
+ * purpose: if the form and the server disagree about what "1,234.50" means,
+ * the customer is told one figure and charged another.
+ *
+ * Returns the problem rather than throwing, because the form needs to show it
+ * while someone is still typing.
+ */
+export function parsePayAmount(
+  typed: unknown,
+  min: number,
+  max: number
+): { amount: number | null; problem: string } {
+  const raw = String(typed ?? '').replace(/[$,\s]/g, '');
+  if (!raw) return { amount: null, problem: 'Enter the amount to pay.' };
+
+  // Reject anything that is not plainly a number: Number('1e5') is 100000,
+  // and '0x10' is 16, neither of which is what anyone typed on an invoice.
+  if (!/^\d*\.?\d*$/.test(raw)) {
+    return { amount: null, problem: 'Enter the amount as a number, like 149.50.' };
+  }
+
+  const value = Number(raw);
+  if (!Number.isFinite(value)) {
+    return { amount: null, problem: 'Enter the amount as a number, like 149.50.' };
+  }
+
+  const amount = Math.round(value * 100) / 100;
+  if (amount <= 0) return { amount: null, problem: 'Enter an amount greater than zero.' };
+  if (amount < min) {
+    return { amount, problem: `The smallest payment we can take online is ${payMoney(min)}.` };
+  }
+  if (amount > max) {
+    return {
+      amount,
+      problem: `That is more than we can take online (${payMoney(max)} maximum). Please call us and we will take it another way.`,
+    };
+  }
+  return { amount, problem: '' };
+}
+
+/** `$1,234.50`, with whole amounts left without cents. */
+export function payMoney(n: number) {
+  const v = Number.isFinite(n) ? n : 0;
+  const [whole, cents] = v.toFixed(2).split('.');
+  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return '$' + grouped + (cents === '00' ? '' : '.' + cents);
 }

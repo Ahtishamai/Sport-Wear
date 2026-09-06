@@ -54,6 +54,17 @@ export type SiteSettings = {
   orderEmailCopyTo: string;
   orderEmailIntro: string;
   orderEmailFooter: string;
+  // ---- pay an invoice ----
+  /** The /pay page, where a customer settles an invoice already sent. */
+  payEnabled: boolean;
+  payHeading: string;
+  payIntro: string;
+  payHelp: string;
+  /** Bounds on a customer-typed amount. Never trust the form for these. */
+  payMin: number;
+  payMax: number;
+  paySuccessTitle: string;
+  paySuccessBody: string;
 };
 
 export const DEFAULT_SETTINGS: SiteSettings = {
@@ -116,6 +127,17 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     'Thanks for ordering with us. Everything below is confirmed and in the queue — we produce the whole team together once the store closes, then ship to your team contact.',
   orderEmailFooter:
     'Keep this email: your order number is how we find you. If anything looks wrong, just reply and we will sort it out.',
+  payEnabled: true,
+  payHeading: 'Pay for your order',
+  payIntro:
+    'Already have an invoice from us? Enter your invoice number and the amount shown on it, then pay securely with PayPal or any card.',
+  payHelp:
+    'Your invoice number is at the top of the invoice we emailed you. Pay the exact amount shown on it — if it looks wrong, call us before paying.',
+  payMin: 1,
+  payMax: 10000,
+  paySuccessTitle: 'Payment received',
+  paySuccessBody:
+    'Thank you. Your payment is confirmed and a receipt is on its way to your email. Keep the reference below in case you need to ask us about it.',
 };
 
 const SETTINGS_KEY = 'site';

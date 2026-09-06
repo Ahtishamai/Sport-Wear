@@ -1,14 +1,16 @@
 'use client';
 
-import { useState } from 'react';
-import { Button, Input } from './ui';
+import { useMemo, useState } from 'react';
+import { checkAddresses } from '@/lib/utils';
+import { Button, Textarea } from './ui';
 
 /**
- * Sends an order's confirmation again.
+ * Sends an order's confirmation to whoever needs it.
  *
- * The address box starts on the order's own email and is editable, because the
- * two reasons to press this are "it never arrived" and "they gave us the wrong
- * address" — and the second one cannot be fixed by sending to the same place.
+ * The box starts on the order's own email and takes a list, because the three
+ * reasons to press this are "it never arrived", "they gave us the wrong
+ * address" and "the parent and the coach need it too" — and only the first is
+ * answered by sending to the same single place again.
  */
 export function ResendOrderEmail({
   orderId,
@@ -25,6 +27,10 @@ export function ResendOrderEmail({
     null
   );
 
+  const { valid, invalid } = useMemo(() => checkAddresses(to), [to]);
+  const customerMissing =
+    Boolean(email) && !valid.some((a) => a.toLowerCase() === email.toLowerCase());
+
   async function send() {
     setBusy(true);
     setResult(null);
@@ -32,7 +38,7 @@ export function ResendOrderEmail({
       const res = await fetch('/api/admin/order-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId, to: to.trim() }),
+        body: JSON.stringify({ orderId, to }),
       });
       setResult(await res.json());
     } catch {
@@ -45,17 +51,65 @@ export function ResendOrderEmail({
   return (
     <div>
       <span className="field-label">Send the confirmation to</span>
-      <div className="flex items-start gap-2">
-        <div className="min-w-0 flex-1">
-          <Input
-            value={to}
-            onChange={(e) => setTo(e.target.value.trim())}
-            placeholder="customer@example.com"
-          />
+
+      <Textarea
+        rows={2}
+        value={to}
+        onChange={(e) => setTo(e.target.value)}
+        placeholder="customer@example.com, parent@example.com, coach@example.com"
+      />
+
+      <p className="mt-1.5 text-[12px] text-[#8A8C93]">
+        One address or several. Separate them with commas, or paste a column of them. Everyone
+        listed gets the same order details and can see who else was sent it.
+      </p>
+
+      {/* The parsed list, so it is obvious what will actually go out before
+          the button is pressed rather than after. */}
+      {(valid.length > 0 || invalid.length > 0) && (
+        <div className="mt-2.5 flex flex-wrap gap-1.5">
+          {valid.map((address) => (
+            <span
+              key={address}
+              className="border border-[#E6E6E2] bg-[#F7F7F5] px-2 py-1 text-[12px] text-[#3A3C42]"
+            >
+              {address}
+            </span>
+          ))}
+          {invalid.map((address) => (
+            <span
+              key={address}
+              title="This does not look like an email address"
+              className="border border-[#F3C6C8] bg-[#FBE7E8] px-2 py-1 text-[12px] text-[#C42027]"
+            >
+              {address}
+            </span>
+          ))}
         </div>
-        <Button variant="outline" onClick={send} disabled={busy} className="shrink-0">
-          {busy ? 'Sending…' : 'Send'}
+      )}
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <Button
+          variant="outline"
+          onClick={send}
+          disabled={busy || valid.length === 0 || invalid.length > 0}
+        >
+          {busy
+            ? 'Sending…'
+            : valid.length > 1
+              ? `Send to ${valid.length} people`
+              : 'Send'}
         </Button>
+
+        {customerMissing && (
+          <button
+            type="button"
+            onClick={() => setTo((v) => (v.trim() ? `${v.trim()}, ${email}` : email))}
+            className="text-[12px] text-[#6B6D74] underline"
+          >
+            Add the customer ({email})
+          </button>
+        )}
       </div>
 
       {result && (

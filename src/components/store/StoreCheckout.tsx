@@ -2,9 +2,10 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { money } from '@/lib/utils';
 import { CartProvider, linePrice, useCart, type CartLine } from './CartProvider';
+import { PayPalButtons } from '@/components/pay/PayPalButtons';
 
 /**
  * Checkout: per-item personalisation, then payment.
@@ -164,7 +165,9 @@ function CheckoutBody({
                 currency={currency}
                 disabled={!canPay}
                 onError={setError}
-                buildOrder={() => ({
+                createUrl="/api/store/checkout"
+                captureUrl="/api/store/capture"
+                buildBody={() => ({
                   store: slug,
                   invoiceNumber,
                   lines: lines.map((l) => ({
@@ -176,7 +179,7 @@ function CheckoutBody({
                     quantity: l.quantity,
                   })),
                 })}
-                onPaid={(reference) => {
+                onPaid={({ reference }) => {
                   clear();
                   setDone(reference);
                 }}
@@ -342,87 +345,3 @@ function LineRow({
   );
 }
 
-/** Loads the PayPal SDK once and mounts the buttons. */
-function PayPalButtons({
-  clientId,
-  currency,
-  disabled,
-  buildOrder,
-  onPaid,
-  onError,
-}: {
-  clientId: string;
-  currency: string;
-  disabled: boolean;
-  buildOrder: () => unknown;
-  onPaid: (reference: string) => void;
-  onError: (message: string) => void;
-}) {
-  const host = useRef<HTMLDivElement>(null);
-  const [sdkReady, setSdkReady] = useState(false);
-  // Read through refs so the buttons always see current form state without
-  // being torn down and re-rendered on every keystroke.
-  const latest = useRef({ disabled, buildOrder, onPaid, onError });
-  latest.current = { disabled, buildOrder, onPaid, onError };
-
-  useEffect(() => {
-    const id = 'paypal-sdk';
-    if (document.getElementById(id)) {
-      setSdkReady(true);
-      return;
-    }
-    const script = document.createElement('script');
-    script.id = id;
-    script.src =
-      `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}` +
-      `&currency=${encodeURIComponent(currency)}&intent=capture&components=buttons`;
-    script.onload = () => setSdkReady(true);
-    script.onerror = () => onError('Could not load PayPal. Please refresh and try again.');
-    document.body.appendChild(script);
-  }, [clientId, currency, onError]);
-
-  useEffect(() => {
-    const paypal = (window as any).paypal;
-    if (!sdkReady || !paypal || !host.current || host.current.childElementCount > 0) return;
-
-    paypal
-      .Buttons({
-        style: { layout: 'vertical', shape: 'rect', label: 'pay', height: 46 },
-        onClick: (_d: unknown, actions: any) =>
-          latest.current.disabled ? actions.reject() : actions.resolve(),
-        createOrder: async () => {
-          latest.current.onError('');
-          const res = await fetch('/api/store/checkout', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(latest.current.buildOrder()),
-          });
-          const json = await res.json().catch(() => ({}));
-          if (!res.ok || !json.paypalOrderId) {
-            throw new Error(json.error || 'Could not start the payment.');
-          }
-          return json.paypalOrderId;
-        },
-        onApprove: async (data: { orderID: string }) => {
-          const res = await fetch('/api/store/capture', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ paypalOrderId: data.orderID }),
-          });
-          const json = await res.json().catch(() => ({}));
-          if (!res.ok || !json.ok) {
-            latest.current.onError(json.error || 'The payment did not complete.');
-            return;
-          }
-          latest.current.onPaid(json.reference);
-        },
-        onError: (err: unknown) => {
-          console.error('[paypal]', err);
-          latest.current.onError('PayPal reported a problem. Please try again.');
-        },
-      })
-      .render(host.current);
-  }, [sdkReady]);
-
-  return <div ref={host} />;
-}

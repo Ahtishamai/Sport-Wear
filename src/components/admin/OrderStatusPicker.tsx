@@ -7,8 +7,21 @@ import { useToast } from './ui';
 
 const STATUSES = ['PENDING', 'PAID', 'FULFILLED', 'CANCELLED', 'REFUNDED'];
 
-/** Moves a store order through fulfilment. Payment fields are never editable. */
-export function OrderStatusPicker({ id, status }: { id: string; status: string }) {
+/**
+ * Moves a store order through fulfilment, or records a refund against an
+ * invoice payment. Payment fields themselves are never editable.
+ */
+export function OrderStatusPicker({
+  id,
+  status,
+  resource = 'storeOrders',
+  statuses = STATUSES,
+}: {
+  id: string;
+  status: string;
+  resource?: string;
+  statuses?: string[];
+}) {
   const router = useRouter();
   const toast = useToast();
   const [value, setValue] = useState(status);
@@ -19,7 +32,7 @@ export function OrderStatusPicker({ id, status }: { id: string; status: string }
     setValue(next);
     setBusy(true);
     try {
-      await api.update('storeOrders', id, { status: next });
+      await api.update(resource, id, { status: next });
       toast('Order updated');
       router.refresh();
     } catch (e) {
@@ -39,7 +52,7 @@ export function OrderStatusPicker({ id, status }: { id: string; status: string }
         disabled={busy}
         onChange={(e) => change(e.target.value)}
       >
-        {STATUSES.map((s) => (
+        {statuses.map((s) => (
           <option key={s} value={s}>
             {s}
           </option>

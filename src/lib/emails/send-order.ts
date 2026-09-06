@@ -1,8 +1,8 @@
 import 'server-only';
 import { prisma } from '../db';
 import { getSettings } from '../settings';
-import { addressList, sendMail, type MailResult } from '../mail';
-import { formatStoreDeadline } from '../utils';
+import { sendMail, type MailResult } from '../mail';
+import { checkAddresses, formatStoreDeadline, splitAddresses } from '../utils';
 import { renderOrderEmail, type OrderEmailItem } from './order';
 
 /**
@@ -16,8 +16,8 @@ import { renderOrderEmail, type OrderEmailItem } from './order';
  */
 export async function sendOrderEmail(
   orderId: string,
-  opts: { to?: string; copyOnly?: boolean } = {}
-): Promise<MailResult & { skipped?: string; subject?: string }> {
+  opts: { to?: string | string[]; copyOnly?: boolean } = {}
+): Promise<MailResult & { skipped?: string; subject?: string; recipients?: string[] }> {
   const order = await prisma.storeOrder.findUnique({
     where: { id: orderId },
     include: {
@@ -81,15 +81,33 @@ export async function sendOrderEmail(
     trackUrl: settings.trackingEnabled && base ? `${base}/track-order` : null,
   });
 
-  const to = opts.copyOnly ? '' : (opts.to ?? order.email ?? '').trim();
-  const bcc = addressList(settings.orderEmailCopyTo).join(', ');
+  // One order often needs to reach more than one person — the player who
+  // ordered, a parent paying for it and the coach keeping the team's roster
+  // straight all want the same details. Any number of addresses can be given.
+  const asked = Array.isArray(opts.to) ? opts.to.join(',') : opts.to;
+  const to = opts.copyOnly ? [] : checkAddresses(asked ?? order.email ?? '').valid;
+
+  // Anyone named on the message must not also receive the blind copy, or the
+  // shop's own mailbox gets two of every order it is listed on.
+  const named = new Set(to.map((a) => a.toLowerCase()));
+  const bcc = splitAddresses(settings.orderEmailCopyTo).filter(
+    (a) => !named.has(a.toLowerCase())
+  );
 
   // A store order can be paid through PayPal without the shopper ever typing
   // an address here, so "no customer email" is a normal outcome, not a fault.
-  if (!to && !bcc) return { ok: false, skipped: 'no-recipient', error: 'No address to send to.' };
+  if (!to.length && !bcc.length) {
+    return { ok: false, skipped: 'no-recipient', error: 'No address to send to.' };
+  }
 
-  const res = await sendMail({ to, subject, html, text, bcc });
-  return { ...res, subject };
+  const res = await sendMail({
+    to: to.join(', '),
+    subject,
+    html,
+    text,
+    bcc: bcc.join(', '),
+  });
+  return { ...res, subject, recipients: to };
 }
 
 /** Fire-and-forget wrapper for paths where the email must never block. */
