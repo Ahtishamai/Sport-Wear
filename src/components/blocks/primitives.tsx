@@ -250,8 +250,24 @@ export type CardProduct = {
   basePrice: number;
   badge?: string | null;
   categoryLabel?: string;
+  /** Off for this product on its own — see Admin → the product → Pricing. */
+  showPrice?: boolean;
   image?: string | null;
 };
+
+/**
+ * Whether a figure may be shown for this product.
+ *
+ * Two switches, and either one is enough to hide it: the site-wide setting and
+ * the product's own. A product priced only by quote must never show a number
+ * because someone left prices on globally.
+ */
+function priceVisible(p: CardProduct, siteWide: boolean) {
+  return siteWide && p.showPrice !== false;
+}
+
+/** What stands in for the price when there is not one to show. */
+const QUOTE_LABEL = 'Request a quote';
 
 export function ProductPlateCard({ p, showPrice = true }: { p: CardProduct; showPrice?: boolean }) {
   return (
@@ -272,10 +288,14 @@ export function ProductPlateCard({ p, showPrice = true }: { p: CardProduct; show
       <h3 className="mt-5 text-center font-display text-[19px] font-extrabold uppercase leading-tight">
         {p.title}
       </h3>
-      {showPrice && (
+      {priceVisible(p, showPrice) ? (
         <p className="mt-1.5 text-center text-[16px] font-semibold text-muted">
           From{' '}
           <span className="font-display text-[22px] font-black text-ink">{money(p.basePrice)}</span>
+        </p>
+      ) : (
+        <p className="mt-1.5 text-center font-display text-[15px] font-extrabold uppercase tracking-[.08em] text-ink">
+          {QUOTE_LABEL}
         </p>
       )}
     </Link>
@@ -318,13 +338,17 @@ export function ProductCatalogCard({
         <p className="mt-1.5 text-[13px] text-muted">{p.categoryLabel}</p>
         <div className="mt-auto flex items-end justify-between gap-3 pt-5">
           <div>
-            {showPrice && (
+            {priceVisible(p, showPrice) ? (
               <>
                 <span className="block text-[12px] font-medium text-faint">From</span>
                 <span className="font-display text-[23px] font-black leading-none">
                   {money(p.basePrice)}
                 </span>
               </>
+            ) : (
+              <span className="font-display text-[15px] font-extrabold uppercase leading-none tracking-[.06em]">
+                {QUOTE_LABEL}
+              </span>
             )}
           </div>
           <span className="btn btn-outline px-4 py-2.5 text-[11px] group-hover:border-ink group-hover:bg-brand group-hover:text-ink">

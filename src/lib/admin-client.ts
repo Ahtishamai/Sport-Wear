@@ -77,6 +77,13 @@ export const api = {
       method: 'DELETE',
     }),
 
+  /** Copies a record and returns the copy, which is always a draft. */
+  duplicate: <T>(resource: string, id: string) =>
+    request<{ item: T }>(`/api/admin/${resource}/duplicate`, {
+      method: 'POST',
+      body: JSON.stringify({ id }),
+    }),
+
   reorder: (resource: string, order: { id: string; position: number }[]) =>
     request<{ ok: true }>(`/api/admin/${resource}/reorder`, {
       method: 'POST',

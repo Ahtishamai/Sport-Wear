@@ -34,6 +34,7 @@ export type EditableProduct = {
   featured: boolean;
   position: number;
   sku: string | null;
+  showPrice?: boolean;
   sports: string[] | null;
   colorways: { name: string; from: string; to: string }[] | null;
   sizes: string[] | null;
@@ -73,6 +74,8 @@ export function ProductEditor({
     featured: Boolean(product.featured),
     position: product.position ?? 0,
     sku: product.sku ?? '',
+    // Older products predate the field, and a missing value must mean "show".
+    showPrice: product.showPrice !== false,
     seoTitle: product.seoTitle ?? '',
     seoDescription: product.seoDescription ?? '',
   }));
@@ -101,6 +104,7 @@ export function ProductEditor({
 
   const [picker, setPicker] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [copying, setCopying] = useState(false);
   const [error, setError] = useState('');
 
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((p) => ({ ...p, [k]: v }));
@@ -149,6 +153,26 @@ export function ProductEditor({
     }
   }
 
+  /**
+   * Copy this product and open the copy.
+   *
+   * It copies what is stored, not what is on screen — this form has no reliable
+   * way to know whether the images, tiers or collections have been touched
+   * since the last save, so the toast says "saved version" rather than implying
+   * something it cannot promise.
+   */
+  async function duplicate() {
+    setCopying(true);
+    try {
+      const { item } = await api.duplicate<{ handle: string; title: string }>('products', product.id!);
+      toast(`Copied the saved version — “${item.title}” is a draft`);
+      router.push(`/admin/products/${item.handle}`);
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Could not duplicate', 'error');
+      setCopying(false);
+    }
+  }
+
   async function destroy() {
     if (!product.id) return;
     try {
@@ -175,6 +199,16 @@ export function ProductEditor({
             >
               View on site
             </Link>
+          )}
+          {!isNew && (
+            <button
+              type="button"
+              onClick={duplicate}
+              disabled={busy || copying}
+              className="rounded-[2px] border border-[#D6D6D1] px-4 py-2.5 text-[13px] font-semibold hover:border-ink disabled:opacity-50"
+            >
+              {copying ? 'Copying…' : 'Duplicate'}
+            </button>
           )}
           {!isNew && (
             <ConfirmButton onConfirm={destroy} message="Delete this product permanently?">
@@ -470,7 +504,27 @@ export function ProductEditor({
                   <option value="ARCHIVED">Archived</option>
                 </Select>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div>
+                <span className="field-label">Pricing</span>
+                <Select
+                  value={f.showPrice ? 'show' : 'quote'}
+                  onChange={(e) => set('showPrice', e.target.value === 'show')}
+                >
+                  <option value="show">Show the price</option>
+                  <option value="quote">Hide the price — show “Request a quote”</option>
+                </Select>
+                <p className="mt-1.5 text-[12px] text-[#8A8C93]">
+                  {f.showPrice
+                    ? 'Shoppers see “From $…” on the card and the full calculator on the product page.'
+                    : 'No figure appears anywhere for this product — the card, the product page and the quantity calculator all say “Request a quote” instead.'}
+                </p>
+              </div>
+
+              <div
+                className={
+                  'grid grid-cols-2 gap-3 ' + (f.showPrice ? '' : 'opacity-45')
+                }
+              >
                 <div>
                   <span className="field-label">Starting at ($)</span>
                   <Input
@@ -490,6 +544,12 @@ export function ProductEditor({
                   />
                 </div>
               </div>
+              {!f.showPrice && (
+                <p className="-mt-2 text-[12px] text-[#8A8C93]">
+                  These are still saved and still drive the volume tiers — they are simply not
+                  shown while this product is quote-only.
+                </p>
+              )}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <span className="field-label">Badge</span>

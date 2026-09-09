@@ -55,6 +55,9 @@ export default async function ProductPage({ params }: { params: Promise<{ handle
 
   const base = process.env.NEXT_PUBLIC_SITE_URL || '';
 
+  // The site-wide setting and the product's own switch; either hides the price.
+  const priced = settings.showPrices !== false && product.showPrice !== false;
+
   return (
     <>
       <nav aria-label="Breadcrumb" className="gutter pt-6">
@@ -76,7 +79,11 @@ export default async function ProductPage({ params }: { params: Promise<{ handle
       </nav>
 
       <ProductDetail
-        product={product}
+        // Hiding the figure in the markup is not hiding it: ProductDetail is a
+        // client component, so whatever it is handed is serialised into the
+        // page source where anyone can read it. A quote-only product is sent
+        // no price and no discount table at all.
+        product={priced ? product : { ...product, basePrice: 0, volumeTiers: [] }}
         urgencyLine="In production now · 6 teams this week"
         showPrices={settings.showPrices !== false}
       />
@@ -117,13 +124,20 @@ export default async function ProductPage({ params }: { params: Promise<{ handle
             description: product.description,
             image: product.images.map((i) => (base ? `${base}${i.url}` : i.url)),
             brand: { '@type': 'Brand', name: settings.siteName },
-            offers: {
-              '@type': 'AggregateOffer',
-              priceCurrency: 'USD',
-              lowPrice: product.basePrice,
-              availability: 'https://schema.org/InStock',
-              url: `${base}/products/${product.handle}`,
-            },
+            // A hidden price must stay hidden here too. Left in, the figure
+            // would still surface in Google's result for a product whose page
+            // says "Request a quote", which is worse than showing no price.
+            ...(priced
+              ? {
+                  offers: {
+                    '@type': 'AggregateOffer',
+                    priceCurrency: 'USD',
+                    lowPrice: product.basePrice,
+                    availability: 'https://schema.org/InStock',
+                    url: `${base}/products/${product.handle}`,
+                  },
+                }
+              : {}),
             aggregateRating: {
               '@type': 'AggregateRating',
               ratingValue: '4.9',

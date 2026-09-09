@@ -18,6 +18,7 @@ const productSelect = {
   basePrice: true,
   badge: true,
   categoryLabel: true,
+  showPrice: true,
   images: { select: { url: true, alt: true }, orderBy: { position: 'asc' as const }, take: 1 },
 };
 
@@ -28,6 +29,7 @@ type RawProduct = {
   basePrice: unknown;
   badge: string | null;
   categoryLabel: string;
+  showPrice: boolean;
   images: { url: string; alt: string }[];
 };
 
@@ -39,6 +41,7 @@ function toCard(p: RawProduct): CardProduct {
     basePrice: Number(p.basePrice),
     badge: p.badge,
     categoryLabel: p.categoryLabel,
+    showPrice: p.showPrice,
     image: p.images[0]?.url ?? null,
   };
 }
@@ -108,6 +111,7 @@ export const getProductByHandle = cache(async (handle: string) => {
     basePrice: Number(p.basePrice),
     badge: p.badge,
     categoryLabel: p.categoryLabel,
+    showPrice: p.showPrice,
     status: p.status,
     seoTitle: p.seoTitle,
     seoDescription: p.seoDescription,

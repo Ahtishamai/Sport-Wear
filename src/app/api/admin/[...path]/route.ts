@@ -7,6 +7,7 @@ import { canUseResource } from '@/lib/permissions';
 import { saveSettings } from '@/lib/settings';
 import { savePaymentSecret, clearPaymentSecret, paypalSecretSummary } from '@/lib/payments';
 import { saveMailConfig, mailConfigSummary, type MailConfig } from '@/lib/mail';
+import { duplicateProduct } from '@/lib/duplicate';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -144,6 +145,16 @@ export async function POST(req: Request, ctx: Ctx) {
     const cfg = RESOURCES[resource];
     if (!cfg) return badRequest(`Unknown resource "${resource}"`);
     const m = model(cfg);
+
+    // ---- duplicate ----
+    if (action === 'duplicate' && resource === 'products') {
+      const sourceId = String(body?.id ?? '').trim();
+      if (!sourceId) return badRequest('Which product?');
+      const copy = await duplicateProduct(sourceId);
+      if (!copy) return json({ error: 'That product was not found.' }, 404);
+      // The copy is a draft, so no public page changes; the admin list does.
+      return json({ item: plain(copy) }, 201);
+    }
 
     // ---- reorder ----
     if (action === 'reorder') {

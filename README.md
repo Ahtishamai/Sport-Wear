@@ -160,6 +160,52 @@ CRM webhook — the payload shape is already assembled.
 
 ---
 
+## Duplicating a product
+
+**Duplicate** sits next to Edit / View / Delete on every row of the products list, and in the
+header of a product being edited. It copies the parts nobody wants to retype — description, size
+run, colourways, volume tiers, spec answers, trust points, SEO, images and collections — then
+opens the copy.
+
+Three things are deliberately not copied:
+
+- **Status.** The copy is a `DRAFT`. A duplicate is half-finished by definition, and a
+  near-identical product appearing in the shop the instant someone clicks Duplicate is the wrong
+  default.
+- **The SKU.** It identifies one product; two sharing one is a data error that surfaces at the
+  worst moment.
+- **The handle.** A new one comes from the copy’s title, with a number appended if that is taken.
+
+Images point at the same uploaded files rather than copying the bytes, so duplicating costs no
+storage and deleting a copy cannot orphan the originals.
+
+---
+
+## Showing prices
+
+Two switches, and either one hides a figure:
+
+- **Site settings → Pricing** turns every price off across the whole site.
+- **A product → Status & pricing → Pricing** does it for one product: *Show the price*, or
+  *Hide the price — show "Request a quote"*.
+
+With a product set to quote-only, the card shows **Request a quote** where the figure was, and
+the product page swaps the price panel and the whole volume-tier grid for a quote panel with a
+**Get my price** button. "Starting at" and "Compare at" are still saved and still drive the tiers —
+they are simply not shown, so switching back needs no re-typing.
+
+Two things that are easy to get wrong and are handled here:
+
+- **The structured data.** The product JSON-LD normally publishes `lowPrice`. Left in, Google
+  would keep showing a price for a page that says "Request a quote", which is worse than showing
+  none — so the whole `offers` block is dropped when the price is hidden.
+- **The page source.** `ProductDetail` is a client component, so anything handed to it is
+  serialised into the HTML where anyone can read it. Hiding the price visually left `basePrice`
+  and the entire discount table sitting in the markup. A quote-only product is now sent
+  `basePrice: 0` and no tiers at all.
+
+---
+
 ## Email
 
 Set the mail server once in **Site settings → Email**: server, port, SSL, mailbox username and

@@ -25,6 +25,26 @@ export function ProductRowActions({
   const router = useRouter();
   const toast = useToast();
   const [busy, setBusy] = useState(false);
+  const [copying, setCopying] = useState(false);
+
+  /**
+   * Copy this product and open the copy.
+   *
+   * Landing on the new product's own page is the point: a duplicate is only
+   * ever made to be changed, and leaving the admin on a list of two
+   * near-identical rows invites editing the wrong one.
+   */
+  async function duplicate() {
+    setCopying(true);
+    try {
+      const { item } = await api.duplicate<{ handle: string; title: string }>('products', id);
+      toast(`Copied — “${item.title}” is a draft`);
+      router.push(`/admin/products/${item.handle}`);
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Could not duplicate', 'error');
+      setCopying(false);
+    }
+  }
 
   async function destroy() {
     if (!window.confirm(`Delete “${title}” permanently? This cannot be undone.`)) return;
@@ -67,8 +87,17 @@ export function ProductRowActions({
       </Link>
       <button
         type="button"
+        onClick={duplicate}
+        disabled={copying || busy}
+        title={`Make a draft copy of “${title}”`}
+        className="text-ink hover:underline disabled:opacity-50"
+      >
+        {copying ? 'Copying…' : 'Duplicate'}
+      </button>
+      <button
+        type="button"
         onClick={destroy}
-        disabled={busy}
+        disabled={busy || copying}
         className="text-[#C42027] hover:underline disabled:opacity-50"
       >
         {busy ? 'Deleting…' : 'Delete'}

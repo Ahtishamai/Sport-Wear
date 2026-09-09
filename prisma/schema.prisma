@@ -101,6 +101,9 @@ model Product {
   featured      Boolean       @default(false)
   position      Int           @default(0)
   sku           String?
+  /// Off shows "Request a quote" in place of every figure for this product.
+  /// The site-wide switch in settings still wins: it hides prices everywhere.
+  showPrice     Boolean       @default(true)
 
   // Structured, admin-editable JSON
   sports      Json? // ["Baseball","Softball","Other"]

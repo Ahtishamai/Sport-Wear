@@ -17,6 +17,7 @@ const BLANK: EditableProduct = {
   featured: false,
   position: 0,
   sku: '',
+  showPrice: true,
   sports: ['Baseball', 'Softball', 'Other'],
   colorways: [
     { name: 'Navy / Gold', from: '#16264B', to: '#FFD100' },

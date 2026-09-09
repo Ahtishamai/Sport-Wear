@@ -35,6 +35,11 @@ export function ProductDetail({
   const unitPrice = unitPriceFor(product.basePrice, tiers, units);
   const estTotal = unitPrice * units;
 
+  // Two switches hide a price and either one is enough: the site-wide setting,
+  // and this product's own. A product sold only by quote must not show a figure
+  // because prices happen to be on everywhere else.
+  const priced = showPrices && product.showPrice !== false;
+
   const images = product.images.length ? product.images : [];
   const colorway = product.colorways[color];
 
@@ -155,8 +160,30 @@ export function ProductDetail({
             {product.description}
           </p>
 
-          {/* price + volume tiers */}
-          {showPrices && (
+          {/* price + volume tiers, or the quote panel that replaces them */}
+          {!priced && (
+            <div className="mt-7 border border-hairline bg-surface p-6">
+              <div className="flex flex-wrap items-end justify-between gap-5">
+                <div>
+                  <div className="text-[11px] font-bold uppercase tracking-[.14em] text-muted">
+                    Pricing
+                  </div>
+                  <div className="mt-2 font-display text-[30px] font-black leading-none">
+                    Request a quote
+                  </div>
+                </div>
+                <button type="button" onClick={requestQuote} className="btn btn-yellow btn-md">
+                  Get my price
+                </button>
+              </div>
+              <p className="mt-4 border-t border-hairline pt-4 text-[13px] leading-relaxed text-muted">
+                This one is priced to your roster, fabric and add-ons. Tell us what you need and we
+                will send a firm per-unit price with a free mockup — no deposit, no obligation.
+              </p>
+            </div>
+          )}
+
+          {priced && (
           <div className="mt-7 border border-hairline bg-surface p-6">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
@@ -302,7 +329,7 @@ export function ProductDetail({
                 </span>
                 <span className="font-display text-[22px] font-black">{units}</span>
               </div>
-              {showPrices && (
+              {priced && (
                 <div className="text-right">
                   <span className="block text-[11px] font-bold uppercase tracking-[.14em] text-muted">
                     Estimated
@@ -401,7 +428,7 @@ export function ProductDetail({
               {product.title}
             </div>
             <div className="text-[13px] text-muted">
-              {units} units{showPrices ? ` · est. ${money(estTotal)}` : ''}
+              {units} units{priced ? ` · est. ${money(estTotal)}` : ''}
             </div>
           </div>
           <div className="flex items-center gap-4">
