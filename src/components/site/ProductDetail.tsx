@@ -76,7 +76,10 @@ export function ProductDetail({
                 fill
                 priority
                 sizes="(max-width: 1024px) 100vw, 50vw"
-                className="object-cover"
+                // Contained: the whole item has to be visible here above all.
+                // These photos run from tall wheeled bags to wide jerseys, so
+                // any fixed crop cuts something off the shopper came to see.
+                className="object-contain p-4"
               />
             ) : (
               <ImagePlaceholder label="Product photo" />
@@ -110,7 +113,7 @@ export function ProductDetail({
                     alt=""
                     fill
                     sizes="120px"
-                    className="object-cover"
+                    className="object-contain p-1.5"
                   />
                 </button>
               ))}

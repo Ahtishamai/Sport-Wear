@@ -98,12 +98,17 @@ export async function CatalogView({
             total={facets.total}
             activeCollection={handle}
             priceBounds={bounds}
+            showPriceFilter={showPrice && bounds.usable}
           />
         </Suspense>
 
         <div data-reveal-root>
           <Suspense fallback={<div />}>
-            <CatalogToolbar shown={products.length} total={facets.total} />
+            <CatalogToolbar
+              shown={products.length}
+              total={facets.total}
+              showPriceSort={showPrice && bounds.usable}
+            />
           </Suspense>
 
           {products.length === 0 ? (

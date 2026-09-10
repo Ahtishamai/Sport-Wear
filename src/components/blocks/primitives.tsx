@@ -315,6 +315,10 @@ export function ProductCatalogCard({
       href={`/products/${p.handle}`}
       className="group flex flex-col border border-hairline bg-white transition-all duration-200 hover:-translate-y-[3px] hover:border-ink hover:shadow-card-hover"
     >
+      {/* Contained, not cropped. These are product photographs where the whole
+          item is the point — a bat bag cropped at the wheels tells a shopper
+          nothing, and they are every shape from tall backpacks to wide
+          jerseys, so nothing can be safely cut off. */}
       <div className="zoom-wrap relative h-[250px] border-b border-hairline bg-plate">
         {p.image ? (
           <Image
@@ -322,7 +326,7 @@ export function ProductCatalogCard({
             alt={p.title}
             fill
             sizes="(max-width: 700px) 100vw, 300px"
-            className="zoom-img object-cover"
+            className="zoom-img object-contain p-3"
           />
         ) : (
           <ImagePlaceholder />
@@ -346,12 +350,14 @@ export function ProductCatalogCard({
                 </span>
               </>
             ) : (
-              <span className="font-display text-[15px] font-extrabold uppercase leading-none tracking-[.06em]">
+              // One line: broken across two it reads as a mistake next to the
+              // button rather than as the price slot it is standing in for.
+              <span className="block whitespace-nowrap font-display text-[13px] font-extrabold uppercase leading-none tracking-[.04em]">
                 {QUOTE_LABEL}
               </span>
             )}
           </div>
-          <span className="btn btn-outline px-4 py-2.5 text-[11px] group-hover:border-ink group-hover:bg-brand group-hover:text-ink">
+          <span className="btn btn-outline shrink-0 px-4 py-2.5 text-[11px] group-hover:border-ink group-hover:bg-brand group-hover:text-ink">
             View details
           </span>
         </div>

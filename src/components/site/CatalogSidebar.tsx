@@ -13,11 +13,14 @@ export function CatalogSidebar({
   total,
   activeCollection,
   priceBounds,
+  showPriceFilter = true,
 }: {
   facets: Facet[];
   total: number;
   activeCollection: string;
   priceBounds: { min: number; max: number };
+  /** Off when nothing in the catalogue shows a price to filter on. */
+  showPriceFilter?: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -39,7 +42,8 @@ export function CatalogSidebar({
     });
   }
 
-  const hasFilters = fabric.length > 0 || maxParam !== priceBounds.max || activeCollection !== 'all';
+  const priceNarrowed = showPriceFilter && maxParam !== priceBounds.max;
+  const hasFilters = fabric.length > 0 || priceNarrowed || activeCollection !== 'all';
 
   return (
     <aside className="flex flex-col gap-7 lg:sticky lg:top-[110px] lg:self-start">
@@ -106,6 +110,7 @@ export function CatalogSidebar({
         </div>
       </section>
 
+      {showPriceFilter && (
       <section>
         <h2 className="mb-3 font-display text-[12px] font-extrabold uppercase tracking-[.16em]">
           Max price
@@ -129,6 +134,7 @@ export function CatalogSidebar({
           <span className="font-semibold text-ink">${price}</span>
         </div>
       </section>
+      )}
 
       <section className="border border-brand-border bg-brand-tint p-[22px]">
         <h2 className="font-display text-[15px] font-extrabold uppercase tracking-[.04em]">
@@ -178,7 +184,16 @@ function FacetRow({
   );
 }
 
-export function CatalogToolbar({ shown, total }: { shown: number; total: number }) {
+export function CatalogToolbar({
+  shown,
+  total,
+  showPriceSort = true,
+}: {
+  shown: number;
+  total: number;
+  /** Off when no product shows a price, so sorting by one sorts by nothing. */
+  showPriceSort?: boolean;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -202,8 +217,8 @@ export function CatalogToolbar({ shown, total }: { shown: number; total: number 
           className="border border-field bg-white px-3 py-2 text-[14px] text-ink"
         >
           <option value="featured">Featured</option>
-          <option value="price-asc">Price: low to high</option>
-          <option value="price-desc">Price: high to low</option>
+          {showPriceSort && <option value="price-asc">Price: low to high</option>}
+          {showPriceSort && <option value="price-desc">Price: high to low</option>}
           <option value="name-asc">Name A–Z</option>
           <option value="newest">Newest</option>
         </select>

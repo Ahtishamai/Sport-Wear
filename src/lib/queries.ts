@@ -229,14 +229,23 @@ export async function getCatalog(query: CatalogQuery) {
 }
 
 export const getPriceBounds = cache(async () => {
+  // Only products that actually show a price can be filtered by one.
   const agg = await prisma.product.aggregate({
-    where: PUBLISHED,
+    where: { ...PUBLISHED, showPrice: true },
     _min: { basePrice: true },
     _max: { basePrice: true },
   });
+  const min = Math.floor(Number(agg._min.basePrice ?? 0));
+  const max = Math.ceil(Number(agg._max.basePrice ?? 250));
   return {
-    min: Math.floor(Number(agg._min.basePrice ?? 0)),
-    max: Math.ceil(Number(agg._max.basePrice ?? 250)),
+    min,
+    max,
+    /**
+     * Whether a price slider would do anything. A catalogue that is entirely
+     * priced by quote — or where every price is the same — otherwise offers a
+     * "$0 to $0" control that cannot filter anything.
+     */
+    usable: agg._max.basePrice !== null && max > min,
   };
 });
 
