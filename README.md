@@ -181,6 +181,26 @@ storage and deleting a copy cannot orphan the originals.
 
 ---
 
+## Random product grids
+
+A **Product grid** block has an **Order** setting: *As set in the catalogue*, or *Random —
+different on every visit*. The home page's "Items you might like" uses random, and so does the
+"Complete the kit" row under every product, which also never suggests the product being viewed.
+
+Pages are cached for five minutes, so choosing on the server alone would show everyone the same
+set until the cache expired, and refreshing would look broken. Rendering fresh on every request
+would cost a database round trip per visit on a host that caps connections per hour. Instead the
+server sends a shuffled pool (three times the grid size, up to 24) and
+[`RandomPick`](src/components/blocks/RandomPick.tsx) chooses which cards show with a few lines of
+inline script. The script sits *before* the grid, so the choice is applied before a single card is
+drawn — nothing appears and then swaps — and it writes one CSS rule into `<head>` rather than
+touching the cards, so React's hydration never sees a difference from the server's HTML.
+
+Without JavaScript the first cards of the server's shuffle show: still random, just changing every
+five minutes rather than on every visit.
+
+---
+
 ## Showing prices
 
 Two switches, and either one hides a figure:

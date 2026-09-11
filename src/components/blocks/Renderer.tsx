@@ -111,6 +111,7 @@ async function renderBlock(block: Block, index: number, ctx: RenderContext) {
         handles: p.handles,
         limit: p.limit,
         excludeId: ctx.excludeProductId,
+        order: p.order,
       });
       return (
         <ProductGridBlock

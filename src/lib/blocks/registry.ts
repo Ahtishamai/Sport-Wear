@@ -522,6 +522,18 @@ export const BLOCKS: BlockDefinition[] = [
       },
       { name: 'limit', label: 'How many', type: 'number', width: 'half', min: 1, max: 24 },
       {
+        name: 'order',
+        label: 'Order',
+        type: 'select',
+        width: 'half',
+        default: 'position',
+        options: [
+          { label: 'As set in the catalogue', value: 'position' },
+          { label: 'Random — different on every visit', value: 'random' },
+        ],
+        help: 'Random picks a fresh set from the matching products each time the page is opened.',
+      },
+      {
         name: 'cardStyle',
         label: 'Card style',
         type: 'select',

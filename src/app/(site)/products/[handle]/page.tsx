@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/db';
 import { getPage, getProductByHandle, getProductsForBlock } from '@/lib/queries';
+import { RandomPick } from '@/components/blocks/RandomPick';
 import { getSettings } from '@/lib/settings';
 import { ProductDetail } from '@/components/site/ProductDetail';
 import { BlockRenderer } from '@/components/blocks/Renderer';
@@ -49,7 +50,9 @@ export default async function ProductPage({ params }: { params: Promise<{ handle
   if (!product) notFound();
 
   const [related, pdpExtras] = await Promise.all([
-    getProductsForBlock({ source: 'featured', limit: 4, excludeId: product.id }),
+    // Random, and never the product being looked at: the same four suggestions
+    // under every product told a shopper nothing new however far they browsed.
+    getProductsForBlock({ source: 'featured', limit: 4, excludeId: product.id, order: 'random' }),
     getPage('product-extras'),
   ]);
 
@@ -103,14 +106,16 @@ export default async function ProductPage({ params }: { params: Promise<{ handle
               All products →
             </Link>
           </div>
-          <div
+          <RandomPick
+            id="related"
+            count={4}
             className="grid gap-4"
             style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))' }}
           >
             {related.map((p) => (
               <ProductPlateCard key={p.id} p={p} showPrice={settings.showPrices !== false} />
             ))}
-          </div>
+          </RandomPick>
         </Section>
       )}
 

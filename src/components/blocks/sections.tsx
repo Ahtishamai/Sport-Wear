@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { HeroSlider, type HeroSlide } from './HeroSlider';
+import { RandomPick } from './RandomPick';
 import { cn } from '@/lib/utils';
 import { Icon } from '@/components/site/Icon';
 import { QuoteButton } from '@/components/site/QuoteButton';
@@ -482,23 +483,35 @@ export function ProductGridBlock({
 }: BlockComponentProps & { products: CardProduct[]; showPrice?: boolean }) {
   if (!products.length) return null;
   const catalog = p.cardStyle === 'catalog';
+  const gridStyle = {
+    gridTemplateColumns: `repeat(auto-fit, minmax(${catalog ? 258 : 260}px, 1fr))`,
+  };
+  const cards = products.map((pr) =>
+    catalog ? (
+      <ProductCatalogCard key={pr.id} p={pr} showPrice={showPrice} />
+    ) : (
+      <ProductPlateCard key={pr.id} p={pr} showPrice={showPrice} />
+    )
+  );
   return (
     <Section background={(p.background as Bg) ?? 'white'}>
       <SectionHeading heading={p.heading} align={p.align ?? 'center'} bid={bid} />
-      <div
-        className="grid gap-5"
-        style={{
-          gridTemplateColumns: `repeat(auto-fit, minmax(${catalog ? 258 : 260}px, 1fr))`,
-        }}
-      >
-        {products.map((pr) =>
-          catalog ? (
-            <ProductCatalogCard key={pr.id} p={pr} showPrice={showPrice} />
-          ) : (
-            <ProductPlateCard key={pr.id} p={pr} showPrice={showPrice} />
-          )
-        )}
-      </div>
+      {p.order === 'random' ? (
+        // The query sent a shuffled pool; this shows `limit` of it, chosen
+        // afresh on every visit.
+        <RandomPick
+          id={bid ?? 'grid'}
+          count={Math.min(Math.max(Number(p.limit) || 4, 1), 24)}
+          className="grid gap-5"
+          style={gridStyle}
+        >
+          {cards}
+        </RandomPick>
+      ) : (
+        <div className="grid gap-5" style={gridStyle}>
+          {cards}
+        </div>
+      )}
       {p.ctaLabel && (
         <div className="mt-12 text-center">
           <CtaLink

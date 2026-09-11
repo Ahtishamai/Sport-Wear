@@ -46,6 +46,16 @@ function toCard(p: RawProduct): CardProduct {
   };
 }
 
+/** Fisher–Yates, on a copy. */
+function shuffled<T>(list: T[]): T[] {
+  const a = [...list];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 export const getProductsForBlock = cache(
   async (opts: {
     source?: string;
@@ -53,10 +63,22 @@ export const getProductsForBlock = cache(
     handles?: string[];
     limit?: number;
     excludeId?: string;
+    /**
+     * `random` returns a shuffled pool larger than `limit`, for a grid to pick
+     * from on every visit — see RandomPick. Anything else keeps the set order.
+     */
+    order?: string;
   }): Promise<CardProduct[]> => {
     const take = Math.min(Math.max(Number(opts.limit) || 4, 1), 24);
+    const random = opts.order === 'random';
+    // Enough to make repeat visits feel different without sending the whole
+    // catalogue down with every page.
+    const pool = random ? Math.min(24, Math.max(take * 3, 12)) : take;
     const where: Record<string, unknown> = { ...PUBLISHED };
     if (opts.excludeId) where.id = { not: opts.excludeId };
+
+    const finish = (rows: RawProduct[]) =>
+      (random ? shuffled(rows).slice(0, pool) : rows.slice(0, take)).map(toCard);
 
     if (opts.source === 'manual' && opts.handles?.length) {
       const rows = await prisma.product.findMany({
@@ -64,10 +86,7 @@ export const getProductsForBlock = cache(
         select: productSelect,
       });
       const order = new Map(opts.handles.map((h, i) => [h, i]));
-      return rows
-        .sort((a, b) => (order.get(a.handle) ?? 99) - (order.get(b.handle) ?? 99))
-        .slice(0, take)
-        .map(toCard);
+      return finish(rows.sort((a, b) => (order.get(a.handle) ?? 99) - (order.get(b.handle) ?? 99)));
     }
 
     if (opts.source === 'collection' && opts.collectionHandle) {
@@ -78,18 +97,19 @@ export const getProductsForBlock = cache(
         },
         select: productSelect,
         orderBy: { position: 'asc' },
-        take,
+        // A random grid samples from the whole collection, not just the top.
+        take: random ? 60 : take,
       });
-      return rows.map(toCard);
+      return finish(rows);
     }
 
     const rows = await prisma.product.findMany({
       where: opts.source === 'featured' ? { ...where, featured: true } : where,
       select: productSelect,
       orderBy: opts.source === 'newest' ? { createdAt: 'desc' } : { position: 'asc' },
-      take,
+      take: random ? 60 : take,
     });
-    return rows.map(toCard);
+    return finish(rows);
   }
 );
 
