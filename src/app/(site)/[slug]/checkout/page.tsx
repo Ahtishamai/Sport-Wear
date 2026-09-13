@@ -57,6 +57,7 @@ export default async function StoreCheckoutPage({
         paypalClientId={settings.paypalClientId}
         paymentsReady={paymentsReady}
         orderNote={settings.storeOrderNote}
+        items={store.items}
       />
     </>
   );

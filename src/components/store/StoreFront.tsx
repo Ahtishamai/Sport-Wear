@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { cn, money } from '@/lib/utils';
 import { Icon } from '@/components/site/Icon';
-import { CartProvider, linePrice, useCart } from './CartProvider';
+import { CartProvider, linePrice, liveItems, useCart } from './CartProvider';
 import { StoreCountdown } from './StoreCountdown';
 
 export type StoreItem = {
@@ -46,7 +46,7 @@ export function StoreFront({
   sections: string[];
 }) {
   return (
-    <CartProvider slug={store.slug}>
+    <CartProvider slug={store.slug} live={liveItems(items)}>
       <StoreBody store={store} items={items} sections={sections} />
     </CartProvider>
   );

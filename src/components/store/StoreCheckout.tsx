@@ -4,7 +4,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
 import { money } from '@/lib/utils';
-import { CartProvider, linePrice, useCart, type CartLine } from './CartProvider';
+import { CartProvider, linePrice, liveItems, useCart, type CartLine } from './CartProvider';
+import type { StoreItem } from './StoreFront';
 import { PayPalButtons } from '@/components/pay/PayPalButtons';
 
 /**
@@ -22,11 +23,13 @@ type Props = {
   paypalClientId: string;
   paymentsReady: boolean;
   orderNote: string;
+  /** The store's designs as they are now, to refresh the saved cart against. */
+  items: StoreItem[];
 };
 
-export function StoreCheckout(props: Props) {
+export function StoreCheckout({ items, ...props }: Props) {
   return (
-    <CartProvider slug={props.slug}>
+    <CartProvider slug={props.slug} live={liveItems(items)}>
       <CheckoutBody {...props} />
     </CartProvider>
   );
@@ -39,8 +42,8 @@ function CheckoutBody({
   paypalClientId,
   paymentsReady,
   orderNote,
-}: Props) {
-  const { lines, update, remove, clear, ready } = useCart();
+}: Omit<Props, 'items'>) {
+  const { lines, update, remove, clear, ready, removed } = useCart();
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [error, setError] = useState('');
   const [done, setDone] = useState<string | null>(null);
@@ -89,8 +92,22 @@ function CheckoutBody({
       <div>
         <h1 className="h-display text-[30px]">Your items</h1>
         <p className="mt-2 text-[15px] text-body">
-          Add the name and number for each piece. Every item is personalised separately.
+          {lines.some((l) => l.allowName || l.allowNumber)
+            ? 'Add the size, and a name and number where offered. Every item is personalised separately.'
+            : 'Add the size for each piece.'}
         </p>
+
+        {removed.length > 0 && (
+          // Said out loud: a cart that quietly lost an item reads as a bug.
+          <p
+            role="status"
+            className="mt-5 border border-[#F0DCA8] bg-[#FDF6E3] px-4 py-3 text-[13px] text-[#8A6D1B]"
+          >
+            {removed.length === 1
+              ? `${removed[0]} is no longer available, so it was taken out of your cart.`
+              : `${removed.join(', ')} are no longer available, so they were taken out of your cart.`}
+          </p>
+        )}
 
         <ul className="mt-7 space-y-4">
           {lines.map((l) => (

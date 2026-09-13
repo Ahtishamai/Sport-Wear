@@ -10,7 +10,6 @@ import {
   AdminPage,
   Button,
   Card,
-  Checkbox as UiCheckbox,
   ConfirmButton,
   Field,
   Input as UiInput,
@@ -143,18 +142,6 @@ function Select({
   );
 }
 
-function Checkbox({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
-}) {
-  return <UiCheckbox label={label} checked={checked} onChange={(e) => onChange(e.target.checked)} />;
-}
-
 type TabKey = 'store' | 'sections' | 'designs';
 
 function Tabs({
@@ -210,7 +197,29 @@ function Tabs({
 
 const DEFAULT_SIZES = ['YS', 'YM', 'YL', 'S', 'M', 'L', 'XL', '2XL', '3XL'];
 
-const blankItem = (position: number, categoryKey: string): EditableStoreItem => ({
+/**
+ * A new design takes its name-and-number settings from the other designs in
+ * its section, so the third visor starts with them off like the first two —
+ * rather than every new design defaulting to on and needing to be caught.
+ * A section with nothing in it yet falls back to on, the common case for kit.
+ */
+function personalisationFor(items: EditableStoreItem[], categoryKey: string) {
+  const sibling = items.find((i) => i.categoryKey === categoryKey && categoryKey);
+  return sibling
+    ? {
+        allowName: sibling.allowName,
+        namePrice: sibling.namePrice,
+        allowNumber: sibling.allowNumber,
+        numberPrice: sibling.numberPrice,
+      }
+    : { allowName: true, namePrice: 0, allowNumber: true, numberPrice: 0 };
+}
+
+const blankItem = (
+  position: number,
+  categoryKey: string,
+  siblings: EditableStoreItem[] = []
+): EditableStoreItem => ({
   name: '',
   categoryKey,
   category: '',
@@ -219,13 +228,56 @@ const blankItem = (position: number, categoryKey: string): EditableStoreItem => 
   images: [],
   sizes: [...DEFAULT_SIZES],
   options: [],
-  allowName: true,
-  namePrice: 0,
-  allowNumber: true,
-  numberPrice: 0,
+  ...personalisationFor(siblings, categoryKey),
   position,
   status: 'PUBLISHED',
 });
+
+/** For the collapsed row: what a shopper is asked for, at a glance. */
+function personalisationLabel(item: EditableStoreItem) {
+  if (item.allowName && item.allowNumber) return 'Name + number';
+  if (item.allowName) return 'Name only';
+  if (item.allowNumber) return 'Number only';
+  return 'No name or number';
+}
+
+/** An unmistakable two-way switch; a lone checkbox read as optional detail. */
+function OnOff({
+  label,
+  on,
+  onChange,
+}: {
+  label: string;
+  on: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <div>
+      <span className="field-label">{label}</span>
+      <div role="radiogroup" aria-label={label} className="inline-flex border border-[#D6D6D1] bg-white">
+        {[true, false].map((v) => (
+          <button
+            key={String(v)}
+            type="button"
+            role="radio"
+            aria-checked={on === v}
+            onClick={() => onChange(v)}
+            className={
+              'px-5 py-2 text-[12px] font-bold uppercase tracking-[.1em] transition-colors ' +
+              (on === v
+                ? v
+                  ? 'bg-ink text-white'
+                  : 'bg-[#E9E9E5] text-ink'
+                : 'text-[#8A8C93] hover:text-ink')
+            }
+          >
+            {v ? 'On' : 'Off'}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function StoreEditor({ store }: { store: EditableStore }) {
   const router = useRouter();
@@ -305,7 +357,15 @@ export function StoreEditor({ store }: { store: EditableStore }) {
   const addDesignBelow = (index: number) => {
     setF((prev) => {
       const next = [...prev.items];
-      next.splice(index + 1, 0, blankItem(index + 1, prev.items[index]?.categoryKey || prev.categories[0]?.tempId || ''));
+      next.splice(
+        index + 1,
+        0,
+        blankItem(
+          index + 1,
+          prev.items[index]?.categoryKey || prev.categories[0]?.tempId || '',
+          prev.items
+        )
+      );
       return { ...prev, items: next };
     });
     setOpenDesign(index + 1);
@@ -696,7 +756,7 @@ export function StoreEditor({ store }: { store: EditableStore }) {
                     ...prev,
                     items: [
                       ...prev.items,
-                      blankItem(prev.items.length, prev.categories[0]?.tempId ?? ''),
+                      blankItem(prev.items.length, prev.categories[0]?.tempId ?? '', prev.items),
                     ],
                   }));
                 }}
@@ -843,7 +903,7 @@ function ItemFields({
               {position + 1}. {item.name || 'Untitled design'}
             </span>
             <span className="mt-0.5 block text-[12px] text-[#8A8C93]">
-              {section} · ${Number(item.price) || 0}
+              {section} · ${Number(item.price) || 0} · {personalisationLabel(item)}
               {item.status !== 'PUBLISHED' && ' · Draft'}
             </span>
           </span>
@@ -899,31 +959,52 @@ function ItemFields({
           value={String(item.price)}
           onChange={(v) => onChange({ price: v })}
         />
-        <Input
-          label="Name charge ($)"
-          type="number"
-          value={String(item.namePrice)}
-          onChange={(v) => onChange({ namePrice: v })}
-        />
-        <Input
-          label="Number charge ($)"
-          type="number"
-          value={String(item.numberPrice)}
-          onChange={(v) => onChange({ numberPrice: v })}
-        />
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-5">
-        <Checkbox
-          label="Can add a name"
-          checked={item.allowName}
-          onChange={(v) => onChange({ allowName: v })}
-        />
-        <Checkbox
-          label="Can add a number"
-          checked={item.allowNumber}
-          onChange={(v) => onChange({ allowNumber: v })}
-        />
+      {/* Its own box with explicit On / Off, because two small ticked
+          checkboxes under the prices went unnoticed — every design in every
+          store ended up asking for a name and number, visors included. */}
+      <div className="mt-5 border border-[#E3E3DF] bg-[#FAFAF8] p-4">
+        <span className="block font-display text-[12px] font-extrabold uppercase tracking-[.12em]">
+          Name &amp; number
+        </span>
+        <p className="mt-1 text-[12px] text-[#8A8C93]">
+          Switch off for things that are never personalised — visors, bags, socks. The shopper
+          then just picks a size.
+        </p>
+
+        <div className="mt-4 grid gap-5 sm:grid-cols-2">
+          <div className="space-y-3">
+            <OnOff
+              label="Name on the item"
+              on={item.allowName}
+              onChange={(v) => onChange({ allowName: v })}
+            />
+            {item.allowName && (
+              <Input
+                label="Extra charge for a name ($)"
+                type="number"
+                value={String(item.namePrice)}
+                onChange={(v) => onChange({ namePrice: v })}
+              />
+            )}
+          </div>
+          <div className="space-y-3">
+            <OnOff
+              label="Number on the item"
+              on={item.allowNumber}
+              onChange={(v) => onChange({ allowNumber: v })}
+            />
+            {item.allowNumber && (
+              <Input
+                label="Extra charge for a number ($)"
+                type="number"
+                value={String(item.numberPrice)}
+                onChange={(v) => onChange({ numberPrice: v })}
+              />
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="mt-4">

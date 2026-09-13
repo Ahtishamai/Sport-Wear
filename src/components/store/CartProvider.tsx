@@ -35,6 +35,12 @@ export type NewCartLine = Omit<
   'key' | 'size' | 'nameOnItem' | 'numberOnItem' | 'quantity'
 >;
 
+/** A design as the store has it right now — what a cart line is refreshed from. */
+export type LiveItem = Pick<
+  CartLine,
+  'name' | 'image' | 'price' | 'namePrice' | 'numberPrice' | 'allowName' | 'allowNumber' | 'sizes' | 'options'
+>;
+
 type Ctx = {
   lines: CartLine[];
   count: number;
@@ -43,7 +49,43 @@ type Ctx = {
   remove: (key: string) => void;
   clear: () => void;
   ready: boolean;
+  /** Designs taken out of the cart on load because the store no longer sells them. */
+  removed: string[];
 };
+
+/**
+ * Brings saved lines up to date with the store as it is now.
+ *
+ * A line copies the design's settings at the moment it is added, and a cart
+ * can sit in a browser for days. Without this, switching names off on a visor
+ * left an old cart still offering "Name on the item" — the shopper typed one,
+ * the page added the charge, and the server quietly dropped both, so what they
+ * were shown and what they paid disagreed. What the shopper chose (size,
+ * name, number, quantity, options) is kept wherever it is still allowed.
+ */
+function reconcile(lines: CartLine[], live?: Record<string, LiveItem>) {
+  if (!live) return { lines, removed: [] as string[] };
+  const kept: CartLine[] = [];
+  const removed: string[] = [];
+  for (const l of lines) {
+    const now = live[l.itemId];
+    if (!now) {
+      removed.push(l.name);
+      continue;
+    }
+    const offered = new Set(now.options.map((o) => o.name));
+    kept.push({
+      ...l,
+      ...now,
+      nameOnItem: now.allowName ? l.nameOnItem : '',
+      numberOnItem: now.allowNumber ? l.numberOnItem : '',
+      chosenOptions: Object.fromEntries(
+        Object.entries(l.chosenOptions ?? {}).filter(([k]) => offered.has(k))
+      ),
+    });
+  }
+  return { lines: kept, removed };
+}
 
 const CartCtx = createContext<Ctx | null>(null);
 
@@ -55,18 +97,34 @@ export function useCart() {
 
 const storageKey = (slug: string) => `ds-store-cart:${slug}`;
 
-export function CartProvider({ slug, children }: { slug: string; children: React.ReactNode }) {
+export function CartProvider({
+  slug,
+  live,
+  children,
+}: {
+  slug: string;
+  /** The store's designs as they are now, keyed by id. */
+  live?: Record<string, LiveItem>;
+  children: React.ReactNode;
+}) {
   const [lines, setLines] = useState<CartLine[]>([]);
   const [ready, setReady] = useState(false);
+  const [removed, setRemoved] = useState<string[]>([]);
 
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem(storageKey(slug));
-      if (raw) setLines(JSON.parse(raw) as CartLine[]);
+      if (raw) {
+        const fresh = reconcile(JSON.parse(raw) as CartLine[], live);
+        setLines(fresh.lines);
+        setRemoved(fresh.removed);
+      }
     } catch {
       /* private mode or cleared storage — start empty */
     }
     setReady(true);
+    // `live` comes from the server with the page and does not change after.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
 
   useEffect(() => {
@@ -82,6 +140,7 @@ export function CartProvider({ slug, children }: { slug: string; children: React
     () => ({
       lines,
       ready,
+      removed,
       count: lines.reduce((n, l) => n + l.quantity, 0),
       add: (line) =>
         setLines((prev) => [
@@ -101,10 +160,43 @@ export function CartProvider({ slug, children }: { slug: string; children: React
       remove: (key) => setLines((prev) => prev.filter((l) => l.key !== key)),
       clear: () => setLines([]),
     }),
-    [lines, ready]
+    [lines, ready, removed]
   );
 
   return <CartCtx.Provider value={value}>{children}</CartCtx.Provider>;
+}
+
+/** The shape the cart is refreshed from, built from the store's own items. */
+export function liveItems(
+  items: {
+    id: string;
+    name: string;
+    images: { url: string }[];
+    price: number;
+    namePrice: number;
+    numberPrice: number;
+    allowName: boolean;
+    allowNumber: boolean;
+    sizes: string[];
+    options: { name: string; values: string[] }[];
+  }[]
+): Record<string, LiveItem> {
+  return Object.fromEntries(
+    items.map((i) => [
+      i.id,
+      {
+        name: i.name,
+        image: i.images[0]?.url ?? null,
+        price: i.price,
+        namePrice: i.namePrice,
+        numberPrice: i.numberPrice,
+        allowName: i.allowName,
+        allowNumber: i.allowNumber,
+        sizes: i.sizes,
+        options: i.options,
+      },
+    ])
+  );
 }
 
 /** Display-only line price; the server recalculates before charging. */
