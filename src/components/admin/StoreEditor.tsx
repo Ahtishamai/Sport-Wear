@@ -195,7 +195,21 @@ function Tabs({
   );
 }
 
-const DEFAULT_SIZES = ['YS', 'YM', 'YL', 'S', 'M', 'L', 'XL', '2XL', '3XL'];
+/** Every size a design can offer, in the order shoppers see them. */
+const DEFAULT_SIZES = [
+  'YS', 'YM', 'YL', 'YXL',
+  'AS', 'AM', 'AL', 'AXL', 'A2XL', 'A3XL', 'A4XL', 'A5XL',
+];
+
+/**
+ * The chips shown for one design: the full list above, plus any size the
+ * design already carries that is not on it — an older design still set to
+ * "M" or "2XL" — so it stays visible and can be switched off, rather than
+ * being saved invisibly with a size nobody can see to remove.
+ */
+function chipsFor(sizes: string[]) {
+  return [...DEFAULT_SIZES, ...sizes.filter((s) => !DEFAULT_SIZES.includes(s))];
+}
 
 /**
  * A new design takes its name-and-number and size settings from the other
@@ -370,6 +384,40 @@ export function StoreEditor({ store }: { store: EditableStore }) {
       return { ...prev, items: next };
     });
     setOpenDesign(index + 1);
+  };
+
+  /**
+   * Copy a design straight below itself and open the copy.
+   *
+   * Everything carries over — price, section, photos, sizes, name-and-number
+   * settings, choices — because a store is mostly the same shirt in eight
+   * colourways, and retyping it is what this saves. Nothing is written until
+   * Save store, exactly like "Add another design", so an unwanted copy is just
+   * removed. The "(copy)" name is what stops a forgotten one slipping onto the
+   * store looking like the original.
+   */
+  const duplicateDesign = (index: number) => {
+    setF((prev) => {
+      const source = prev.items[index];
+      if (!source) return prev;
+      const copy: EditableStoreItem = {
+        ...source,
+        // No id, so Save creates a new design rather than updating this one.
+        id: undefined,
+        name: source.name.trim() ? `${source.name.trim()} (copy)` : '',
+        // Fresh arrays: editing the copy's photos or sizes must not reach
+        // back into the original's.
+        images: source.images.map((image) => ({ ...image })),
+        sizes: [...source.sizes],
+        options: source.options.map((option) => ({ ...option, values: [...option.values] })),
+        position: index + 1,
+      };
+      const next = [...prev.items];
+      next.splice(index + 1, 0, copy);
+      return { ...prev, items: next };
+    });
+    setOpenDesign(index + 1);
+    toast('Copy added below — change it, then Save store to keep it');
   };
 
   const setItem = (index: number, patch: Partial<EditableStoreItem>) =>
@@ -791,6 +839,7 @@ export function StoreEditor({ store }: { store: EditableStore }) {
                     onToggle={() => setOpenDesign((cur) => (cur === i ? null : i))}
                     onSave={save}
                     onAddBelow={() => addDesignBelow(i)}
+                    onDuplicate={() => duplicateDesign(i)}
                     saving={busy}
                   />
                 ))}
@@ -869,6 +918,7 @@ function ItemFields({
   onToggle,
   onSave,
   onAddBelow,
+  onDuplicate,
   saving,
 }: {
   item: EditableStoreItem;
@@ -883,6 +933,7 @@ function ItemFields({
   onToggle: () => void;
   onSave: () => void;
   onAddBelow: () => void;
+  onDuplicate: () => void;
   saving: boolean;
 }) {
   const section = categories.find((c) => c.tempId === item.categoryKey)?.name || 'no section';
@@ -939,6 +990,14 @@ function ItemFields({
             disabled={position === total - 1}
           >
             ↓
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onDuplicate}
+            title={`Copy “${item.name || 'this design'}” below itself`}
+          >
+            Duplicate
           </Button>
           <Button variant="ghost" size="sm" onClick={onToggle}>
             {open ? 'Close' : 'Edit'}
@@ -1046,7 +1105,7 @@ function ItemFields({
           <div className="mt-4">
             <span className="field-label">Sizes offered</span>
             <div className="flex flex-wrap gap-1.5">
-              {DEFAULT_SIZES.map((s) => {
+              {chipsFor(item.sizes).map((s, _i, chips) => {
                 const on = item.sizes.includes(s);
                 // Removing the last size would switch sizes off by the back
                 // door, and the chips would vanish under the pointer.
@@ -1058,9 +1117,11 @@ function ItemFields({
                     title={last ? 'Switch size off instead' : undefined}
                     onClick={() => {
                       if (last) return;
-                      onChange({
-                        sizes: on ? item.sizes.filter((x) => x !== s) : [...item.sizes, s],
-                      });
+                      const next = on ? item.sizes.filter((x) => x !== s) : [...item.sizes, s];
+                      // Kept in chip order rather than click order: checkout
+                      // suggests sizes in this order, and "AL, YS, A3XL"
+                      // reads as a mistake.
+                      onChange({ sizes: chips.filter((c) => next.includes(c)) });
                     }}
                     className={
                       'rounded-[2px] border px-2.5 py-1 text-[12px] font-semibold transition-colors ' +
@@ -1141,6 +1202,9 @@ function ItemFields({
           >
             Remove this design
           </button>
+          <Button variant="ghost" size="sm" onClick={onDuplicate}>
+            Duplicate
+          </Button>
           <Button variant="ghost" size="sm" onClick={onAddBelow}>
             + Add another design
           </Button>
