@@ -92,9 +92,7 @@ function CheckoutBody({
       <div>
         <h1 className="h-display text-[30px]">Your items</h1>
         <p className="mt-2 text-[15px] text-body">
-          {lines.some((l) => l.allowName || l.allowNumber)
-            ? 'Add the size, and a name and number where offered. Every item is personalised separately.'
-            : 'Add the size for each piece.'}
+          {checkoutIntro(lines)}
         </p>
 
         {removed.length > 0 && (
@@ -211,10 +209,22 @@ function CheckoutBody({
   );
 }
 
+/** What the shopper still has to fill in, worded for what their cart asks. */
+function checkoutIntro(lines: CartLine[]): string {
+  const sized = lines.some((l) => l.sizes.length > 0);
+  const personal = lines.some((l) => l.allowName || l.allowNumber);
+  if (sized && personal) {
+    return 'Add the size, and a name and number where offered. Every item is personalised separately.';
+  }
+  if (personal) return 'Add a name and number where offered. Every item is personalised separately.';
+  if (sized) return 'Add the size for each piece.';
+  return 'Check your items and quantities.';
+}
+
 function validate(lines: CartLine[]): string[] {
   const out: string[] = [];
   for (const l of lines) {
-    if (!l.size.trim()) out.push(`Enter a size for ${l.name}.`);
+    if (l.sizes.length > 0 && !l.size.trim()) out.push(`Enter a size for ${l.name}.`);
     for (const opt of l.options ?? []) {
       if (!l.chosenOptions?.[opt.name]) {
         out.push(`Choose ${opt.name.toLowerCase()} for ${l.name}.`);
@@ -285,24 +295,26 @@ function LineRow({
             </label>
           ))}
 
-          <label className="block">
-            <span className="field-label">Size</span>
-            <input
-              className="field !py-2 text-[14px] uppercase"
-              list={`sizes-${line.key}`}
-              maxLength={32}
-              value={line.size}
-              onChange={(e) => onChange({ size: e.target.value })}
-              placeholder={line.sizes.length ? line.sizes.slice(0, 3).join(' / ') : 'e.g. Adult L'}
-            />
-            {line.sizes.length > 0 && (
+          {/* A design with sizes switched off in the admin is one-size, so it
+              is never asked for one. */}
+          {line.sizes.length > 0 && (
+            <label className="block">
+              <span className="field-label">Size</span>
+              <input
+                className="field !py-2 text-[14px] uppercase"
+                list={`sizes-${line.key}`}
+                maxLength={32}
+                value={line.size}
+                onChange={(e) => onChange({ size: e.target.value })}
+                placeholder={line.sizes.slice(0, 3).join(' / ')}
+              />
               <datalist id={`sizes-${line.key}`}>
                 {line.sizes.map((s) => (
                   <option key={s} value={s} />
                 ))}
               </datalist>
-            )}
-          </label>
+            </label>
+          )}
 
           <label className="block">
             <span className="field-label">Quantity</span>

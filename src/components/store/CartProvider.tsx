@@ -77,6 +77,8 @@ function reconcile(lines: CartLine[], live?: Record<string, LiveItem>) {
     kept.push({
       ...l,
       ...now,
+      // A design switched to one-size no longer takes a size at all.
+      size: now.sizes.length ? l.size : '',
       nameOnItem: now.allowName ? l.nameOnItem : '',
       numberOnItem: now.allowNumber ? l.numberOnItem : '',
       chosenOptions: Object.fromEntries(

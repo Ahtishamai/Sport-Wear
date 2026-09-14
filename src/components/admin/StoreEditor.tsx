@@ -198,10 +198,11 @@ function Tabs({
 const DEFAULT_SIZES = ['YS', 'YM', 'YL', 'S', 'M', 'L', 'XL', '2XL', '3XL'];
 
 /**
- * A new design takes its name-and-number settings from the other designs in
- * its section, so the third visor starts with them off like the first two —
- * rather than every new design defaulting to on and needing to be caught.
- * A section with nothing in it yet falls back to on, the common case for kit.
+ * A new design takes its name-and-number and size settings from the other
+ * designs in its section, so the third visor starts with them off like the
+ * first two — rather than every new design defaulting to on and needing to be
+ * caught. A section with nothing in it yet falls back to on, the common case
+ * for kit.
  */
 function personalisationFor(items: EditableStoreItem[], categoryKey: string) {
   const sibling = items.find((i) => i.categoryKey === categoryKey && categoryKey);
@@ -211,8 +212,9 @@ function personalisationFor(items: EditableStoreItem[], categoryKey: string) {
         namePrice: sibling.namePrice,
         allowNumber: sibling.allowNumber,
         numberPrice: sibling.numberPrice,
+        sizes: sibling.sizes.length ? [...DEFAULT_SIZES] : [],
       }
-    : { allowName: true, namePrice: 0, allowNumber: true, numberPrice: 0 };
+    : { allowName: true, namePrice: 0, allowNumber: true, numberPrice: 0, sizes: [...DEFAULT_SIZES] };
 }
 
 const blankItem = (
@@ -226,7 +228,6 @@ const blankItem = (
   description: '',
   price: 0,
   images: [],
-  sizes: [...DEFAULT_SIZES],
   options: [],
   ...personalisationFor(siblings, categoryKey),
   position,
@@ -886,6 +887,23 @@ function ItemFields({
 }) {
   const section = categories.find((c) => c.tempId === item.categoryKey)?.name || 'no section';
 
+  const sizesOn = item.sizes.length > 0;
+  // Held while sizes are off, so switching back on restores the sizes that
+  // were picked rather than resetting a youth-only design to every size.
+  const [lastSizes, setLastSizes] = useState<string[]>(
+    sizesOn ? item.sizes : [...DEFAULT_SIZES]
+  );
+
+  function setSizesOn(on: boolean) {
+    if (on === sizesOn) return;
+    if (on) {
+      onChange({ sizes: [...lastSizes] });
+    } else {
+      setLastSizes(item.sizes);
+      onChange({ sizes: [] });
+    }
+  }
+
   return (
     <div className="border border-[#E3E3DF]">
       {/* Collapsed, a design is one summary row. A store with twenty designs
@@ -904,6 +922,7 @@ function ItemFields({
             </span>
             <span className="mt-0.5 block text-[12px] text-[#8A8C93]">
               {section} · ${Number(item.price) || 0} · {personalisationLabel(item)}
+              {item.sizes.length === 0 && ' · No size'}
               {item.status !== 'PUBLISHED' && ' · Draft'}
             </span>
           </span>
@@ -969,8 +988,7 @@ function ItemFields({
           Name &amp; number
         </span>
         <p className="mt-1 text-[12px] text-[#8A8C93]">
-          Switch off for things that are never personalised — visors, bags, socks. The shopper
-          then just picks a size.
+          Switch off for things that are never personalised — visors, bags, socks.
         </p>
 
         <div className="mt-4 grid gap-5 sm:grid-cols-2">
@@ -1007,30 +1025,57 @@ function ItemFields({
         </div>
       </div>
 
-      <div className="mt-4">
-        <span className="field-label">Sizes offered</span>
-        <div className="flex flex-wrap gap-1.5">
-          {DEFAULT_SIZES.map((s) => {
-            const on = item.sizes.includes(s);
-            return (
-              <button
-                key={s}
-                type="button"
-                onClick={() =>
-                  onChange({
-                    sizes: on ? item.sizes.filter((x) => x !== s) : [...item.sizes, s],
-                  })
-                }
-                className={
-                  'rounded-[2px] border px-2.5 py-1 text-[12px] font-semibold transition-colors ' +
-                  (on ? 'border-ink bg-ink text-white' : 'border-[#D6D6D1] bg-white hover:border-ink')
-                }
-              >
-                {s}
-              </button>
-            );
-          })}
+      {/* One-size things — visors, bags, towels — should not ask for a size at
+          all. "No sizes offered" is how that is stored, so switching off writes
+          an empty list instead of needing a column of its own, and the storefront
+          and checkout skip the size question for any design without sizes. */}
+      <div className="mt-4 border border-[#E3E3DF] bg-[#FAFAF8] p-4">
+        <span className="block font-display text-[12px] font-extrabold uppercase tracking-[.12em]">
+          Size
+        </span>
+        <p className="mt-1 text-[12px] text-[#8A8C93]">
+          Switch off for one-size things — visors, bags, towels. The shopper is then not asked
+          for a size.
+        </p>
+
+        <div className="mt-4">
+          <OnOff label="Shopper picks a size" on={sizesOn} onChange={setSizesOn} />
         </div>
+
+        {sizesOn && (
+          <div className="mt-4">
+            <span className="field-label">Sizes offered</span>
+            <div className="flex flex-wrap gap-1.5">
+              {DEFAULT_SIZES.map((s) => {
+                const on = item.sizes.includes(s);
+                // Removing the last size would switch sizes off by the back
+                // door, and the chips would vanish under the pointer.
+                const last = on && item.sizes.length === 1;
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    title={last ? 'Switch size off instead' : undefined}
+                    onClick={() => {
+                      if (last) return;
+                      onChange({
+                        sizes: on ? item.sizes.filter((x) => x !== s) : [...item.sizes, s],
+                      });
+                    }}
+                    className={
+                      'rounded-[2px] border px-2.5 py-1 text-[12px] font-semibold transition-colors ' +
+                      (on
+                        ? 'border-ink bg-ink text-white'
+                        : 'border-[#D6D6D1] bg-white hover:border-ink')
+                    }
+                  >
+                    {s}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       <OptionEditor

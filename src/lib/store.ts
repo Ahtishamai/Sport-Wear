@@ -122,8 +122,11 @@ export async function priceCart(
       throw new StoreError(`Choose a quantity between 1 and 99 for ${item.name}.`);
     }
 
-    const size = clean(raw.size, 32);
-    if (!size) throw new StoreError(`Enter a size for ${item.name}.`);
+    // A design with no sizes offered is one-size: it is never asked for a
+    // size, and anything a stale cart still sends for one is dropped.
+    const offersSizes = ((item.sizes as string[] | null) ?? []).some(Boolean);
+    const size = offersSizes ? clean(raw.size, 32) : '';
+    if (offersSizes && !size) throw new StoreError(`Enter a size for ${item.name}.`);
 
     // Same for any design / colourway options the item defines.
     const optionDefs = (item.options as { name: string; values: string[] }[] | null) ?? [];
@@ -155,7 +158,7 @@ export async function priceCart(
     priced.push({
       itemId: item.id,
       itemName: item.name,
-      size,
+      size: size || null,
       nameOnItem: nameOnItem || null,
       numberOnItem: numberOnItem || null,
       options,
