@@ -2,13 +2,14 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, type MediaItem } from '@/lib/admin-client';
-import { Button, EmptyState, Input, useToast } from './ui';
+import { Button, EmptyState, Input, useMoveToTrash, useToast } from './ui';
 import { Icon } from '@/components/site/Icon';
 import { Thumb } from './Thumb';
 import { formatDate } from '@/lib/utils';
 
 export function MediaLibrary() {
   const toast = useToast();
+  const moveToTrash = useMoveToTrash();
   const [items, setItems] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
@@ -58,22 +59,19 @@ export function MediaLibrary() {
     }
   }
 
-  async function remove(item: MediaItem, force = false) {
-    if (!force && !window.confirm(`Delete ${item.filename}?`)) return;
-    try {
-      await api.remove('media', item.id, force);
+  async function remove(item: MediaItem) {
+    // The file itself is kept while it is in Trash, so any page still showing
+    // it keeps working; the in-use check matters again only when erasing.
+    const ok = await moveToTrash({
+      resource: 'media',
+      id: item.id,
+      name: `“${item.filename}”`,
+      force: true,
+      extra: 'Pages already using this image keep showing it until it is deleted forever from Trash.',
+    });
+    if (ok) {
       setItems((prev) => prev.filter((m) => m.id !== item.id));
       setSelected(null);
-      toast('File removed from the library');
-    } catch (e) {
-      const message = e instanceof Error ? e.message : 'Delete failed';
-      // The server refuses to delete a file that pages still point at, and says
-      // where. Offer to go ahead rather than leaving the user stuck.
-      if (/still used in/i.test(message)) {
-        if (window.confirm(message + '\n\nDelete anyway?')) await remove(item, true);
-        return;
-      }
-      toast(message, 'error');
     }
   }
 

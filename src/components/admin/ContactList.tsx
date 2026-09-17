@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { api } from '@/lib/admin-client';
-import { Badge, Button, EmptyState, Select, useToast } from './ui';
+import { Badge, Button, EmptyState, Select, useMoveToTrash, useToast } from './ui';
 import { formatDateTime } from '@/lib/utils';
 import { Icon } from '@/components/site/Icon';
 import { cn } from '@/lib/utils';
@@ -31,6 +31,7 @@ const TONE = {
 export function ContactList({ messages }: { messages: Message[] }) {
   const router = useRouter();
   const toast = useToast();
+  const moveToTrash = useMoveToTrash();
   const [open, setOpen] = useState<string | null>(null);
 
   async function setStatus(id: string, status: string) {
@@ -44,14 +45,7 @@ export function ContactList({ messages }: { messages: Message[] }) {
   }
 
   async function remove(id: string) {
-    if (!window.confirm('Delete this message?')) return;
-    try {
-      await api.remove('contacts', id);
-      toast('Message deleted');
-      router.refresh();
-    } catch (e) {
-      toast(e instanceof Error ? e.message : 'Delete failed', 'error');
-    }
+    if (await moveToTrash({ resource: 'contacts', id })) router.refresh();
   }
 
   if (messages.length === 0) {

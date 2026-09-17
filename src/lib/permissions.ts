@@ -105,6 +105,8 @@ export function canUseResource(user: Accessor, resource: string): boolean {
 /** Whether an /admin path is inside an area this account may use. */
 export function canUsePath(user: Accessor, pathname: string): boolean {
   if (pathname === '/admin' || pathname === '/admin/') return true;
+  // Everyone gets Trash; it only lists what their own areas deleted.
+  if (pathname === '/admin/trash') return true;
   const areas = allowedAreas(user);
   for (const a of AREAS) {
     if (a.paths.some((p) => pathname === p || pathname.startsWith(p + '/'))) {

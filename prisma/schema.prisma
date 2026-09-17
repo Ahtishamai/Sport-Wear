@@ -518,3 +518,29 @@ model InvoicePayment {
   @@index([invoiceNumber])
   @@map("invoice_payments")
 }
+
+/// Something deleted in the admin, kept whole so it can be put back.
+///
+/// Deleting never erases: the record, everything that goes with it (a store's
+/// sections, designs and orders; a product's images and collection links) and
+/// every link other records had to it are copied here first, and only then
+/// removed from the live tables. The storefront, checkout and reports never
+/// see this table, so nothing in Trash can show up anywhere by accident.
+/// Only "Delete forever" in the Trash screen erases a row from here.
+model TrashItem {
+  id            String   @id @default(cuid())
+  /// The admin resource it came from — "stores", "storeOrders", "products"…
+  resource      String   @db.VarChar(40)
+  recordId      String   @db.VarChar(191)
+  label         String   @db.VarChar(255)
+  /// "36 designs, 4 sections, 12 orders" — what went with it.
+  detail        String?  @db.VarChar(255)
+  snapshot      Json
+  deletedById   String?  @db.VarChar(191)
+  deletedByName String?  @db.VarChar(120)
+  deletedAt     DateTime @default(now())
+
+  @@index([resource])
+  @@index([deletedAt])
+  @@map("trash_items")
+}

@@ -11,7 +11,7 @@ import {
   Button,
   Card,
   Checkbox,
-  ConfirmButton,
+  useMoveToTrash,
   Input,
   Select,
   Textarea,
@@ -59,6 +59,7 @@ export function ProductEditor({
 }) {
   const router = useRouter();
   const toast = useToast();
+  const moveToTrash = useMoveToTrash();
   const isNew = !product.id;
 
   const [f, setF] = useState(() => ({
@@ -175,13 +176,9 @@ export function ProductEditor({
 
   async function destroy() {
     if (!product.id) return;
-    try {
-      await api.remove('products', product.id);
-      toast('Product deleted');
+    if (await moveToTrash({ resource: 'products', id: product.id, name: `“${product.title}”` })) {
       router.push('/admin/products');
       router.refresh();
-    } catch (e) {
-      toast(e instanceof Error ? e.message : 'Delete failed', 'error');
     }
   }
 
@@ -211,9 +208,9 @@ export function ProductEditor({
             </button>
           )}
           {!isNew && (
-            <ConfirmButton onConfirm={destroy} message="Delete this product permanently?">
+            <Button variant="danger" size="sm" onClick={destroy}>
               Delete
-            </ConfirmButton>
+            </Button>
           )}
           <Button variant="yellow" onClick={save} disabled={busy}>
             {busy ? 'Saving…' : isNew ? 'Create product' : 'Save product'}

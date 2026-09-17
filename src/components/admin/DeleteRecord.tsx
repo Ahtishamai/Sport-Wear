@@ -2,11 +2,10 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { api } from '@/lib/admin-client';
-import { useToast } from './ui';
+import { useMoveToTrash } from './ui';
 
 /**
- * Deletes one record through the admin API.
+ * Moves one record to Trash through the admin API, after a warning.
  *
  * Used from server-rendered tables and detail pages, which cannot carry a click
  * handler themselves. `redirectTo` is for detail pages, where staying on the
@@ -26,19 +25,15 @@ export function DeleteRecord({
   variant?: 'link' | 'button';
 }) {
   const router = useRouter();
-  const toast = useToast();
+  const moveToTrash = useMoveToTrash();
   const [busy, setBusy] = useState(false);
 
   async function destroy() {
-    if (!window.confirm(`Delete ${name} permanently? This cannot be undone.`)) return;
     setBusy(true);
-    try {
-      await api.remove(resource, id);
-      toast('Deleted');
+    if (await moveToTrash({ resource, id, name })) {
       if (redirectTo) router.push(redirectTo);
       router.refresh();
-    } catch (e) {
-      toast(e instanceof Error ? e.message : 'Delete failed', 'error');
+    } else {
       setBusy(false);
     }
   }

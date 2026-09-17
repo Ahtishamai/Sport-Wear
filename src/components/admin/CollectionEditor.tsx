@@ -12,7 +12,7 @@ import {
   Button,
   Card,
   Checkbox,
-  ConfirmButton,
+  useMoveToTrash,
   Input,
   Select,
   Textarea,
@@ -56,6 +56,7 @@ export function CollectionEditor({
 }) {
   const router = useRouter();
   const toast = useToast();
+  const moveToTrash = useMoveToTrash();
   const isNew = !collection.id;
 
   const [f, setF] = useState(() => ({
@@ -124,13 +125,10 @@ export function CollectionEditor({
 
   async function destroy() {
     if (!collection.id) return;
-    try {
-      await api.remove('collections', collection.id);
-      toast('Collection deleted');
+    // Its products stay; only their place in this collection goes with it.
+    if (await moveToTrash({ resource: 'collections', id: collection.id, name: `the “${collection.title}” collection` })) {
       router.push('/admin/collections');
       router.refresh();
-    } catch (e) {
-      toast(e instanceof Error ? e.message : 'Delete failed', 'error');
     }
   }
 
@@ -151,9 +149,9 @@ export function CollectionEditor({
             </Link>
           )}
           {!isNew && (
-            <ConfirmButton onConfirm={destroy} message="Delete this collection? Products are not deleted.">
+            <Button variant="danger" size="sm" onClick={destroy}>
               Delete
-            </ConfirmButton>
+            </Button>
           )}
           <Button variant="yellow" onClick={save} disabled={busy}>
             {busy ? 'Saving…' : isNew ? 'Create collection' : 'Save collection'}

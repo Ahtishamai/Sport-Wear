@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { api, ApiError } from '@/lib/admin-client';
-import { useToast } from './ui';
+import { api } from '@/lib/admin-client';
+import { useMoveToTrash, useToast } from './ui';
 
 /**
  * Per-row Edit / View / Delete for the products table.
@@ -24,6 +24,7 @@ export function ProductRowActions({
 }) {
   const router = useRouter();
   const toast = useToast();
+  const moveToTrash = useMoveToTrash();
   const [busy, setBusy] = useState(false);
   const [copying, setCopying] = useState(false);
 
@@ -47,30 +48,9 @@ export function ProductRowActions({
   }
 
   async function destroy() {
-    if (!window.confirm(`Delete “${title}” permanently? This cannot be undone.`)) return;
     setBusy(true);
-    try {
-      await api.remove('products', id);
-      toast('Product deleted');
-      router.refresh();
-    } catch (e) {
-      // The API refuses to delete a product that is still referenced, and says
-      // where. Offer the override rather than leaving a dead end.
-      const message = e instanceof ApiError ? e.message : 'Delete failed';
-      if (e instanceof ApiError && window.confirm(`${message}\n\nDelete it anyway?`)) {
-        try {
-          await api.remove('products', id, true);
-          toast('Product deleted');
-          router.refresh();
-        } catch (err) {
-          toast(err instanceof Error ? err.message : 'Delete failed', 'error');
-        }
-      } else if (!(e instanceof ApiError)) {
-        toast(message, 'error');
-      }
-    } finally {
-      setBusy(false);
-    }
+    if (await moveToTrash({ resource: 'products', id, name: `“${title}”` })) router.refresh();
+    setBusy(false);
   }
 
   return (

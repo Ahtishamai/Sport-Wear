@@ -72,10 +72,43 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
+  /** Moves a record to Trash. Nothing in the admin erases outright. */
   remove: (resource: string, id: string, force = false) =>
-    request<{ ok: true }>(`/api/admin/${resource}/${id}${force ? '?force=1' : ''}`, {
-      method: 'DELETE',
-    }),
+    request<{ ok: true; trashed?: { id: string; label: string; detail: string | null } }>(
+      `/api/admin/${resource}/${id}${force ? '?force=1' : ''}`,
+      { method: 'DELETE' }
+    ),
+
+  trash: {
+    list: () =>
+      request<{
+        items: {
+          id: string;
+          resource: string;
+          kind: string;
+          label: string;
+          detail: string | null;
+          deletedAt: string;
+          deletedByName: string | null;
+        }[];
+      }>('/api/admin/trash'),
+    /** What a delete would take with it, for the warning. */
+    preview: (resource: string, id: string) =>
+      request<{ label: string; kind: string; contents: { noun: string; count: number }[] }>('/api/admin/trash', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'preview', resource, id }),
+      }),
+    restore: (id: string) =>
+      request<{ ok: true; label: string; notes: string[]; resource: string }>('/api/admin/trash', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'restore', id }),
+      }),
+    purge: (id: string) =>
+      request<{ ok: true; label: string }>('/api/admin/trash', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'purge', id }),
+      }),
+  },
 
   /** Copies a record and returns the copy, which is always a draft. */
   duplicate: <T>(resource: string, id: string) =>

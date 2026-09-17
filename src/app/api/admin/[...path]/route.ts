@@ -8,6 +8,7 @@ import { saveSettings } from '@/lib/settings';
 import { savePaymentSecret, clearPaymentSecret, paypalSecretSummary } from '@/lib/payments';
 import { saveMailConfig, mailConfigSummary, type MailConfig } from '@/lib/mail';
 import { duplicateProduct } from '@/lib/duplicate';
+import { moveToTrash, TrashError } from '@/lib/trash';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -352,17 +353,17 @@ export async function DELETE(_req: Request, ctx: Ctx) {
       }
     }
 
-    await m.delete({ where: { id } });
+    // Pages need the store's address to refresh; load it before it goes.
+    const full = cfg.include ? ((await m.findUnique({ where: { id }, include: cfg.include })) ?? row) : row;
 
-    // Media rows own their bytes; drop them so deleting a file actually
-    // reclaims the space rather than orphaning a blob.
-    if (resource === 'media' && typeof row.url === 'string') {
-      await prisma.uploadedFile.deleteMany({ where: { path: row.url } });
-    }
+    // Nothing is erased here: it moves to Trash with everything that belongs
+    // to it. A media file's bytes stay until it is deleted forever from Trash.
+    const moved = await moveToTrash(resource, id, { id: user.id, name: user.name || user.email });
 
-    bump(cfg, row);
-    return json({ ok: true });
+    bump(cfg, full);
+    return json({ ok: true, trashed: { id: moved.trashId, label: moved.label, detail: moved.detail } });
   } catch (err) {
+    if (err instanceof TrashError) return json({ error: err.message }, err.status);
     return handleWriteError(err);
   }
 }

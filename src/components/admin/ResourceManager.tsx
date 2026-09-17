@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { Field } from '@/lib/blocks/types';
 import { emptyRow } from '@/lib/blocks/types';
 import { api } from '@/lib/admin-client';
-import { Button, Card, EmptyState, Input, useToast } from './ui';
+import { Button, Card, EmptyState, Input, useMoveToTrash, useToast } from './ui';
 import { FieldSet } from './BlockFields';
 import { Icon } from '@/components/site/Icon';
 import { cn } from '@/lib/utils';
@@ -38,6 +38,7 @@ export function ResourceManager({
   extraPayload?: Record<string, unknown>;
 }) {
   const toast = useToast();
+  const moveToTrash = useMoveToTrash();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
@@ -94,14 +95,7 @@ export function ResourceManager({
   }
 
   async function remove(id: string) {
-    if (!window.confirm(`Delete this ${singularLabel.toLowerCase()}?`)) return;
-    try {
-      await api.remove(resource, id);
-      toast(`${singularLabel} deleted`);
-      await load();
-    } catch (e) {
-      toast(e instanceof Error ? e.message : 'Delete failed', 'error');
-    }
+    if (await moveToTrash({ resource, id, name: `this ${singularLabel.toLowerCase()}` })) await load();
   }
 
   async function move(index: number, dir: -1 | 1) {

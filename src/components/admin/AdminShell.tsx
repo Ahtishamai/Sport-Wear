@@ -7,7 +7,7 @@ import type { SessionUser } from '@/lib/auth';
 import { Icon } from '@/components/site/Icon';
 import type { AreaKey } from '@/lib/permissions';
 import { cn } from '@/lib/utils';
-import { ToastProvider } from './ui';
+import { ConfirmProvider, ToastProvider } from './ui';
 
 const NAV: {
   group: string;
@@ -55,6 +55,8 @@ const NAV: {
       { label: 'Navigation', href: '/admin/navigation', icon: 'ruler', area: 'settings' },
       { label: 'Site settings', href: '/admin/settings', icon: 'factory', area: 'settings' },
       { label: 'Users', href: '/admin/users', icon: 'check', area: 'users' },
+      // No area: everyone sees Trash, filtered to what they can manage.
+      { label: 'Trash', href: '/admin/trash', icon: 'close' },
     ],
   },
 ];
@@ -186,7 +188,9 @@ export function AdminShell({
           <span className="font-display text-[14px] font-black uppercase">Admin</span>
         </div>
         <div className="min-w-0 flex-1">
-          <ToastProvider>{children}</ToastProvider>
+          <ToastProvider>
+            <ConfirmProvider>{children}</ConfirmProvider>
+          </ToastProvider>
         </div>
       </div>
     </div>

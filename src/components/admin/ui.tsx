@@ -325,23 +325,211 @@ export function useDebounced<T>(value: T, ms = 300) {
 export function ConfirmButton({
   onConfirm,
   children,
-  message = 'Are you sure? This cannot be undone.',
+  message = 'Are you sure?',
+  title = 'Are you sure?',
+  confirmLabel = 'Move to Trash',
   ...rest
 }: {
   onConfirm: () => void;
   children: React.ReactNode;
   message?: string;
+  title?: string;
+  confirmLabel?: string;
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  const confirm = useConfirm();
   return (
     <Button
       variant="danger"
       size="sm"
       {...rest}
-      onClick={() => {
-        if (window.confirm(message)) onConfirm();
+      onClick={async () => {
+        if (await confirm({ title, message, confirmLabel })) onConfirm();
       }}
     >
       {children}
     </Button>
+  );
+}
+
+// ------------------------------------------------------------------ confirm
+
+export type ConfirmOptions = {
+  title: string;
+  message?: React.ReactNode;
+  /** Short lines listed under the message, e.g. "36 designs". */
+  items?: string[];
+  confirmLabel?: string;
+  cancelLabel?: string;
+  /** "danger" is for things that cannot be undone. */
+  tone?: 'trash' | 'danger';
+};
+
+// Outside the provider, fall back to the browser's box rather than silently
+// answering "no" and leaving a button that does nothing.
+const ConfirmCtx = createContext<(o: ConfirmOptions) => Promise<boolean>>(async (o) =>
+  window.confirm([o.title, typeof o.message === 'string' ? o.message : '', ...(o.items ?? [])].filter(Boolean).join('\n\n'))
+);
+
+/** A proper warning dialog in place of the browser's confirm box. Resolves true on yes. */
+export function useConfirm() {
+  return useContext(ConfirmCtx);
+}
+
+export function ConfirmProvider({ children }: { children: React.ReactNode }) {
+  const [open, setOpen] = useState<(ConfirmOptions & { resolve: (ok: boolean) => void }) | null>(null);
+
+  const ask = useCallback(
+    (o: ConfirmOptions) =>
+      new Promise<boolean>((resolve) => {
+        setOpen({ ...o, resolve });
+      }),
+    []
+  );
+
+  const close = useCallback(
+    (ok: boolean) => {
+      setOpen((cur) => {
+        cur?.resolve(ok);
+        return null;
+      });
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, close]);
+
+  const danger = open?.tone === 'danger';
+
+  return (
+    <ConfirmCtx.Provider value={ask}>
+      {children}
+      {open && (
+        <div
+          className="fixed inset-0 z-[400] flex items-center justify-center bg-black/45 p-4"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) close(false);
+          }}
+        >
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="confirm-title"
+            data-confirm-dialog
+            className="w-full max-w-[440px] rounded-[2px] bg-white shadow-2xl"
+          >
+            <div className="flex gap-3.5 px-6 pb-2 pt-6">
+              <span
+                className={cn(
+                  'mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[18px] font-bold',
+                  danger ? 'bg-[#FBE7E8] text-[#C42027]' : 'bg-brand-tint text-brand-deep'
+                )}
+                aria-hidden
+              >
+                !
+              </span>
+              <div className="min-w-0">
+                <h2 id="confirm-title" className="text-[17px] font-bold leading-snug text-ink">
+                  {open.title}
+                </h2>
+                {open.message && <div className="mt-1.5 text-[13.5px] leading-relaxed text-[#55575E]">{open.message}</div>}
+                {!!open.items?.length && (
+                  <ul className="mt-3 space-y-1 rounded-[2px] bg-[#F6F6F3] px-3.5 py-2.5 text-[13px] font-medium text-ink">
+                    {open.items.map((i) => (
+                      <li key={i}>• {i}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+            <div className="mt-4 flex justify-end gap-2 border-t border-[#EFEFEC] px-6 py-4">
+              <Button variant="outline" autoFocus onClick={() => close(false)} data-confirm-cancel>
+                {open.cancelLabel ?? 'Cancel'}
+              </Button>
+              <Button
+                className={danger ? 'border-[#C42027] bg-[#C42027] hover:bg-[#a51b21]' : ''}
+                onClick={() => close(true)}
+                data-confirm-ok
+              >
+                {open.confirmLabel ?? 'Yes'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </ConfirmCtx.Provider>
+  );
+}
+
+/**
+ * Warn, then move a saved record to Trash.
+ *
+ * The warning names what else goes with it ("36 designs, 4 orders"), read
+ * from the server at the moment of asking, so it is never a guess. Resolves
+ * true once it is in Trash; false if the person said no or it failed (the
+ * failure is already shown as a toast).
+ */
+export function useMoveToTrash() {
+  const confirm = useConfirm();
+  const toast = useToast();
+
+  return useCallback(
+    async ({
+      resource,
+      id,
+      name,
+      force = false,
+      extra,
+    }: {
+      resource: string;
+      id: string;
+      /** How to call it in the warning, e.g. “Pirates 2026”. */
+      name?: string;
+      force?: boolean;
+      /** A further line of warning, e.g. about images still in use. */
+      extra?: string;
+    }) => {
+      const { api } = await import('@/lib/admin-client');
+      let label = name ?? 'this';
+      let items: string[] = [];
+      try {
+        const p = await api.trash.preview(resource, id);
+        label = name ?? p.label;
+        items = p.contents.map((c) => `${c.count} ${c.noun}`);
+      } catch (e) {
+        toast(e instanceof Error ? e.message : 'Could not check that item', 'error');
+        return false;
+      }
+
+      const ok = await confirm({
+        title: `Delete ${label}?`,
+        message: (
+          <>
+            {items.length ? 'This also removes everything below with it. ' : ''}
+            It goes to <b>Trash</b> first — nothing is erased, and you can restore it from Trash at any time.
+            {extra ? <span className="mt-2 block text-[#C42027]">{extra}</span> : null}
+          </>
+        ),
+        items,
+        confirmLabel: 'Move to Trash',
+      });
+      if (!ok) return false;
+
+      try {
+        await api.remove(resource, id, force);
+        toast('Moved to Trash — restore it from Trash if needed');
+        return true;
+      } catch (e) {
+        toast(e instanceof Error ? e.message : 'Delete failed', 'error');
+        return false;
+      }
+    },
+    [confirm, toast]
   );
 }

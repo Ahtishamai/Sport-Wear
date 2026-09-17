@@ -7,7 +7,7 @@ import { defaultsFor, newBlockId, type Block } from '@/lib/blocks/types';
 import { api } from '@/lib/admin-client';
 import { cn } from '@/lib/utils';
 import { Icon } from '@/components/site/Icon';
-import { Button, Input, Select, Textarea, useToast } from './ui';
+import { Button, Input, Select, Textarea, useConfirm, useToast } from './ui';
 import { FieldSet } from './BlockFields';
 
 export type BuilderPage = {
@@ -33,6 +33,7 @@ const DEVICE_WIDTH: Record<Device, string> = {
 
 export function PageBuilder({ page }: { page: BuilderPage }) {
   const toast = useToast();
+  const confirm = useConfirm();
   const iframe = useRef<HTMLIFrameElement>(null);
   const iframeReady = useRef(false);
 
@@ -350,8 +351,14 @@ export function PageBuilder({ page }: { page: BuilderPage }) {
                           <IconBtn
                             label="Delete"
                             danger
-                            onClick={() => {
-                              if (window.confirm(`Remove the "${def?.label ?? b.type}" section?`)) {
+                            onClick={async () => {
+                              if (
+                                await confirm({
+                                  title: `Remove the “${def?.label ?? b.type}” section?`,
+                                  message: 'Save the page to keep this change. Earlier versions stay in the page history.',
+                                  confirmLabel: 'Remove section',
+                                })
+                              ) {
                                 remove(b.id);
                               }
                             }}

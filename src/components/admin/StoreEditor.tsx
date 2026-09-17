@@ -10,7 +10,8 @@ import {
   AdminPage,
   Button,
   Card,
-  ConfirmButton,
+  useConfirm,
+  useMoveToTrash,
   Field,
   Input as UiInput,
   Select as UiSelect,
@@ -297,6 +298,8 @@ function OnOff({
 export function StoreEditor({ store }: { store: EditableStore }) {
   const router = useRouter();
   const toast = useToast();
+  const confirm = useConfirm();
+  const moveToTrash = useMoveToTrash();
   const isNew = !store.id;
 
   const [f, setF] = useState<EditableStore>(store);
@@ -342,14 +345,10 @@ export function StoreEditor({ store }: { store: EditableStore }) {
       toast(`Move or remove the ${used} design(s) in “${cat.name}” first.`, 'error');
       return;
     }
-    if (cat.id && !window.confirm(`Delete the “${cat.name}” section?`)) return;
     if (cat.id) {
-      try {
-        await api.remove('storeCategories', cat.id);
-      } catch (e) {
-        toast(e instanceof Error ? e.message : 'Delete failed', 'error');
-        return;
-      }
+      if (!(await moveToTrash({ resource: 'storeCategories', id: cat.id, name: `the “${cat.name}” section` }))) return;
+    } else if (!(await confirm({ title: `Remove the “${cat.name || 'new'}” section?`, message: 'It has not been saved yet.', confirmLabel: 'Remove' }))) {
+      return;
     }
     setF((prev) => ({ ...prev, categories: prev.categories.filter((_, i) => i !== index) }));
   }
@@ -533,26 +532,19 @@ export function StoreEditor({ store }: { store: EditableStore }) {
 
   async function destroy() {
     if (!f.id) return;
-    try {
-      await api.remove('stores', f.id);
-      toast('Store deleted');
+    // The warning lists its sections, designs and orders — all go to Trash together.
+    if (await moveToTrash({ resource: 'stores', id: f.id, name: `the “${f.name}” store` })) {
       router.push('/admin/stores');
       router.refresh();
-    } catch (e) {
-      toast(e instanceof Error ? e.message : 'Delete failed', 'error');
     }
   }
 
   async function removeItem(index: number) {
     const item = f.items[index];
-    if (item.id && !window.confirm(`Delete “${item.name}” from this store?`)) return;
     if (item.id) {
-      try {
-        await api.remove('storeItems', item.id);
-      } catch (e) {
-        toast(e instanceof Error ? e.message : 'Delete failed', 'error');
-        return;
-      }
+      if (!(await moveToTrash({ resource: 'storeItems', id: item.id, name: `“${item.name}”` }))) return;
+    } else if (!(await confirm({ title: `Remove “${item.name || 'this design'}”?`, message: 'It has not been saved yet, so it cannot be restored.', confirmLabel: 'Remove', tone: 'danger' }))) {
+      return;
     }
     setOpenDesign((cur) => (cur === index ? null : cur !== null && cur > index ? cur - 1 : cur));
     setF((prev) => ({ ...prev, items: prev.items.filter((_, i) => i !== index) }));
@@ -579,9 +571,9 @@ export function StoreEditor({ store }: { store: EditableStore }) {
             </Link>
           )}
           {!isNew && (
-            <ConfirmButton onConfirm={destroy} message="Delete this store and all its designs?">
+            <Button variant="danger" size="sm" onClick={destroy}>
               Delete
-            </ConfirmButton>
+            </Button>
           )}
           <Button variant="yellow" onClick={save} disabled={busy}>
             {busy ? 'Saving…' : isNew ? 'Create store' : 'Save store'}
