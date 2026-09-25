@@ -1,8 +1,10 @@
 import Link from 'next/link';
+import { Prisma } from '@prisma/client';
 import { prisma, plain } from '@/lib/db';
 import { AdminPage, Badge, Table, Td, Th } from '@/components/admin/ui';
-import { formatDateTime, money } from '@/lib/utils';
+import { formatDateTime, money, storeTimeToDate } from '@/lib/utils';
 import { DeleteRecord } from '@/components/admin/DeleteRecord';
+import { StoreOrderFilters } from '@/components/admin/StoreOrderFilters';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,31 +24,65 @@ const FILTERS = [
   { label: 'Refunded', value: 'REFUNDED' },
 ];
 
+const SORTS: Record<string, Prisma.StoreOrderOrderByWithRelationInput> = {
+  oldest: { createdAt: 'asc' },
+  highest: { total: 'desc' },
+  lowest: { total: 'asc' },
+  customer: { customerName: 'asc' },
+};
+
 export default async function StoreOrdersIndex({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; q?: string }>;
+  searchParams: Promise<{
+    status?: string;
+    q?: string;
+    store?: string;
+    from?: string;
+    to?: string;
+    sort?: string;
+  }>;
 }) {
-  const { status, q } = await searchParams;
+  const { status, q, store, from, to, sort } = await searchParams;
 
-  const orders = await prisma.storeOrder.findMany({
-    where: {
-      ...(status ? { status: status as 'PAID' } : {}),
-      ...(q
-        ? {
-            OR: [
-              { reference: { contains: q } },
-              { invoiceNumber: { contains: q } },
-              { customerName: { contains: q } },
-              { email: { contains: q } },
-            ],
-          }
-        : {}),
-    },
-    orderBy: { createdAt: 'desc' },
-    include: { store: { select: { name: true } }, _count: { select: { items: true } } },
-    take: 200,
-  });
+  // A date picked here means that whole day in US Eastern, the timezone the
+  // stores and their deadlines already run on.
+  const after = from ? storeTimeToDate(`${from}T00:00`) : null;
+  const until = to ? storeTimeToDate(`${to}T23:59`) : null;
+
+  const where: Prisma.StoreOrderWhereInput = {
+    ...(status ? { status: status as 'PAID' } : {}),
+    ...(store ? { store: { slug: store } } : {}),
+    ...(after || until
+      ? { createdAt: { ...(after ? { gte: after } : {}), ...(until ? { lte: until } : {}) } }
+      : {}),
+    ...(q
+      ? {
+          OR: [
+            { reference: { contains: q } },
+            { invoiceNumber: { contains: q } },
+            { customerName: { contains: q } },
+            { email: { contains: q } },
+          ],
+        }
+      : {}),
+  };
+
+  const [orders, matching, storeOptions] = await Promise.all([
+    prisma.storeOrder.findMany({
+      where,
+      orderBy: SORTS[sort ?? ''] ?? { createdAt: 'desc' },
+      include: { store: { select: { name: true } }, _count: { select: { items: true } } },
+      take: 200,
+    }),
+    prisma.storeOrder.count({ where }),
+    // Only stores that have ever taken an order; the rest would filter to nothing.
+    prisma.teamStore.findMany({
+      where: { orders: { some: {} } },
+      select: { slug: true, name: true, _count: { select: { orders: true } } },
+      orderBy: { name: 'asc' },
+    }),
+  ]);
 
   const paidTotal = orders
     .filter((o) => o.status === 'PAID' || o.status === 'FULFILLED')
@@ -56,25 +92,24 @@ export default async function StoreOrdersIndex({
     <AdminPage
       title="Store orders"
       description="Orders paid through a team store checkout. Quote requests stay on their own page."
-      actions={
-        <form className="flex gap-2">
-          {status && <input type="hidden" name="status" value={status} />}
-          <input
-            name="q"
-            defaultValue={q ?? ''}
-            placeholder="Search reference, invoice #, name, email…"
-            className="field !py-2 text-[13px]"
-          />
-        </form>
-      }
     >
+      <StoreOrderFilters
+        stores={storeOptions.map((s) => ({ slug: s.slug, name: s.name, orders: s._count.orders }))}
+        total={matching}
+      />
+
       <div className="mb-4 flex flex-wrap items-center gap-1.5">
         {FILTERS.map((f) => {
           const active = (status ?? '') === f.value;
+          // Changing the status keeps whatever else is being filtered on.
+          const params = new URLSearchParams();
+          if (f.value) params.set('status', f.value);
+          for (const [k, v] of Object.entries({ store, from, to, sort, q })) if (v) params.set(k, v);
+          const qs = params.toString();
           return (
             <Link
               key={f.label}
-              href={f.value ? `/admin/store-orders?status=${f.value}` : '/admin/store-orders'}
+              href={qs ? `/admin/store-orders?${qs}` : '/admin/store-orders'}
               className={
                 'rounded-[2px] border px-3 py-1.5 text-[12px] font-semibold transition-colors ' +
                 (active
@@ -88,6 +123,11 @@ export default async function StoreOrdersIndex({
         })}
         <span className="ml-auto text-[13px] text-[#6B6D74]">
           Paid on this page: <strong className="text-ink">{money(paidTotal)}</strong>
+          {matching > orders.length && (
+            <span className="ml-2 text-[#8A8C93]">
+              (showing the first {orders.length} of {matching} — narrow the filters to see the rest)
+            </span>
+          )}
         </span>
       </div>
 
