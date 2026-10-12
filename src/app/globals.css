@@ -196,6 +196,35 @@
 /* ------------------------------------------------------------------ components */
 
 @layer components {
+  /*
+   * A row of equal cells separated by hairlines, where the last row stretches
+   * to fill the width instead of leaving empty squares. --cells is how many
+   * sit on a row; the basis is a hair under the exact share so rounding never
+   * drops a cell onto the next line.
+   */
+  .cell-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1px;
+  }
+
+  .cell-row > * {
+    flex: 1 1 calc(100% / var(--cells-sm, 2) - 1px);
+    min-width: 0;
+  }
+
+  @media (min-width: 640px) {
+    .cell-row > * {
+      flex-basis: calc(100% / var(--cells-md, 3) - 1px);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .cell-row > * {
+      flex-basis: calc(100% / var(--cells, 4) - 1px);
+    }
+  }
+
   .gutter {
     padding-left: 40px;
     padding-right: 40px;

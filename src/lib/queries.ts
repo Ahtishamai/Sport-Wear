@@ -287,6 +287,7 @@ export const getPackages = cache(async (limit = 4): Promise<CardPackage[]> => {
     items: (p.items as string[] | null) ?? [],
     imageUrl: p.imageUrl,
     highlight: p.highlight,
+    showPrice: p.showPrice,
   }));
 });
 

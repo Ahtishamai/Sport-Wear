@@ -166,6 +166,9 @@ model TeamPackage {
   tag       String
   name      String
   price     Decimal       @db.Decimal(10, 2)
+  /// Off shows only "Request quote" on this package — no figure, no note.
+  /// The site-wide switch in settings still wins: it hides prices everywhere.
+  showPrice Boolean       @default(true)
   note      String?
   items     Json // string[]
   imageUrl  String?       @db.VarChar(512)

@@ -376,10 +376,14 @@ export type CardPackage = {
   items: string[];
   imageUrl?: string | null;
   highlight: boolean;
+  /** Off hides the figure on this package alone. */
+  showPrice?: boolean;
 };
 
 export function PackageCard({ pk, showPrice = true }: { pk: CardPackage; showPrice?: boolean }) {
   const hl = pk.highlight;
+  // Either switch hides it: the site-wide one, or this package's own.
+  const priced = showPrice && pk.showPrice !== false;
   return (
     <article
       className="flex flex-col border"
@@ -430,7 +434,7 @@ export function PackageCard({ pk, showPrice = true }: { pk: CardPackage; showPri
             </li>
           ))}
         </ul>
-        {showPrice && (
+        {priced && (
           <div className="mt-7 flex items-baseline gap-2">
             <span
               className="font-display text-[46px] font-black leading-none"
@@ -443,7 +447,7 @@ export function PackageCard({ pk, showPrice = true }: { pk: CardPackage; showPri
         )}
         {/* The note qualifies the price ("with rolling bag $500"), so it goes
             when the price does. */}
-        {showPrice && pk.note && (
+        {priced && pk.note && (
           <p
             className="mt-2 text-[13px] font-medium"
             style={{ color: hl ? 'rgba(16,17,20,.66)' : '#8A8C93' }}
@@ -453,7 +457,7 @@ export function PackageCard({ pk, showPrice = true }: { pk: CardPackage; showPri
           </p>
         )}
         <QuoteButton
-          subject={showPrice ? `${pk.tag} — ${money(pk.price)}/player` : pk.tag}
+          subject={priced ? `${pk.tag} — ${money(pk.price)}/player` : pk.tag}
           className="btn mt-6 w-full py-[18px] text-[14px]"
           style={
             hl

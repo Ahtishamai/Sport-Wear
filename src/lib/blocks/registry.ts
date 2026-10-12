@@ -201,12 +201,13 @@ export const BLOCKS: BlockDefinition[] = [
       alignField,
       bgField,
       {
-        name: 'minWidth',
-        label: 'Min cell width (px)',
+        name: 'columns',
+        label: 'Cells per row',
         type: 'number',
         width: 'half',
-        min: 140,
-        max: 400,
+        min: 0,
+        max: 6,
+        help: 'Leave 0 to split them evenly — eight figures become two rows of four.',
       },
       {
         name: 'items',
@@ -232,7 +233,7 @@ export const BLOCKS: BlockDefinition[] = [
       body: '',
       align: 'center',
       background: 'ink',
-      minWidth: 220,
+      columns: 0,
       items: [
         { value: '8+', label: 'Years of industry experience', count: 0, suffix: '' },
         { value: '1,000+', label: 'Happy customers', count: 1000, suffix: '+' },

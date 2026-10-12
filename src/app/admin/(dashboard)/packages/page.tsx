@@ -13,6 +13,14 @@ const FIELDS: Field[] = [
   { name: 'imageUrl', label: 'Photo', type: 'image', default: '' },
   { name: 'highlight', label: 'Highlight card (yellow)', type: 'boolean', width: 'half', default: false },
   {
+    name: 'showPrice',
+    label: 'Show the price',
+    type: 'boolean',
+    width: 'half',
+    default: true,
+    help: 'Off shows only the Request quote button — no price and no note line.',
+  },
+  {
     name: 'status',
     label: 'Status',
     type: 'select',

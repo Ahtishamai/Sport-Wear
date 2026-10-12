@@ -221,11 +221,24 @@ export function StatStripBlock({ p, bid }: BlockComponentProps) {
   );
 }
 
+/**
+ * How many cells to put on a row so the rows come out even.
+ *
+ * Fitting as many as will go leaves a ragged last row — eight figures across
+ * six columns is six and then two, with a gap where the other four would be.
+ * Splitting them evenly instead (four and four) fills every row.
+ */
+function evenColumns(count: number, max = 4) {
+  if (count <= max) return count;
+  return Math.ceil(count / Math.ceil(count / max));
+}
+
 /** Free-form stat grid — any number of cells, used for "By the numbers". */
 export function NumbersGridBlock({ p, bid }: BlockComponentProps) {
   const items: P[] = p.items ?? [];
   if (!items.length) return null;
   const onDark = p.background === 'ink';
+  const cols = Number(p.columns) > 0 ? Math.min(Number(p.columns), items.length) : evenColumns(items.length);
   return (
     <Section background={(p.background as Bg) ?? 'ink'}>
       <SectionHeading
@@ -236,12 +249,20 @@ export function NumbersGridBlock({ p, bid }: BlockComponentProps) {
         onDark={onDark}
         bid={bid}
       />
+      {/*
+        Flexible cells rather than a fixed grid: a row that is short of cells
+        stretches to fill the width, so there is never an empty square.
+      */}
       <div
-        className="grid gap-px border border-hairline/20"
-        style={{
-          gridTemplateColumns: `repeat(auto-fit, minmax(${Number(p.minWidth) || 220}px, 1fr))`,
-          background: onDark ? 'rgba(255,255,255,.14)' : '#E6E6E2',
-        }}
+        className="cell-row border border-hairline/20"
+        style={
+          {
+            '--cells': cols,
+            '--cells-sm': Math.min(2, cols),
+            '--cells-md': Math.min(3, cols),
+            background: onDark ? 'rgba(255,255,255,.14)' : '#E6E6E2',
+          } as React.CSSProperties
+        }
       >
         {items.map((s, i) => (
           <div
