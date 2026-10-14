@@ -21,6 +21,8 @@ const poppins = Poppins({
 export async function generateMetadata(): Promise<Metadata> {
   const s = await getSettings();
   const base = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+  const chosen = s.favicon?.trim();
+  const custom = chosen && chosen !== '/favicon.ico' ? chosen : null;
   return {
     metadataBase: new URL(base),
     title: { default: s.defaultSeoTitle, template: `%s — ${s.siteName}` },
@@ -34,6 +36,21 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     twitter: { card: 'summary_large_image' },
     robots: { index: true, follow: true },
+    // The D-S mark, built from the logo by scripts/make-icons.mjs. A favicon
+    // set in site settings replaces it, so it can be changed without a deploy.
+    icons: custom
+      ? { icon: custom, shortcut: custom, apple: custom }
+      : {
+          icon: [
+            { url: '/favicon.ico', sizes: '16x16 32x32 48x48' },
+            { url: '/icon-96.png', type: 'image/png', sizes: '96x96' },
+            { url: '/icon-192.png', type: 'image/png', sizes: '192x192' },
+            { url: '/icon-512.png', type: 'image/png', sizes: '512x512' },
+          ],
+          shortcut: '/favicon.ico',
+          apple: [{ url: '/apple-icon.png', sizes: '180x180' }],
+        },
+    manifest: '/manifest.webmanifest',
   };
 }
 

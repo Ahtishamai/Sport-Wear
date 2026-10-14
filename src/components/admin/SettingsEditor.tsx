@@ -191,6 +191,14 @@ export function SettingsEditor({
                 <span className="field-label">Footer logo (light)</span>
                 <ImageField value={s.logoLight} onChange={(v) => set('logoLight', v)} folder="brand" />
               </div>
+              <div>
+                <span className="field-label">Browser tab icon</span>
+                <ImageField value={s.favicon} onChange={(v) => set('favicon', v)} folder="brand" />
+                <p className="mt-1.5 text-[12px] text-[#8A8C93]">
+                  Leave this on /favicon.ico to keep the D-S mark. A square PNG of at least 192×192
+                  works best — anything wider is squashed into the tab.
+                </p>
+              </div>
             </div>
           </Card>
 
