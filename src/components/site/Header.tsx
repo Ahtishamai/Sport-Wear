@@ -1,14 +1,19 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import Image from 'next/image';
-import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { Icon } from './Icon';
-import { useQuote } from './QuoteProvider';
-import { edSetting } from '@/components/blocks/primitives';
+import Link from "next/link";
+import Image from "next/image";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { Icon } from "./Icon";
+import { useQuote } from "./QuoteProvider";
+import { edSetting } from "@/components/blocks/primitives";
 
-export type NavLink = { id: string; label: string; href: string; newTab?: boolean };
+export type NavLink = {
+  id: string;
+  label: string;
+  href: string;
+  newTab?: boolean;
+};
 
 /**
  * Announcement bar — a continuous marquee at every width.
@@ -48,7 +53,7 @@ export function AnnouncementBar({ items }: { items: string[] }) {
         <div
           data-marquee
           className="animate-marq flex w-max whitespace-nowrap text-[11px] font-semibold uppercase tracking-[.08em] md:text-[13px] md:tracking-[.06em]"
-          style={{ animationDuration: '48s' }}
+          style={{ animationDuration: "48s" }}
         >
           <Row live />
           <Row />
@@ -100,12 +105,15 @@ function Logo({
 
 export function Header({
   nav,
+  collections = [],
   logo,
   phone,
   phoneHref,
   siteName,
 }: {
   nav: NavLink[];
+  /** Shown inside the mobile menu, which stands in for the catalogue sidebar. */
+  collections?: { id: string; handle: string; title: string; count: number }[];
   logo: string;
   phone: string;
   phoneHref: string;
@@ -118,86 +126,99 @@ export function Header({
   useEffect(() => setMenuOpen(false), [pathname]);
 
   useEffect(() => {
-    document.body.style.overflow = menuOpen ? 'hidden' : '';
+    document.body.style.overflow = menuOpen ? "hidden" : "";
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     };
   }, [menuOpen]);
 
   const isActive = (href: string) =>
-    href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/');
+    href === "/"
+      ? pathname === "/"
+      : pathname === href || pathname.startsWith(href + "/");
 
   return (
-    <header className="sticky top-0 z-[60] border-b border-hairline bg-[rgba(255,255,255,.94)] backdrop-blur-[14px]">
-      {/* One row at every width — never wraps. */}
-      <div className="flex items-center gap-3 px-4 py-2.5 md:gap-7 md:px-10 md:py-3.5">
-        <Link
-          href="/"
-          aria-label={`${siteName} — home`}
-          className="flex shrink-0 items-center"
-          {...edSetting('logoDark', 'image')}
-        >
-          <Logo
-            src={logo}
-            siteName={siteName}
-            priority
-            className="h-[26px] w-auto max-w-[120px] object-contain sm:max-w-[170px] md:h-[30px]"
-          />
-        </Link>
+    <>
+      <header className="sticky top-0 z-[60] border-b border-hairline bg-[rgba(255,255,255,.94)] backdrop-blur-[14px]">
+        {/* One row at every width — never wraps. */}
+        <div className="flex items-center gap-3 px-4 py-2.5 md:gap-7 md:px-10 md:py-3.5">
+          <Link
+            href="/"
+            aria-label={`${siteName} — home`}
+            className="flex shrink-0 items-center"
+            {...edSetting("logoDark", "image")}
+          >
+            <Logo
+              src={logo}
+              siteName={siteName}
+              priority
+              className="h-[26px] w-auto max-w-[120px] object-contain sm:max-w-[170px] md:h-[30px]"
+            />
+          </Link>
 
-        <nav aria-label="Main" className="hidden flex-1 items-center gap-7 lg:flex">
-          {nav.map((n) => (
-            <Link
-              key={n.id}
-              href={n.href}
-              target={n.newTab ? '_blank' : undefined}
-              rel={n.newTab ? 'noopener noreferrer' : undefined}
-              data-active={isActive(n.href)}
-              className="nav-link whitespace-nowrap text-[14px] font-semibold uppercase tracking-[.04em] text-body transition-colors hover:text-ink data-[active=true]:text-ink"
+          <nav
+            aria-label="Main"
+            className="hidden flex-1 items-center gap-7 lg:flex"
+          >
+            {nav.map((n) => (
+              <Link
+                key={n.id}
+                href={n.href}
+                target={n.newTab ? "_blank" : undefined}
+                rel={n.newTab ? "noopener noreferrer" : undefined}
+                data-active={isActive(n.href)}
+                className="nav-link whitespace-nowrap text-[14px] font-semibold uppercase tracking-[.04em] text-body transition-colors hover:text-ink data-[active=true]:text-ink"
+              >
+                {n.label}
+              </Link>
+            ))}
+          </nav>
+
+          <div className="ml-auto flex shrink-0 items-center gap-2 md:gap-4">
+            <a
+              href={phoneHref}
+              className="hidden whitespace-nowrap text-[15px] font-semibold text-ink md:block"
             >
-              {n.label}
-            </Link>
-          ))}
-        </nav>
+              <span {...edSetting("phone")}>{phone}</span>
+            </a>
 
-        <div className="ml-auto flex shrink-0 items-center gap-2 md:gap-4">
-          <a
-            href={phoneHref}
-            className="hidden whitespace-nowrap text-[15px] font-semibold text-ink md:block"
-          >
-            <span {...edSetting('phone')}>{phone}</span>
-          </a>
+            {/* Call button — phones only, where tapping to call beats reading a number. */}
+            <a
+              href={phoneHref}
+              aria-label={`Call ${phone}`}
+              className="flex h-10 w-10 items-center justify-center border border-hairline text-ink transition-colors hover:border-ink md:hidden"
+            >
+              <Icon name="phone" size={17} />
+            </a>
 
-          {/* Call button — phones only, where tapping to call beats reading a number. */}
-          <a
-            href={phoneHref}
-            aria-label={`Call ${phone}`}
-            className="flex h-10 w-10 items-center justify-center border border-hairline text-ink transition-colors hover:border-ink md:hidden"
-          >
-            <Icon name="phone" size={17} />
-          </a>
+            <button
+              type="button"
+              onClick={() => open("Custom team kit")}
+              className="btn btn-yellow whitespace-nowrap px-3 py-2.5 text-[11px] tracking-[.06em] sm:px-4 md:px-[22px] md:py-[13px] md:text-[13px] md:tracking-[.1em]"
+            >
+              <span className="sm:hidden">Quote</span>
+              <span className="hidden sm:inline">Request a quote</span>
+            </button>
 
-          <button
-            type="button"
-            onClick={() => open('Custom team kit')}
-            className="btn btn-yellow whitespace-nowrap px-3 py-2.5 text-[11px] tracking-[.06em] sm:px-4 md:px-[22px] md:py-[13px] md:text-[13px] md:tracking-[.1em]"
-          >
-            <span className="sm:hidden">Quote</span>
-            <span className="hidden sm:inline">Request a quote</span>
-          </button>
-
-          <button
-            type="button"
-            aria-label="Open menu"
-            aria-expanded={menuOpen}
-            onClick={() => setMenuOpen(true)}
-            className="flex h-10 w-10 items-center justify-center text-ink lg:hidden"
-          >
-            <Icon name="menu" size={24} />
-          </button>
+            <button
+              type="button"
+              aria-label="Open menu"
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen(true)}
+              className="flex h-10 w-10 items-center justify-center text-ink lg:hidden"
+            >
+              <Icon name="menu" size={24} />
+            </button>
+          </div>
         </div>
-      </div>
+      </header>
 
+      {/*
+        The drawer sits outside the header on purpose. The header is blurred,
+        and a backdrop-filter makes its box the frame that "fixed" children are
+        measured against — inside it, the drawer was trapped at header height
+        and its links were cut off.
+      */}
       {menuOpen && (
         <div className="fixed inset-0 z-[80] lg:hidden">
           <button
@@ -223,18 +244,62 @@ export function Header({
               </button>
             </div>
 
-            <nav aria-label="Mobile" className="flex flex-col overflow-y-auto px-5">
-              {nav.map((n) => (
-                <Link
-                  key={n.id}
-                  href={n.href}
-                  data-active={isActive(n.href)}
-                  className="flex items-center justify-between border-b border-hairline py-4 text-[15px] font-semibold uppercase tracking-[.04em] text-ink data-[active=true]:text-brand-text"
-                >
-                  {n.label}
-                  <Icon name="arrowRight" size={16} />
-                </Link>
-              ))}
+            <nav
+              aria-label="Mobile"
+              className="flex flex-col overflow-y-auto px-5"
+            >
+              {/* Contact gets its own row at the end, under the collections,
+                  so it is not buried above a long list. */}
+              {nav
+                .filter((n) => n.href !== "/contact")
+                .map((n) => (
+                  <Link
+                    key={n.id}
+                    href={n.href}
+                    data-active={isActive(n.href)}
+                    className="flex items-center justify-between border-b border-hairline py-4 text-[15px] font-semibold uppercase tracking-[.04em] text-ink data-[active=true]:text-brand-text"
+                  >
+                    {n.label}
+                    <Icon name="arrowRight" size={16} />
+                  </Link>
+                ))}
+
+              {/* The sidebar's collections, which a phone never sees. */}
+              {collections.length > 0 && (
+                <>
+                  <span className="pb-2 pt-5 text-[11px] font-bold uppercase tracking-[.16em] text-muted">
+                    Shop by collection
+                  </span>
+                  <Link
+                    href="/collections"
+                    data-active={pathname === "/collections"}
+                    className="flex items-center justify-between border-b border-hairline py-3 text-[14px] font-semibold text-ink data-[active=true]:text-brand-text"
+                  >
+                    All products
+                    <Icon name="arrowRight" size={15} />
+                  </Link>
+                  {collections.map((c) => (
+                    <Link
+                      key={c.id}
+                      href={`/collections/${c.handle}`}
+                      data-active={isActive(`/collections/${c.handle}`)}
+                      className="flex items-center justify-between gap-3 border-b border-hairline py-3 text-[14px] font-medium text-body data-[active=true]:font-semibold data-[active=true]:text-brand-text"
+                    >
+                      {c.title}
+                      <span className="text-[12px] text-muted">{c.count}</span>
+                    </Link>
+                  ))}
+                </>
+              )}
+
+              <Link
+                href="/contact"
+                data-active={isActive("/contact")}
+                className="mb-5 flex items-center justify-between border-b border-hairline py-4 text-[15px] font-semibold uppercase tracking-[.04em] text-ink data-[active=true]:text-brand-text"
+              >
+                Contact us
+                <Icon name="arrowRight" size={16} />
+              </Link>
             </nav>
 
             <div className="mt-auto space-y-3 border-t border-hairline p-5">
@@ -249,7 +314,7 @@ export function Header({
                 type="button"
                 onClick={() => {
                   setMenuOpen(false);
-                  open('Custom team kit');
+                  open("Custom team kit");
                 }}
                 className="btn btn-yellow btn-lg w-full"
               >
@@ -262,6 +327,6 @@ export function Header({
           </div>
         </div>
       )}
-    </header>
+    </>
   );
 }

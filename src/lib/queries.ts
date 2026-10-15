@@ -185,6 +185,24 @@ export const getCollectionCards = cache(async (limit = 12): Promise<CollectionCa
   }));
 });
 
+/**
+ * Collections for the mobile menu.
+ *
+ * A phone has no sidebar, so the menu is the only way to browse by collection.
+ * Empty ones are left out: a link that leads to "no products" is worse than no
+ * link, and the two that are empty today are meant to be filled later.
+ */
+export const getNavCollections = cache(async () => {
+  const rows = await prisma.collection.findMany({
+    where: { ...PUBLISHED, showInNav: true },
+    orderBy: { position: 'asc' },
+    select: { id: true, handle: true, title: true, _count: { select: { products: true } } },
+  });
+  return rows
+    .filter((c) => c._count.products > 0)
+    .map((c) => ({ id: c.id, handle: c.handle, title: c.title, count: c._count.products }));
+});
+
 export const getCollectionByHandle = cache(async (handle: string) => {
   const c = await prisma.collection.findUnique({ where: { handle } });
   if (!c || c.status === 'ARCHIVED') return null;

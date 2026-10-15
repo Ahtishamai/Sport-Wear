@@ -1,5 +1,5 @@
 import { getSettings } from '@/lib/settings';
-import { getNav } from '@/lib/queries';
+import { getNav, getNavCollections } from '@/lib/queries';
 import { QuoteProvider } from '@/components/site/QuoteProvider';
 import { AnnouncementBar, Header } from '@/components/site/Header';
 import { Footer } from '@/components/site/Footer';
@@ -7,7 +7,11 @@ import { ScrollProgress, SiteEffects } from '@/components/site/SiteEffects';
 import { EditBar } from '@/components/site/EditBar';
 
 export default async function SiteLayout({ children }: { children: React.ReactNode }) {
-  const [settings, nav] = await Promise.all([getSettings(), getNav()]);
+  const [settings, nav, collections] = await Promise.all([
+    getSettings(),
+    getNav(),
+    getNavCollections(),
+  ]);
 
   return (
     <QuoteProvider
@@ -29,6 +33,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
       {settings.announcementEnabled && <AnnouncementBar items={settings.announcement} />}
       <Header
         nav={nav.header}
+        collections={collections}
         logo={settings.logoDark}
         phone={settings.phone}
         phoneHref={settings.phoneHref}
