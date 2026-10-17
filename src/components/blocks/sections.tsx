@@ -1276,7 +1276,7 @@ export function GoogleReviewsBlock({
 
       {items.length > 0 && (
         <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {items.slice(0, 6).map((r, i) => (
+          {items.slice(0, Math.max(1, Number(p.limit) || 6)).map((r, i) => (
             <article
               key={i}
               className={cn(

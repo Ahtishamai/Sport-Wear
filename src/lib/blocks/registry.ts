@@ -305,6 +305,15 @@ export const BLOCKS: BlockDefinition[] = [
       },
       { name: 'reviewCount', label: 'How many reviews', type: 'text', width: 'half', help: 'e.g. 128' },
       {
+        name: 'limit',
+        label: 'How many to show',
+        type: 'number',
+        width: 'half',
+        min: 1,
+        max: 12,
+        help: 'The rest stay on the list, ready to swap in.',
+      },
+      {
         name: 'profileUrl',
         label: 'Link to your Google reviews',
         type: 'text',
@@ -335,6 +344,7 @@ export const BLOCKS: BlockDefinition[] = [
       body: '',
       rating: '',
       reviewCount: '',
+      limit: 6,
       profileUrl: '',
       writeUrl: '',
       background: 'surface',
