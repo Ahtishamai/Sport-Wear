@@ -3,6 +3,7 @@ import Image from 'next/image';
 import type { SiteSettings } from '@/lib/settings';
 import type { NavLink } from './Header';
 import { QuoteButton } from './QuoteButton';
+import { SocialIcon } from './SocialIcon';
 import { edSetting } from '@/components/blocks/primitives';
 
 export function Footer({
@@ -38,9 +39,10 @@ export function Footer({
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={s.label}
-                className="flex h-[38px] w-[38px] items-center justify-center border border-white/20 text-[13px] font-semibold text-ondark-3 transition-colors hover:border-brand hover:text-brand"
+                title={s.label}
+                className="flex h-[38px] w-[38px] items-center justify-center overflow-hidden border border-white/20 text-[13px] font-semibold text-ondark-3 transition-opacity hover:border-brand hover:opacity-80"
               >
-                {s.short}
+                <SocialIcon link={s} />
               </a>
             ))}
           </div>

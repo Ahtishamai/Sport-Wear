@@ -7,6 +7,7 @@ import type { SiteSettings } from '@/lib/settings';
 import type { MailSummary } from '@/lib/mail';
 import { AdminPage, Button, Card, Checkbox, Input, Select, Textarea, useToast } from './ui';
 import { ImageField } from './MediaPicker';
+import { SocialIcon } from '@/components/site/SocialIcon';
 import { Icon } from '@/components/site/Icon';
 
 export function SettingsEditor({
@@ -263,7 +264,11 @@ export function SettingsEditor({
                 <span className="field-label">Social links</span>
                 <div className="space-y-2">
                   {s.social.map((soc, i) => (
-                    <div key={i} className="flex gap-1.5">
+                    <div key={i} className="flex items-center gap-1.5">
+                      {/* Which brand icon this row will show on the site. */}
+                      <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center border border-[#E3E3DF] bg-ink">
+                        <SocialIcon link={soc} size={30} />
+                      </span>
                       <Input
                         value={soc.label}
                         onChange={(e) =>
@@ -316,6 +321,11 @@ export function SettingsEditor({
                 >
                   + Add social link
                 </Button>
+                <p className="mt-1.5 text-[12px] text-[#8A8C93]">
+                  The icon comes from the link — paste a Facebook, Instagram, TikTok, YouTube,
+                  X, LinkedIn, Pinterest or WhatsApp address and its own logo appears. Anything
+                  else falls back to the short text.
+                </p>
               </div>
             </div>
           </Card>

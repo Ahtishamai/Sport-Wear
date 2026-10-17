@@ -7,6 +7,7 @@ import {
   getReviews,
 } from '@/lib/queries';
 import { getSettings } from '@/lib/settings';
+import { getGoogleListing } from '@/lib/google-reviews';
 import { FaqBlock } from './FaqBlock';
 import { ContactFormBlock } from './ContactFormBlock';
 import { OrderTrackingBlock } from './OrderTrackingBlock';
@@ -160,8 +161,10 @@ async function renderBlock(block: Block, index: number, ctx: RenderContext) {
       return <ReviewsBlock key={key} p={p} bid={block.id} reviews={reviews} />;
     }
 
-    case 'googleReviews':
-      return <GoogleReviewsBlock key={key} p={p} bid={block.id} />;
+    case 'googleReviews': {
+      const listing = await getGoogleListing();
+      return <GoogleReviewsBlock key={key} p={p} bid={block.id} live={listing} />;
+    }
 
     case 'faq': {
       const faqs = await getFaqs(p.group || 'home');

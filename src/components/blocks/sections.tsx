@@ -1193,11 +1193,25 @@ function Stars({ rating, size = 15 }: { rating: number; size?: number }) {
  * that serves them and the free share link cannot be read by a server, so a
  * field the shop can update in a minute beats a feed that silently empties.
  */
-export function GoogleReviewsBlock({ p, bid }: BlockComponentProps) {
-  const items: P[] = (p.items ?? []).filter((r: P) => r?.text);
-  const rating = Number(p.rating) || 0;
-  const count = String(p.reviewCount ?? '').trim();
-  const url = String(p.profileUrl ?? '').trim();
+export function GoogleReviewsBlock({
+  p,
+  bid,
+  live,
+}: BlockComponentProps & {
+  /** Straight from the Google listing, when the API key is set up. */
+  live?: {
+    rating: number;
+    total: number;
+    url: string | null;
+    reviews: { author: string; rating: number; when: string; text: string; url: string | null }[];
+  } | null;
+}) {
+  // Google's own figures win over anything typed in, so the page cannot drift
+  // out of date; the typed ones stay as the fallback until the key is set up.
+  const items: P[] = live?.reviews?.length ? live.reviews : (p.items ?? []).filter((r: P) => r?.text);
+  const rating = live?.rating || Number(p.rating) || 0;
+  const count = live?.total ? live.total.toLocaleString('en-US') : String(p.reviewCount ?? '').trim();
+  const url = String(p.profileUrl ?? '').trim() || live?.url || '';
   const writeUrl = String(p.writeUrl ?? '').trim();
   const onDark = p.background === 'ink';
 
@@ -1226,13 +1240,19 @@ export function GoogleReviewsBlock({ p, bid }: BlockComponentProps) {
 
         {rating > 0 && (
           <span className="flex flex-wrap items-center justify-center gap-3">
-            <span className="font-display text-[44px] font-black leading-none" {...edText(bid, 'rating')}>
-              {p.rating}
+            <span
+              className="font-display text-[44px] font-black leading-none"
+              {...(live ? {} : edText(bid, 'rating'))}
+            >
+              {live ? live.rating.toFixed(1) : p.rating}
             </span>
             <span className="flex flex-col items-start">
               <Stars rating={rating} size={18} />
               {count && (
-                <span className={cn('text-[13px]', onDark ? 'text-ondark-2' : 'text-muted')} {...edText(bid, 'reviewCount')}>
+                <span
+                  className={cn('text-[13px]', onDark ? 'text-ondark-2' : 'text-muted')}
+                  {...(live ? {} : edText(bid, 'reviewCount'))}
+                >
                   from {count} reviews
                 </span>
               )}
@@ -1270,7 +1290,7 @@ export function GoogleReviewsBlock({ p, bid }: BlockComponentProps) {
               </span>
               <p
                 className={cn('mt-3 text-[15px] leading-[1.65]', onDark ? 'text-ondark-2' : 'text-quote')}
-                {...edText(bid, `items.${i}.text`)}
+                {...(live ? {} : edText(bid, `items.${i}.text`))}
               >
                 {r.text}
               </p>
@@ -1285,11 +1305,14 @@ export function GoogleReviewsBlock({ p, bid }: BlockComponentProps) {
                     .toUpperCase()}
                 </span>
                 <span>
-                  <span className="block text-[14px] font-bold" {...edText(bid, `items.${i}.author`)}>
+                  <span className="block text-[14px] font-bold" {...(live ? {} : edText(bid, `items.${i}.author`))}>
                     {r.author}
                   </span>
                   {r.when && (
-                    <span className={cn('block text-[12px]', onDark ? 'text-ondark-2' : 'text-muted')} {...edText(bid, `items.${i}.when`)}>
+                    <span
+                      className={cn('block text-[12px]', onDark ? 'text-ondark-2' : 'text-muted')}
+                      {...(live ? {} : edText(bid, `items.${i}.when`))}
+                    >
                       {r.when}
                     </span>
                   )}
@@ -1298,6 +1321,13 @@ export function GoogleReviewsBlock({ p, bid }: BlockComponentProps) {
             </article>
           ))}
         </div>
+      )}
+
+      {live && (
+        // Google asks that reviews taken from its listing say where they came from.
+        <p className={cn('mt-5 text-center text-[12px]', onDark ? 'text-ondark-2' : 'text-muted')}>
+          Reviews from Google, refreshed automatically.
+        </p>
       )}
     </Section>
   );
