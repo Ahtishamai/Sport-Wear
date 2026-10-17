@@ -285,6 +285,63 @@ export const BLOCKS: BlockDefinition[] = [
     },
   },
 
+  {
+    type: 'googleReviews',
+    label: 'Google reviews',
+    group: 'Social proof',
+    glyph: 'G',
+    description:
+      'The Google score, a link to the listing, and any reviews worth quoting. The numbers are typed in — Google charges for the feed that serves them.',
+    fields: [
+      { name: 'eyebrow', label: 'Eyebrow', type: 'text', width: 'half' },
+      { name: 'heading', label: 'Heading', type: 'text', width: 'half' },
+      { name: 'body', label: 'Intro', type: 'textarea', rows: 2 },
+      {
+        name: 'rating',
+        label: 'Score out of 5',
+        type: 'text',
+        width: 'half',
+        help: 'As shown on your Google listing, e.g. 4.9. Leave empty to hide the score.',
+      },
+      { name: 'reviewCount', label: 'How many reviews', type: 'text', width: 'half', help: 'e.g. 128' },
+      {
+        name: 'profileUrl',
+        label: 'Link to your Google reviews',
+        type: 'text',
+        help: 'The share link from your Google Business Profile.',
+      },
+      {
+        name: 'writeUrl',
+        label: 'Link to write a review',
+        type: 'text',
+        help: 'From Google Business Profile → Ask for reviews. Leave empty to hide the button.',
+      },
+      bgField,
+      {
+        name: 'items',
+        label: 'Reviews to quote',
+        type: 'list',
+        fields: [
+          { name: 'author', label: 'Name', type: 'text', width: 'half' },
+          { name: 'when', label: 'When', type: 'text', width: 'half', help: 'e.g. 2 weeks ago' },
+          { name: 'rating', label: 'Stars', type: 'number', width: 'half', min: 1, max: 5 },
+          { name: 'text', label: 'What they wrote', type: 'textarea', rows: 3 },
+        ],
+      },
+    ],
+    defaults: {
+      eyebrow: 'Google reviews',
+      heading: 'What teams say on Google',
+      body: '',
+      rating: '',
+      reviewCount: '',
+      profileUrl: '',
+      writeUrl: '',
+      background: 'surface',
+      items: [],
+    },
+  },
+
   // ------------------------------------------------------------- commerce
   {
     type: 'featuredTiles',

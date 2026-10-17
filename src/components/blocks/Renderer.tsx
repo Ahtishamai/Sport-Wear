@@ -16,6 +16,7 @@ import {
   CtaBandBlock,
   FeaturedTilesBlock,
   GalleryBlock,
+  GoogleReviewsBlock,
   HeroBlock,
   HtmlBlock,
   IconFeaturesBlock,
@@ -158,6 +159,9 @@ async function renderBlock(block: Block, index: number, ctx: RenderContext) {
       const reviews = await getReviews(Number(p.limit) || 12);
       return <ReviewsBlock key={key} p={p} bid={block.id} reviews={reviews} />;
     }
+
+    case 'googleReviews':
+      return <GoogleReviewsBlock key={key} p={p} bid={block.id} />;
 
     case 'faq': {
       const faqs = await getFaqs(p.group || 'home');

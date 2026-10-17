@@ -1154,3 +1154,151 @@ export function CtaLink({
     </Link>
   );
 }
+
+/** Google's four-colour G, for the reviews band. */
+function GoogleG({ size = 22 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+      <path
+        fill="#4285F4"
+        d="M45.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h11.8c-.5 2.8-2.1 5.1-4.4 6.700v5.5h7.1c4.2-3.8 6.6-9.5 6.6-16.2z"
+      />
+      <path
+        fill="#34A853"
+        d="M24 46c6 0 11-2 14.6-5.3l-7.1-5.5c-2 1.3-4.5 2.1-7.5 2.1-5.8 0-10.7-3.9-12.5-9.1H4.2v5.7C7.8 41.1 15.3 46 24 46z"
+      />
+      <path fill="#FBBC05" d="M11.5 28.2c-.5-1.3-.7-2.7-.7-4.2s.3-2.9.7-4.2V14H4.2A22 22 0 0 0 2 24c0 3.6.9 6.9 2.2 10l7.3-5.8z" />
+      <path
+        fill="#EA4335"
+        d="M24 10.7c3.3 0 6.2 1.1 8.5 3.3l6.3-6.3C35 4.1 30 2 24 2 15.3 2 7.8 6.9 4.2 14l7.3 5.8c1.8-5.2 6.7-9.1 12.5-9.1z"
+      />
+    </svg>
+  );
+}
+
+function Stars({ rating, size = 15 }: { rating: number; size?: number }) {
+  const whole = Math.max(0, Math.min(5, Math.round(rating || 0)));
+  return (
+    <span className="tracking-[1px] text-gold" style={{ fontSize: size }} aria-hidden="true">
+      {'★'.repeat(whole)}
+      <span className="text-[#D6D6D1]">{'★'.repeat(5 - whole)}</span>
+    </span>
+  );
+}
+
+/**
+ * The Google listing: the score, and whatever reviews are worth quoting.
+ *
+ * The numbers are typed in rather than fetched. Google charges for the API
+ * that serves them and the free share link cannot be read by a server, so a
+ * field the shop can update in a minute beats a feed that silently empties.
+ */
+export function GoogleReviewsBlock({ p, bid }: BlockComponentProps) {
+  const items: P[] = (p.items ?? []).filter((r: P) => r?.text);
+  const rating = Number(p.rating) || 0;
+  const count = String(p.reviewCount ?? '').trim();
+  const url = String(p.profileUrl ?? '').trim();
+  const writeUrl = String(p.writeUrl ?? '').trim();
+  const onDark = p.background === 'ink';
+
+  return (
+    <Section background={(p.background as Bg) ?? 'surface'}>
+      <SectionHeading
+        eyebrow={p.eyebrow}
+        heading={p.heading}
+        body={p.body}
+        align="center"
+        onDark={onDark}
+        bid={bid}
+        className="mb-8"
+      />
+
+      <div
+        className={cn(
+          'mx-auto flex max-w-[620px] flex-col items-center gap-4 border px-6 py-7 text-center',
+          onDark ? 'border-white/15 bg-white/5' : 'border-hairline bg-white'
+        )}
+      >
+        <span className="flex items-center gap-2.5">
+          <GoogleG size={24} />
+          <span className="text-[15px] font-bold uppercase tracking-[.1em]">Google reviews</span>
+        </span>
+
+        {rating > 0 && (
+          <span className="flex flex-wrap items-center justify-center gap-3">
+            <span className="font-display text-[44px] font-black leading-none" {...edText(bid, 'rating')}>
+              {p.rating}
+            </span>
+            <span className="flex flex-col items-start">
+              <Stars rating={rating} size={18} />
+              {count && (
+                <span className={cn('text-[13px]', onDark ? 'text-ondark-2' : 'text-muted')} {...edText(bid, 'reviewCount')}>
+                  from {count} reviews
+                </span>
+              )}
+            </span>
+          </span>
+        )}
+
+        <span className="flex flex-wrap items-center justify-center gap-2.5">
+          {url && (
+            <a href={url} target="_blank" rel="noopener noreferrer" className="btn btn-outline px-5 py-3 text-[13px]">
+              Read our Google reviews
+            </a>
+          )}
+          {writeUrl && (
+            <a href={writeUrl} target="_blank" rel="noopener noreferrer" className="btn btn-yellow px-5 py-3 text-[13px]">
+              Write a review
+            </a>
+          )}
+        </span>
+      </div>
+
+      {items.length > 0 && (
+        <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {items.slice(0, 6).map((r, i) => (
+            <article
+              key={i}
+              className={cn(
+                'flex flex-col border px-6 py-6',
+                onDark ? 'border-white/15 bg-white/5' : 'border-hairline bg-white shadow-review'
+              )}
+            >
+              <span className="flex items-center justify-between">
+                <Stars rating={Number(r.rating) || 5} />
+                <GoogleG size={16} />
+              </span>
+              <p
+                className={cn('mt-3 text-[15px] leading-[1.65]', onDark ? 'text-ondark-2' : 'text-quote')}
+                {...edText(bid, `items.${i}.text`)}
+              >
+                {r.text}
+              </p>
+              <span className="mt-5 flex items-center gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-ink text-[13px] font-bold text-brand">
+                  {String(r.author ?? '?')
+                    .split(' ')
+                    .map((w: string) => w[0])
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .join('')
+                    .toUpperCase()}
+                </span>
+                <span>
+                  <span className="block text-[14px] font-bold" {...edText(bid, `items.${i}.author`)}>
+                    {r.author}
+                  </span>
+                  {r.when && (
+                    <span className={cn('block text-[12px]', onDark ? 'text-ondark-2' : 'text-muted')} {...edText(bid, `items.${i}.when`)}>
+                      {r.when}
+                    </span>
+                  )}
+                </span>
+              </span>
+            </article>
+          ))}
+        </div>
+      )}
+    </Section>
+  );
+}

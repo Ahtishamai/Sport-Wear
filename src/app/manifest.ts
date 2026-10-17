@@ -15,7 +15,8 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
     description: s.tagline,
     start_url: '/',
     display: 'standalone',
-    background_color: '#101114',
+    // Matches the icon, which keeps the logo's white ground.
+    background_color: '#FFFFFF',
     theme_color: '#101114',
     icons: [
       { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },

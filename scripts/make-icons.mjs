@@ -2,9 +2,11 @@
  * Builds the browser icons from the D-S logo.
  *
  * Browser tabs, phone home screens and bookmark bars all want different sizes,
- * and a wordmark on white vanishes against a light tab strip — so the mark is
- * lifted off its white background and set on the brand's dark square: white
- * "D", yellow "S", the same two colours as the logo.
+ * so each is cut from the logo itself and kept in the logo's own colours: the
+ * black "D" and yellow "S" on white, the mark as people already know it.
+ *
+ * The strapline underneath is dropped — at 16px it is a smudge — and the "D-S"
+ * is enlarged to fill the square instead.
  *
  * Run after changing the logo:  node scripts/make-icons.mjs [path/to/logo.png]
  */
@@ -17,9 +19,9 @@ const sharp = req('sharp');
 
 const SOURCE = process.argv[2] || 'public/brand/logo-ds.png';
 const OUT = 'public';
-const INK = { r: 0x10, g: 0x11, b: 0x14 }; // brand dark
-const YELLOW = { r: 0xff, g: 0xd1, b: 0x00 }; // brand yellow
-const WHITE = { r: 0xff, g: 0xff, b: 0xff };
+const INK = { r: 0x10, g: 0x11, b: 0x14 }; // the logo's black
+const YELLOW = { r: 0xff, g: 0xd1, b: 0x00 }; // the logo's yellow
+const BACKDROP = { r: 0xff, g: 0xff, b: 0xff }; // the logo sits on white
 
 /**
  * The mark, as two shapes rather than a picture.
@@ -97,7 +99,7 @@ async function scaleMask(mask, width, sourceWidth) {
   return { data: out, width: info.width, height: info.height };
 }
 
-/** One square icon: the two shapes laid flat on the dark brand square. */
+/** One square icon: the two shapes laid flat on the logo's white ground. */
 async function square(mark, size, coverage) {
   const inner = Math.round(size * coverage);
   const ink = await scaleMask(mark.ink, inner, mark.width);
@@ -109,7 +111,7 @@ async function square(mark, size, coverage) {
   for (let i = 0; i < w * h; i++) {
     const y = yellow.data[i];
     const d = ink.data[i];
-    const colour = y > d ? YELLOW : WHITE;
+    const colour = y > d ? YELLOW : INK;
     const alpha = Math.max(y, d);
     rgba[i * 4] = colour.r;
     rgba[i * 4 + 1] = colour.g;
@@ -118,7 +120,7 @@ async function square(mark, size, coverage) {
   }
 
   return sharp({
-    create: { width: size, height: size, channels: 4, background: { ...INK, alpha: 1 } },
+    create: { width: size, height: size, channels: 4, background: { ...BACKDROP, alpha: 1 } },
   })
     .composite([
       {
