@@ -104,6 +104,11 @@ model Product {
   /// Off shows "Request a quote" in place of every figure for this product.
   /// The site-wide switch in settings still wins: it hides prices everywhere.
   showPrice     Boolean       @default(true)
+  /// Asks for the team name on the product page. On for shirts, where it is
+  /// printed across the chest; off for bags and anything not personalised.
+  askTeamName   Boolean       @default(false)
+  /// Asks for the number printed on the back.
+  askNumber     Boolean       @default(false)
 
   // Structured, admin-editable JSON
   sports      Json? // ["Baseball","Softball","Other"]

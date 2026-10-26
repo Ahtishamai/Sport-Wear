@@ -67,7 +67,7 @@ export const RESOURCES: Record<string, ResourceConfig> = {
     },
     decimals: ['basePrice', 'compareAt'],
     ints: ['position'],
-    bools: ['featured', 'showPrice'],
+    bools: ['featured', 'showPrice', 'askTeamName', 'askNumber'],
     jsons: ['sports', 'colorways', 'sizes', 'defaultQty', 'volumeTiers', 'specs', 'trustPoints'],
     revalidate: (r) => ['/', '/collections', `/products/${r.handle}`],
     searchFields: ['title', 'handle', 'sku'],

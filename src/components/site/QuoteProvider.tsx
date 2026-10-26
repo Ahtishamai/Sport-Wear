@@ -21,6 +21,8 @@ export type QuoteContextPayload = {
   /** Which way the product page was filled in. */
   orderType?: 'individual' | 'team';
   teamName?: string;
+  /** Printed on the back, for a one-off shirt. */
+  number?: string;
   unitPrice?: number;
   estTotal?: number;
   sport?: string;
@@ -315,6 +317,12 @@ function Drawer({
                         .map(([s, n]) => n + ' × ' + s)
                         .join(', ')}
                     </span>
+                  </div>
+                )}
+                {payload.number && (
+                  <div className="mt-1.5 flex justify-between">
+                    <span>Number</span>
+                    <span className="font-semibold text-ink">{payload.number}</span>
                   </div>
                 )}
                 {payload.colorway && (

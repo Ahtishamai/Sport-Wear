@@ -35,6 +35,8 @@ export type EditableProduct = {
   position: number;
   sku: string | null;
   showPrice?: boolean;
+  askTeamName?: boolean;
+  askNumber?: boolean;
   sports: string[] | null;
   colorways: { name: string; from: string; to: string }[] | null;
   sizes: string[] | null;
@@ -77,6 +79,8 @@ export function ProductEditor({
     sku: product.sku ?? '',
     // Older products predate the field, and a missing value must mean "show".
     showPrice: product.showPrice !== false,
+    askTeamName: product.askTeamName === true,
+    askNumber: product.askNumber === true,
     seoTitle: product.seoTitle ?? '',
     seoDescription: product.seoDescription ?? '',
   }));
@@ -541,6 +545,26 @@ export function ProductEditor({
                   {f.showPrice
                     ? 'Shoppers see “From $…” on the card and the full calculator on the product page.'
                     : 'No figure appears anywhere for this product — the card, the product page and the quantity calculator all say “Request a quote” instead.'}
+                </p>
+              </div>
+
+              <div>
+                <span className="field-label">Printed on it</span>
+                <div className="space-y-2">
+                  <Checkbox
+                    label="Ask for the team name"
+                    checked={f.askTeamName}
+                    onChange={(e) => set('askTeamName', e.target.checked)}
+                  />
+                  <Checkbox
+                    label="Ask for the number"
+                    checked={f.askNumber}
+                    onChange={(e) => set('askNumber', e.target.checked)}
+                  />
+                </div>
+                <p className="mt-1.5 text-[12px] text-[#8A8C93]">
+                  Shown on the product page for shirts, which carry a name and number. Leave both
+                  off for bags and anything that is not personalised.
                 </p>
               </div>
 

@@ -132,6 +132,8 @@ export const getProductByHandle = cache(async (handle: string) => {
     badge: p.badge,
     categoryLabel: p.categoryLabel,
     showPrice: p.showPrice,
+    askTeamName: p.askTeamName,
+    askNumber: p.askNumber,
     status: p.status,
     seoTitle: p.seoTitle,
     seoDescription: p.seoDescription,

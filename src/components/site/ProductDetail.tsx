@@ -37,6 +37,11 @@ export function ProductDetail({
   // size run and the team's name.
   const [mode, setMode] = useState<'individual' | 'team'>('individual');
   const [teamName, setTeamName] = useState('');
+  // Printed on the shirt: the team across the chest, the number on the back.
+  // Bags and anything not personalised do not ask.
+  const [number, setNumber] = useState('');
+  const asksTeamName = product.askTeamName || mode === 'team';
+  const asksNumber = product.askNumber;
   const [oneSize, setOneSize] = useState(product.sizes[0] ?? '');
   const [oneQty, setOneQty] = useState(1);
 
@@ -68,11 +73,26 @@ export function ProductDetail({
       estTotal,
       sport,
       orderType: mode,
-      // Only the team's name goes with a team order; names and numbers per
-      // player are settled on the mockup, not here.
-      teamName: mode === 'team' ? teamName.trim() : '',
+      teamName: asksTeamName ? teamName.trim() : '',
+      // A team order is a run of shirts, so one number only belongs on an
+      // individual one; the roster's numbers are settled on the mockup.
+      number: asksNumber && mode === 'individual' ? number.trim() : '',
     }),
-    [product.id, product.title, colorway?.name, sizeRun, units, unitPrice, estTotal, sport, mode, teamName]
+    [
+      product.id,
+      product.title,
+      colorway?.name,
+      sizeRun,
+      units,
+      unitPrice,
+      estTotal,
+      sport,
+      mode,
+      teamName,
+      number,
+      asksTeamName,
+      asksNumber,
+    ]
   );
 
   const requestQuote = () => {
@@ -344,18 +364,43 @@ export function ProductDetail({
               ))}
             </div>
 
-            {mode === 'team' && (
-              <label className="mb-5 block">
-                <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-[.14em] text-muted">
-                  Team name
-                </span>
-                <input
-                  value={teamName}
-                  onChange={(e) => setTeamName(e.target.value)}
-                  placeholder="Springfield Thunder 14U"
-                  className="w-full border border-hairline px-4 py-3 text-[15px] outline-none focus:border-ink"
-                />
-              </label>
+            {(asksTeamName || (asksNumber && mode === 'individual')) && (
+              <div className="mb-5 grid gap-3 sm:grid-cols-[1fr_auto]">
+                {asksTeamName && (
+                  <label className="block">
+                    <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-[.14em] text-muted">
+                      Team name
+                    </span>
+                    <input
+                      value={teamName}
+                      onChange={(e) => setTeamName(e.target.value)}
+                      placeholder="Springfield Thunder 14U"
+                      maxLength={40}
+                      className="w-full border border-hairline px-4 py-3 text-[15px] outline-none focus:border-ink"
+                    />
+                  </label>
+                )}
+                {asksNumber && mode === 'individual' && (
+                  <label className="block">
+                    <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-[.14em] text-muted">
+                      Number
+                    </span>
+                    <input
+                      value={number}
+                      onChange={(e) => setNumber(e.target.value.replace(/[^0-9]/g, '').slice(0, 3))}
+                      inputMode="numeric"
+                      placeholder="23"
+                      aria-label="Number printed on the shirt"
+                      className="w-full border border-hairline px-4 py-3 text-center text-[15px] outline-none focus:border-ink sm:w-[110px]"
+                    />
+                  </label>
+                )}
+                {asksNumber && mode === 'team' && (
+                  <p className="self-end pb-3 text-[12.5px] text-muted sm:max-w-[220px]">
+                    Names and numbers for the roster are collected with your mockup.
+                  </p>
+                )}
+              </div>
             )}
 
             {mode === 'individual' ? (
