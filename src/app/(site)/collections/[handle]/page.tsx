@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db';
 import { getCollectionByHandle } from '@/lib/queries';
 import { CatalogView, type CatalogSearchParams } from '@/components/site/CatalogView';
 import { BlockRenderer } from '@/components/blocks/Renderer';
+import { PageHeaderBlock } from '@/components/blocks/sections';
 
 export const revalidate = 120;
 
@@ -49,6 +50,37 @@ export default async function CollectionPage({
   const [{ handle }, sp] = await Promise.all([params, searchParams]);
   const collection = await getCollectionByHandle(handle);
   if (!collection) notFound();
+
+  const blocks = Array.isArray(collection.blocks) ? collection.blocks : [];
+  const stocked = await prisma.productCollection.count({
+    where: { collectionId: collection.id, product: { status: 'PUBLISHED' } },
+  });
+
+  // A collection that holds no products but has sections of its own is a
+  // landing page — a choice of what to look at next. Showing it as a catalogue
+  // would greet people with "nothing matches those filters" and a price slider
+  // for an empty shelf.
+  if (stocked === 0 && blocks.length > 0) {
+    return (
+      <>
+        <PageHeaderBlock
+          p={{
+            eyebrow: collection.subtitle ?? '',
+            heading: collection.title,
+            body: collection.description ?? '',
+            image: collection.bannerUrl ?? '',
+            showBreadcrumb: true,
+          }}
+          breadcrumb={[
+            { label: 'Home', href: '/' },
+            { label: 'Collections', href: '/collections' },
+            { label: collection.title },
+          ]}
+        />
+        <BlockRenderer blocks={blocks} />
+      </>
+    );
+  }
 
   return (
     <>

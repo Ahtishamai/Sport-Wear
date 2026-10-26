@@ -4,9 +4,12 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import type { ProductDetail as Product } from '@/lib/queries';
-import { activeTier, cn, money, sumQty, unitPriceFor } from '@/lib/utils';
+import { activeTier, cn, money, sumQty, tierPrice, unitPriceFor } from '@/lib/utils';
 import { useQuote } from './QuoteProvider';
 import { ImagePlaceholder } from '@/components/blocks/primitives';
+
+/** Team orders are made as a run, so they start at ten. */
+const TEAM_MINIMUM = 10;
 
 export function ProductDetail({
   product,
@@ -29,7 +32,18 @@ export function ProductDetail({
   const [qty, setQty] = useState<Record<string, number>>(() => ({ ...product.defaultQty }));
   const [spec, setSpec] = useState(product.specs[0]?.q ?? '');
 
-  const units = sumQty(qty);
+  // One person buying for themselves, or a coach kitting out a roster. They
+  // need different things asked of them: one size and a count, against a
+  // size run and the team's name.
+  const [mode, setMode] = useState<'individual' | 'team'>('individual');
+  const [teamName, setTeamName] = useState('');
+  const [oneSize, setOneSize] = useState(product.sizes[0] ?? '');
+  const [oneQty, setOneQty] = useState(1);
+
+  const teamRun = qty;
+  const sizeRun = mode === 'team' ? teamRun : { [oneSize]: oneQty };
+  const units = mode === 'team' ? sumQty(teamRun) : oneQty;
+  const shortOfMinimum = mode === 'team' && units < TEAM_MINIMUM;
   const tiers = product.volumeTiers;
   const tierIdx = activeTier(tiers, units);
   const unitPrice = unitPriceFor(product.basePrice, tiers, units);
@@ -48,17 +62,27 @@ export function ProductDetail({
       productId: product.id,
       productTitle: product.title,
       colorway: colorway?.name,
-      sizeRun: qty,
+      sizeRun,
       totalUnits: units,
       unitPrice,
       estTotal,
       sport,
+      orderType: mode,
+      // Only the team's name goes with a team order; names and numbers per
+      // player are settled on the mockup, not here.
+      teamName: mode === 'team' ? teamName.trim() : '',
     }),
-    [product.id, product.title, colorway?.name, qty, units, unitPrice, estTotal, sport]
+    [product.id, product.title, colorway?.name, sizeRun, units, unitPrice, estTotal, sport, mode, teamName]
   );
 
-  const requestQuote = () =>
-    open(`${product.title} — ${units} unit${units === 1 ? '' : 's'}`, quotePayload);
+  const requestQuote = () => {
+    if (shortOfMinimum) return;
+    const what =
+      mode === 'team'
+        ? `${teamName.trim() ? teamName.trim() + ' — ' : ''}${units} shirts`
+        : `${units} × ${oneSize}`;
+    open(`${product.title} — ${what}`, quotePayload);
+  };
 
   return (
     <>
@@ -219,7 +243,7 @@ export function ProductDetail({
                     {t.label}
                   </div>
                   <div className="mt-1.5 font-display text-[18px] font-black leading-none">
-                    {money(Math.max(0, product.basePrice - t.discount))}
+                    {money(tierPrice(product.basePrice, t))}
                   </div>
                   {t.savingsLabel && (
                     <div className="mt-1 text-[11px] font-semibold text-success">
@@ -280,11 +304,11 @@ export function ProductDetail({
             <p className="mt-3 text-[13px] font-semibold text-ink">{colorway?.name}</p>
           </Group>
 
-          {/* size run */}
+          {/* who it is for, then how many */}
           <div className="mt-7 border border-hairline bg-white p-6">
             <div className="mb-4 flex items-center justify-between gap-4">
               <h2 className="font-display text-[13px] font-extrabold uppercase tracking-[.14em]">
-                Size run
+                {mode === 'team' ? 'Size run' : 'Your size'}
               </h2>
               <Link
                 href="/size-chart"
@@ -294,41 +318,131 @@ export function ProductDetail({
               </Link>
             </div>
 
-            <div
-              className="grid gap-2"
-              style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(84px, 1fr))' }}
-            >
-              {product.sizes.map((s) => {
-                const v = qty[s] || 0;
-                return (
-                  <label
-                    key={s}
-                    className="cursor-text border px-2 py-2.5 text-center transition-colors"
-                    style={{
-                      borderColor: v ? '#101114' : '#E6E6E2',
-                      background: v ? '#FFF6CC' : '#FFFFFF',
-                    }}
-                  >
-                    <span className="block text-[11px] font-bold uppercase text-muted">{s}</span>
-                    <input
-                      type="number"
-                      min={0}
-                      value={v}
-                      onChange={(e) =>
-                        setQty((p) => ({ ...p, [s]: Math.max(0, Number(e.target.value) || 0) }))
-                      }
-                      aria-label={`${s} quantity`}
-                      className="no-spin mt-1 w-full border-0 bg-transparent text-center font-display text-[20px] font-black outline-none"
-                    />
-                  </label>
-                );
-              })}
+            <div className="mb-5 grid grid-cols-2 gap-2" role="group" aria-label="Who is this order for">
+              {(
+                [
+                  ['individual', 'Individual', 'Just for me'],
+                  ['team', 'Team', `${TEAM_MINIMUM} shirts or more`],
+                ] as const
+              ).map(([value, label, hint]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setMode(value)}
+                  aria-pressed={mode === value}
+                  className="border px-4 py-3 text-left transition-colors"
+                  style={{
+                    borderColor: mode === value ? '#101114' : '#E6E6E2',
+                    background: mode === value ? '#FFF6CC' : '#FFFFFF',
+                  }}
+                >
+                  <span className="block font-display text-[15px] font-extrabold uppercase tracking-[.06em]">
+                    {label}
+                  </span>
+                  <span className="mt-0.5 block text-[12.5px] text-muted">{hint}</span>
+                </button>
+              ))}
             </div>
+
+            {mode === 'team' && (
+              <label className="mb-5 block">
+                <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-[.14em] text-muted">
+                  Team name
+                </span>
+                <input
+                  value={teamName}
+                  onChange={(e) => setTeamName(e.target.value)}
+                  placeholder="Springfield Thunder 14U"
+                  className="w-full border border-hairline px-4 py-3 text-[15px] outline-none focus:border-ink"
+                />
+              </label>
+            )}
+
+            {mode === 'individual' ? (
+              <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
+                <div>
+                  <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-[.14em] text-muted">
+                    Size
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {product.sizes.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setOneSize(s)}
+                        aria-pressed={oneSize === s}
+                        className="border px-3.5 py-2 text-[13px] font-bold uppercase transition-colors"
+                        style={{
+                          borderColor: oneSize === s ? '#101114' : '#E6E6E2',
+                          background: oneSize === s ? '#FFF6CC' : '#FFFFFF',
+                        }}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <label className="block">
+                  <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-[.14em] text-muted">
+                    How many
+                  </span>
+                  <input
+                    type="number"
+                    min={1}
+                    value={oneQty}
+                    onChange={(e) => setOneQty(Math.max(1, Number(e.target.value) || 1))}
+                    aria-label="How many shirts"
+                    className="w-[120px] border border-hairline px-4 py-2.5 text-center font-display text-[20px] font-black outline-none focus:border-ink"
+                  />
+                </label>
+              </div>
+            ) : (
+              <div
+                className="grid gap-2"
+                style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(84px, 1fr))' }}
+              >
+                {product.sizes.map((s) => {
+                  const v = qty[s] || 0;
+                  return (
+                    <label
+                      key={s}
+                      className="cursor-text border px-2 py-2.5 text-center transition-colors"
+                      style={{
+                        borderColor: v ? '#101114' : '#E6E6E2',
+                        background: v ? '#FFF6CC' : '#FFFFFF',
+                      }}
+                    >
+                      <span className="block text-[11px] font-bold uppercase text-muted">{s}</span>
+                      <input
+                        type="number"
+                        min={0}
+                        value={v}
+                        onChange={(e) =>
+                          setQty((p) => ({ ...p, [s]: Math.max(0, Number(e.target.value) || 0) }))
+                        }
+                        aria-label={`${s} quantity`}
+                        className="no-spin mt-1 w-full border-0 bg-transparent text-center font-display text-[20px] font-black outline-none"
+                      />
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+
+            {shortOfMinimum && (
+              <p
+                role="status"
+                className="mt-4 border border-[#F3C6C8] bg-[#FBE7E8] px-4 py-3 text-[13px] font-medium text-[#C42027]"
+              >
+                Team orders start at {TEAM_MINIMUM} shirts — {TEAM_MINIMUM - units} more to go. Fewer than
+                that? Switch to Individual.
+              </p>
+            )}
 
             <div className="mt-5 flex flex-wrap items-end justify-between gap-4 border-t border-hairline pt-4">
               <div>
                 <span className="block text-[11px] font-bold uppercase tracking-[.14em] text-muted">
-                  Total units
+                  {mode === 'team' ? 'Total shirts' : 'Shirts'}
                 </span>
                 <span className="font-display text-[22px] font-black">{units}</span>
               </div>
@@ -349,9 +463,10 @@ export function ProductDetail({
             <button
               type="button"
               onClick={requestQuote}
-              className="btn btn-yellow btn-xl min-w-[240px] flex-1"
+              disabled={shortOfMinimum}
+              className="btn btn-yellow btn-xl min-w-[240px] flex-1 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Request a quote
+              {shortOfMinimum ? `Add ${TEAM_MINIMUM - units} more shirts` : 'Request a quote'}
             </button>
             <button
               type="button"
@@ -431,15 +546,22 @@ export function ProductDetail({
               {product.title}
             </div>
             <div className="text-[13px] text-muted">
-              {units} units{priced ? ` · est. ${money(estTotal)}` : ''}
+              {mode === 'team' ? 'Team · ' : ''}
+              {units} shirt{units === 1 ? '' : 's'}
+              {priced ? ` · est. ${money(estTotal)}` : ''}
             </div>
           </div>
           <div className="flex items-center gap-4">
             <span className="hidden text-[13px] font-medium text-body sm:block">
               Free mockup in 24h
             </span>
-            <button type="button" onClick={requestQuote} className="btn btn-yellow btn-md">
-              Request a quote
+            <button
+              type="button"
+              onClick={requestQuote}
+              disabled={shortOfMinimum}
+              className="btn btn-yellow btn-md disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {shortOfMinimum ? `Add ${TEAM_MINIMUM - units} more shirts` : 'Request a quote'}
             </button>
           </div>
         </div>

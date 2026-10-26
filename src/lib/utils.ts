@@ -48,6 +48,12 @@ export type VolumeTier = {
   label: string;
   minQty: number;
   maxQty: number | null;
+  /**
+   * The price each at this quantity. When it is set it is simply the price —
+   * a price list the shop can type straight from its own sheet.
+   */
+  price?: number | null;
+  /** The older way: dollars off the starting price. Used when no price is set. */
   discount: number;
   savingsLabel: string;
 };
@@ -68,8 +74,15 @@ export function activeTier(tiers: VolumeTier[], units: number) {
 }
 
 export function unitPriceFor(base: number, tiers: VolumeTier[], units: number) {
-  const idx = activeTier(tiers, units);
-  return Math.max(0, base - (tiers[idx]?.discount ?? 0));
+  return tierPrice(base, tiers[activeTier(tiers, units)]);
+}
+
+/** What one unit costs in this tier: its own price, or the discount off base. */
+export function tierPrice(base: number, tier?: VolumeTier) {
+  if (!tier) return Math.max(0, base);
+  const own = Number(tier.price);
+  if (Number.isFinite(own) && own > 0) return own;
+  return Math.max(0, base - (tier.discount ?? 0));
 }
 
 export const SIZE_RUN = ['YS', 'YM', 'YL', 'S', 'M', 'L', 'XL', '2XL', '3XL'];

@@ -18,6 +18,9 @@ export type QuoteContextPayload = {
   colorway?: string;
   sizeRun?: Record<string, number>;
   totalUnits?: number;
+  /** Which way the product page was filled in. */
+  orderType?: 'individual' | 'team';
+  teamName?: string;
   unitPrice?: number;
   estTotal?: number;
   sport?: string;
@@ -186,7 +189,10 @@ function Drawer({
     const get = (k: string) => String(fd.get(k) ?? '').trim();
 
     const errs: Errors = {};
-    if (!get('team')) errs.team = 'Tell us the team or organization name.';
+    // An individual buying one shirt has no team to name.
+    if (!get('team') && payload.orderType !== 'individual') {
+      errs.team = 'Tell us the team or organization name.';
+    }
     if (!get('name')) errs.name = 'Your name is required.';
     if (!get('phone')) errs.phone = 'A phone number is required.';
     else if (get('phone').replace(/\D/g, '').length < 7) errs.phone = 'That phone number looks short.';
@@ -297,9 +303,20 @@ function Drawer({
             {payload.totalUnits ? (
               <div className="mb-6 border border-hairline bg-surface px-4 py-3 text-[13px] text-body">
                 <div className="flex justify-between">
-                  <span>Size run</span>
+                  <span>{payload.orderType === 'individual' ? 'Individual order' : 'Team order'}</span>
                   <span className="font-semibold text-ink">{payload.totalUnits} units</span>
                 </div>
+                {payload.sizeRun && Object.values(payload.sizeRun).some((n) => n > 0) && (
+                  <div className="mt-1.5 flex justify-between gap-4">
+                    <span>Sizes</span>
+                    <span className="text-right font-semibold text-ink">
+                      {Object.entries(payload.sizeRun)
+                        .filter(([, n]) => n > 0)
+                        .map(([s, n]) => n + ' × ' + s)
+                        .join(', ')}
+                    </span>
+                  </div>
+                )}
                 {payload.colorway && (
                   <div className="mt-1.5 flex justify-between">
                     <span>Colorway</span>
@@ -321,8 +338,9 @@ function Drawer({
               <Field
                 span
                 name="team"
-                label="Team / organization *"
+                label={payload.orderType === 'individual' ? 'Team / organization' : 'Team / organization *'}
                 placeholder="Springfield Thunder 14U"
+                defaultValue={payload.teamName ?? ''}
                 error={errors.team}
               />
               <Field name="name" label="Your name *" placeholder="Coach name" error={errors.name} />

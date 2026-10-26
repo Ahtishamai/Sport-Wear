@@ -345,14 +345,24 @@ export function ProductEditor({
             />
           </Card>
 
-          <Card title="Volume pricing" description="Discounts applied per unit on the PDP calculator.">
+          <Card
+            title="Volume pricing"
+            description="The price each at different quantities, shown on the product page as the buyer changes the count."
+          >
+            <div className="hidden gap-2 pb-1 sm:grid sm:grid-cols-6">
+              {['Label', 'From qty', 'To qty', 'Price each', 'Or $ off', 'Note'].map((h) => (
+                <span key={h} className="field-label !mb-0">
+                  {h}
+                </span>
+              ))}
+            </div>
             <div className="space-y-2">
               {tiers.map((t, i) => (
-                <div key={i} className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+                <div key={i} className="grid grid-cols-2 gap-2 sm:grid-cols-6">
                   <Input
                     value={t.label}
                     onChange={(e) => setTiers(tiers.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))}
-                    placeholder="12–23"
+                    placeholder="6–10"
                     className="!py-2 text-[13px]"
                   />
                   <Input
@@ -375,6 +385,23 @@ export function ProductEditor({
                       )
                     }
                     placeholder="Max (blank = ∞)"
+                    className="!py-2 text-[13px]"
+                  />
+                  {/* A price typed here is the price; the $-off column is only
+                      used when this is left empty. */}
+                  <Input
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    value={t.price ?? ''}
+                    onChange={(e) =>
+                      setTiers(
+                        tiers.map((x, j) =>
+                          j === i ? { ...x, price: e.target.value === '' ? null : Number(e.target.value) } : x
+                        )
+                      )
+                    }
+                    placeholder="$ each"
                     className="!py-2 text-[13px]"
                   />
                   <Input
@@ -413,7 +440,7 @@ export function ProductEditor({
               variant="outline"
               className="mt-3"
               onClick={() =>
-                setTiers([...tiers, { label: '', minQty: 0, maxQty: null, discount: 0, savingsLabel: '' }])
+                setTiers([...tiers, { label: '', minQty: 0, maxQty: null, price: null, discount: 0, savingsLabel: '' }])
               }
             >
               + Add tier
