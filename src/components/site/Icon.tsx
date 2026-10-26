@@ -33,6 +33,8 @@ const PATHS: Record<string, string[]> = {
   ],
   tag: ['M20.59 13.41L12 22l-9-9V3h10l7.59 7.59a2 2 0 0 1 0 2.82z', 'M7 7h.01'],
   arrowRight: ['M5 12h14', 'M13 6l6 6-6 6'],
+  // A tote with handles, for the cart.
+  bag: ['M5 8h14l-1 12H6L5 8z', 'M9 8V6a3 3 0 0 1 6 0v2'],
   close: ['M18 6L6 18', 'M6 6l12 12'],
   menu: ['M3 6h18', 'M3 12h18', 'M3 18h18'],
   plus: ['M12 5v14', 'M5 12h14'],

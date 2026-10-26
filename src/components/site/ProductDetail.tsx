@@ -6,6 +6,7 @@ import { useMemo, useState } from 'react';
 import type { ProductDetail as Product } from '@/lib/queries';
 import { activeTier, cn, money, sumQty, tierPrice, unitPriceFor } from '@/lib/utils';
 import { useQuote } from './QuoteProvider';
+import { useShopCart } from '@/components/shop/CartProvider';
 import { ImagePlaceholder } from '@/components/blocks/primitives';
 
 /** Team orders are made as a run, so they start at ten. */
@@ -44,6 +45,8 @@ export function ProductDetail({
   const asksNumber = product.askNumber;
   const [oneSize, setOneSize] = useState(product.sizes[0] ?? '');
   const [oneQty, setOneQty] = useState(1);
+  const { add: addLines } = useShopCart();
+  const [added, setAdded] = useState(false);
 
   const teamRun = qty;
   const sizeRun = mode === 'team' ? teamRun : { [oneSize]: oneQty };
@@ -58,6 +61,9 @@ export function ProductDetail({
   // and this product's own. A product sold only by quote must not show a figure
   // because prices happen to be on everywhere else.
   const priced = showPrices && product.showPrice !== false;
+  // Sold outright only when there is a real figure behind it; a $0 product is
+  // one nobody has priced yet, not a free one.
+  const sellable = priced && unitPrice > 0;
 
   const images = product.images.length ? product.images : [];
   const colorway = product.colorways[color];
@@ -94,6 +100,35 @@ export function ProductDetail({
       asksNumber,
     ]
   );
+
+  /**
+   * Into the cart, one line per size.
+   *
+   * A team order is a run of sizes, and each size is its own line so it can be
+   * changed later without unpicking the rest.
+   */
+  const addToCart = () => {
+    if (shortOfMinimum || !sellable) return;
+    const common = {
+      productId: product.id,
+      handle: product.handle,
+      title: product.title,
+      image: images[0]?.url ?? null,
+      sport,
+      colorway: colorway?.name ?? '',
+      teamName: asksTeamName ? teamName.trim() : '',
+      number: asksNumber && mode === 'individual' ? number.trim() : '',
+      orderType: mode,
+      unitPrice,
+    };
+    addLines(
+      Object.entries(sizeRun)
+        .filter(([size, n]) => size && Number(n) > 0)
+        .map(([size, n]) => ({ ...common, size, quantity: Number(n) }))
+    );
+    setAdded(true);
+    window.setTimeout(() => setAdded(false), 4000);
+  };
 
   const requestQuote = () => {
     if (shortOfMinimum) return;
@@ -505,22 +540,62 @@ export function ProductDetail({
 
           {/* CTAs */}
           <div className="mt-6 flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={requestQuote}
-              disabled={shortOfMinimum}
-              className="btn btn-yellow btn-xl min-w-[240px] flex-1 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {shortOfMinimum ? `Add ${TEAM_MINIMUM - units} more shirts` : 'Request a quote'}
-            </button>
-            <button
-              type="button"
-              onClick={() => open(`Sample request — ${product.title}`, quotePayload)}
-              className="btn btn-outline btn-xl"
-            >
-              Order a sample
-            </button>
+            {/*
+              Buying outright only makes sense once there is a price to charge.
+              A product still waiting for one keeps the quote button, which is
+              how it has always been sold.
+            */}
+            {sellable ? (
+              <>
+                <button
+                  type="button"
+                  onClick={addToCart}
+                  disabled={shortOfMinimum}
+                  className="btn btn-yellow btn-xl min-w-[240px] flex-1 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {shortOfMinimum
+                    ? `Add ${TEAM_MINIMUM - units} more shirts`
+                    : added
+                      ? 'Added to cart ✓'
+                      : `Add ${units} to cart · ${money(estTotal)}`}
+                </button>
+                <button
+                  type="button"
+                  onClick={requestQuote}
+                  disabled={shortOfMinimum}
+                  className="btn btn-outline btn-xl disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Request a quote
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={requestQuote}
+                  disabled={shortOfMinimum}
+                  className="btn btn-yellow btn-xl min-w-[240px] flex-1 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {shortOfMinimum ? `Add ${TEAM_MINIMUM - units} more shirts` : 'Request a quote'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => open(`Sample request — ${product.title}`, quotePayload)}
+                  className="btn btn-outline btn-xl"
+                >
+                  Order a sample
+                </button>
+              </>
+            )}
           </div>
+          {added && (
+            <p role="status" className="mt-3 text-[14px] font-medium text-success">
+              In your cart.{' '}
+              <Link href="/cart" className="underline underline-offset-2">
+                Go to cart
+              </Link>
+            </p>
+          )}
 
           <ul className="mt-5 flex flex-wrap gap-x-6 gap-y-2">
             {product.trustPoints.map((t) => (

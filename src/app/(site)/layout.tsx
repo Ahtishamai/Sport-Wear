@@ -1,6 +1,7 @@
 import { getSettings } from '@/lib/settings';
 import { getNav, getNavCollections } from '@/lib/queries';
 import { QuoteProvider } from '@/components/site/QuoteProvider';
+import { ShopCartProvider } from '@/components/shop/CartProvider';
 import { AnnouncementBar, Header } from '@/components/site/Header';
 import { Footer } from '@/components/site/Footer';
 import { ScrollProgress, SiteEffects } from '@/components/site/SiteEffects';
@@ -14,6 +15,8 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
   ]);
 
   return (
+    // The cart follows the shopper around the catalogue, so it lives here.
+    <ShopCartProvider>
     <QuoteProvider
       settings={{
         quoteHeadline: settings.quoteHeadline,
@@ -64,5 +67,6 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
         }}
       />
     </QuoteProvider>
+    </ShopCartProvider>
   );
 }

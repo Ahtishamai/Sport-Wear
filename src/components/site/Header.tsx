@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Icon } from "./Icon";
 import { useQuote } from "./QuoteProvider";
+import { CartButton } from "@/components/shop/CartButton";
 import { edSetting } from "@/components/blocks/primitives";
 
 export type NavLink = {
@@ -175,6 +176,8 @@ export function Header({
           </nav>
 
           <div className="ml-auto flex shrink-0 items-center gap-2 md:gap-4">
+            <CartButton />
+
             <a
               href={phoneHref}
               className="hidden whitespace-nowrap text-[15px] font-semibold text-ink md:block"
