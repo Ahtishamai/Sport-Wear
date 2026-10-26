@@ -287,6 +287,17 @@ export const RESOURCES: Record<string, ResourceConfig> = {
     searchFields: ['reference', 'invoiceNumber', 'customerName', 'email'],
   },
 
+  shopOrders: {
+    model: 'shopOrder',
+    // Orders come from the checkout, never by hand: only fulfilment fields
+    // can be edited here.
+    fields: ['status', 'notes'],
+    defaultOrder: { createdAt: 'desc' },
+    include: { items: true },
+    revalidate: () => [],
+    searchFields: ['reference', 'customerName', 'email'],
+  },
+
   invoicePayments: {
     model: 'invoicePayment',
     // Payments are created by the pay page, never by hand: only the status

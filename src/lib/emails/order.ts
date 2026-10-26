@@ -33,6 +33,11 @@ export type OrderEmailData = {
   currency: string;
   storeName: string;
   storeUrl: string;
+  /**
+   * What to call the place it was bought — "Team store" for a club's own shop,
+   * "Shop" for the catalogue. The same email serves both.
+   */
+  storeLabel?: string;
   closesAt: string | null;
   shipNote: string | null;
   /** Editable copy from the admin. */
@@ -166,7 +171,7 @@ export function renderOrderEmail(d: OrderEmailData): {
   const facts: string[] = [
     factRow('Order number', d.reference),
     factRow('Placed', when(d.placedAt)),
-    factRow('Team store', d.storeName),
+    factRow(d.storeLabel ?? 'Team store', d.storeName),
   ];
   if (d.customerName) facts.push(factRow('Ordered by', d.customerName));
   if (d.email) facts.push(factRow('Email', d.email));

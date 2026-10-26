@@ -36,6 +36,7 @@ const NAV: {
     group: 'Team stores',
     items: [
       { label: 'Stores', href: '/admin/stores', icon: 'shield', area: 'stores' },
+      { label: 'Shop orders', href: '/admin/shop-orders', icon: 'tag', area: 'orders' },
       { label: 'Store orders', href: '/admin/store-orders', icon: 'truck', area: 'orders' },
       { label: 'Invoice payments', href: '/admin/payments', icon: 'check', area: 'orders' },
     ],

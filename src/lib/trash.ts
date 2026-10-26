@@ -99,6 +99,25 @@ export const TRASH: Record<string, Spec> = {
     ],
   },
 
+  shopOrders: {
+    model: 'shopOrder',
+    kind: 'Shop order',
+    label: (r) => `Order ${r.reference}${r.customerName ? ` — ${clip(r.customerName, 60)}` : ''}`,
+    children: [
+      {
+        key: 'lines',
+        model: 'shopOrderItem',
+        noun: ['item', 'items'],
+        where: (id) => ({ orderId: id }),
+        optional: [{ fk: 'productId', model: 'product' }],
+      },
+    ],
+    unique: [
+      { field: 'reference', onClash: 'refuse' },
+      { field: 'paypalOrderId', onClash: 'refuse' },
+    ],
+  },
+
   invoicePayments: {
     model: 'invoicePayment',
     kind: 'Invoice payment',
