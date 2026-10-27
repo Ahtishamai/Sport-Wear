@@ -11,7 +11,18 @@ import { ProductPlateCard, Section, SectionHeading } from '@/components/blocks/p
 
 export const revalidate = 300;
 
+/**
+ * Which product pages to build ahead of time.
+ *
+ * None, by default. Building all sixty-odd at once is what tips the deploy
+ * host over its thread limit, and the pages are cached the moment they are
+ * first opened anyway — so the only cost is the first visitor to each one
+ * waiting a beat, against a deploy that reliably finishes.
+ *
+ * Set PRERENDER_PAGES=1 to build them all up front on a machine that can.
+ */
 export async function generateStaticParams() {
+  if (process.env.PRERENDER_PAGES !== '1') return [];
   try {
     const rows = await prisma.product.findMany({
       where: { status: 'PUBLISHED' },

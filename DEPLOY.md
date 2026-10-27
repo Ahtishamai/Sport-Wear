@@ -35,6 +35,29 @@ bash scripts/deploy.sh
 If the build runs out of memory on a small plan, build locally and upload the
 `.next` folder instead — or raise the memory in `scripts/deploy.sh`.
 
+## If the build fails with "OS can't spawn worker thread"
+
+```
+thread '<unnamed>' panicked at tokio ... worker.rs
+OS can't spawn worker thread: Resource temporarily unavailable (os error 11)
+Next.js build worker exited with code: null and signal: SIGABRT
+```
+
+That is the build host refusing to start more threads, not a fault in the
+code. The build is already set up to avoid it:
+
+- `next.config.ts` builds on a single worker (`experimental.cpus: 1`,
+  `workerThreads: false`).
+- Product and collection pages are no longer built up front. They are built
+  the first time somebody opens them and cached from then on, so the deploy
+  does a fraction of the work.
+
+If it still happens, the host is very tight on threads. Either raise the
+limit (`ulimit -u`) or build somewhere else and upload the `.next` folder.
+
+To go back to building every page up front — on a machine with room for it —
+set `PRERENDER_PAGES=1` in the environment before the build.
+
 ## Checking it worked
 
 Open any shirt product page. If the deploy took, the order box offers

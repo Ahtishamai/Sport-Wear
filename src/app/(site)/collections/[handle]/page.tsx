@@ -8,7 +8,9 @@ import { PageHeaderBlock } from '@/components/blocks/sections';
 
 export const revalidate = 120;
 
+/** Built on first visit, like the product pages — see the note there. */
 export async function generateStaticParams() {
+  if (process.env.PRERENDER_PAGES !== '1') return [];
   try {
     const rows = await prisma.collection.findMany({
       where: { status: 'PUBLISHED' },
