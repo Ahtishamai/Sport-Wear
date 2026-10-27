@@ -8,19 +8,15 @@ import { PageHeaderBlock } from '@/components/blocks/sections';
 
 export const revalidate = 120;
 
-/** Built on first visit, like the product pages — see the note there. */
-export async function generateStaticParams() {
-  if (process.env.PRERENDER_PAGES !== '1') return [];
-  try {
-    const rows = await prisma.collection.findMany({
-      where: { status: 'PUBLISHED' },
-      select: { handle: true },
-    });
-    return rows.map((r) => ({ handle: r.handle }));
-  } catch {
-    return [];
-  }
-}
+/*
+ * No generateStaticParams here, unlike the product pages.
+ *
+ * This page reads searchParams — the sort, the price cap, the fabric filters —
+ * and a route that both declares static params and reads the request cannot be
+ * rendered: Next refuses with DYNAMIC_SERVER_USAGE and serves a 500. It is
+ * rendered on demand instead and cached for the two minutes above, which is
+ * what /collections (the same view, no params to declare) already does.
+ */
 
 export async function generateMetadata({
   params,
@@ -54,9 +50,24 @@ export default async function CollectionPage({
   if (!collection) notFound();
 
   const blocks = Array.isArray(collection.blocks) ? collection.blocks : [];
-  const stocked = await prisma.productCollection.count({
-    where: { collectionId: collection.id, product: { status: 'PUBLISHED' } },
-  });
+  // Its own products plus those of its sub-collections: a parent collection
+  // lists them all, so it is only an empty shelf when the children are empty too.
+  const [stocked, parent] = await Promise.all([
+    prisma.product.count({
+      where: {
+        status: 'PUBLISHED',
+        collections: {
+          some: { collection: { OR: [{ id: collection.id }, { parentId: collection.id }] } },
+        },
+      },
+    }),
+    collection.parentId
+      ? prisma.collection.findUnique({
+          where: { id: collection.parentId },
+          select: { handle: true, title: true },
+        })
+      : null,
+  ]);
 
   // A collection that holds no products but has sections of its own is a
   // landing page — a choice of what to look at next. Showing it as a catalogue
@@ -76,6 +87,7 @@ export default async function CollectionPage({
           breadcrumb={[
             { label: 'Home', href: '/' },
             { label: 'Collections', href: '/collections' },
+            ...(parent ? [{ label: parent.title, href: `/collections/${parent.handle}` }] : []),
             { label: collection.title },
           ]}
         />

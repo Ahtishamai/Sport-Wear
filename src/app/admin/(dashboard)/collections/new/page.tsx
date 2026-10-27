@@ -1,3 +1,4 @@
+import { prisma } from '@/lib/db';
 import { CollectionEditor, type EditableCollection } from '@/components/admin/CollectionEditor';
 import { loadProductOptions } from '@/lib/admin-data';
 
@@ -13,12 +14,22 @@ const BLANK: EditableCollection = {
   status: 'PUBLISHED',
   position: 0,
   showInNav: true,
+  parentId: null,
   seoTitle: '',
   seoDescription: '',
   blocks: [],
 };
 
 export default async function NewCollection() {
-  const products = await loadProductOptions();
-  return <CollectionEditor collection={BLANK} products={products} memberIds={[]} />;
+  const [products, parents] = await Promise.all([
+    loadProductOptions(),
+    prisma.collection.findMany({
+      where: { parentId: null },
+      orderBy: { position: 'asc' },
+      select: { id: true, title: true },
+    }),
+  ]);
+  return (
+    <CollectionEditor collection={BLANK} products={products} memberIds={[]} parents={parents} />
+  );
 }

@@ -72,6 +72,14 @@ model Collection {
   position    Int           @default(0)
   showInNav   Boolean       @default(true)
 
+  // A collection may sit under one other collection, WordPress-style: the
+  // ones with no parent are the primary collections, the rest are their
+  // sub-collections. Only two levels deep — a sub-collection cannot itself
+  // be a parent — so the menu never grows a third tier nobody asked for.
+  parentId String?
+  parent   Collection?  @relation("CollectionTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children Collection[] @relation("CollectionTree")
+
   seoTitle       String?
   seoDescription String? @db.Text
 
@@ -84,6 +92,7 @@ model Collection {
   products ProductCollection[]
 
   @@index([status, position])
+  @@index([parentId, position])
   @@map("collections")
 }
 

@@ -187,22 +187,82 @@ export const getCollectionCards = cache(async (limit = 12): Promise<CollectionCa
   }));
 });
 
+/** A collection in a menu or a sidebar: a parent, or one filed under one. */
+export type CollectionNode = {
+  id: string;
+  handle: string;
+  title: string;
+  count: number;
+  parentId: string | null;
+};
+
+type NavNode = CollectionNode & { showInNav: boolean };
+
 /**
- * Collections for the mobile menu.
+ * Every published collection, with how many live products it holds.
+ *
+ * A parent's count includes whatever sits in its sub-collections, because its
+ * page shows those products too — and counts each product once even when it
+ * is filed in both the parent and a child, so the number beside the link is
+ * the number of products the page actually lists.
+ */
+const publishedCollections = cache(async (): Promise<NavNode[]> => {
+  const [rows, links] = await Promise.all([
+    prisma.collection.findMany({
+      where: PUBLISHED,
+      orderBy: { position: 'asc' },
+      select: { id: true, handle: true, title: true, parentId: true, showInNav: true },
+    }),
+    prisma.productCollection.findMany({
+      where: { product: PUBLISHED },
+      select: { productId: true, collectionId: true },
+    }),
+  ]);
+
+  const own = new Map<string, Set<string>>();
+  for (const l of links) {
+    const set = own.get(l.collectionId) ?? new Set<string>();
+    set.add(l.productId);
+    own.set(l.collectionId, set);
+  }
+
+  return rows.map((c) => {
+    const products = new Set(own.get(c.id) ?? []);
+    for (const child of rows) {
+      if (child.parentId !== c.id) continue;
+      for (const id of own.get(child.id) ?? []) products.add(id);
+    }
+    return {
+      id: c.id,
+      handle: c.handle,
+      title: c.title,
+      parentId: c.parentId,
+      count: products.size,
+      showInNav: c.showInNav,
+    };
+  });
+});
+
+/**
+ * Collections for the mobile menu, parents first with their children's ids.
  *
  * A phone has no sidebar, so the menu is the only way to browse by collection.
  * Empty ones are left out: a link that leads to "no products" is worse than no
  * link, and the two that are empty today are meant to be filled later.
  */
-export const getNavCollections = cache(async () => {
-  const rows = await prisma.collection.findMany({
-    where: { ...PUBLISHED, showInNav: true },
-    orderBy: { position: 'asc' },
-    select: { id: true, handle: true, title: true, _count: { select: { products: true } } },
-  });
-  return rows
-    .filter((c) => c._count.products > 0)
-    .map((c) => ({ id: c.id, handle: c.handle, title: c.title, count: c._count.products }));
+export const getNavCollections = cache(async (): Promise<CollectionNode[]> => {
+  const rows = await publishedCollections();
+  const shown = rows.filter((c) => c.showInNav && c.count > 0);
+  const ids = new Set(shown.map((c) => c.id));
+  return shown.map(({ id, handle, title, count, parentId }) => ({
+    id,
+    handle,
+    title,
+    count,
+    // A child whose parent is hidden or empty has nothing to indent under, so
+    // it stands at the top level rather than disappearing with it.
+    parentId: parentId && ids.has(parentId) ? parentId : null,
+  }));
 });
 
 export const getCollectionByHandle = cache(async (handle: string) => {
@@ -215,18 +275,17 @@ export const getCollectionByHandle = cache(async (handle: string) => {
 export const getCatalogFacets = cache(async () => {
   const [total, cols] = await Promise.all([
     prisma.product.count({ where: PUBLISHED }),
-    prisma.collection.findMany({
-      where: PUBLISHED,
-      orderBy: { position: 'asc' },
-      include: { _count: { select: { products: true } } },
-    }),
+    publishedCollections(),
   ]);
+  const ids = new Set(cols.map((c) => c.id));
   return {
     total,
     collections: cols.map((c) => ({
+      id: c.id,
       handle: c.handle,
       title: c.title,
-      count: c._count.products,
+      count: c.count,
+      parentId: c.parentId && ids.has(c.parentId) ? c.parentId : null,
     })),
   };
 });
@@ -243,7 +302,15 @@ export type CatalogQuery = {
 export async function getCatalog(query: CatalogQuery) {
   const where: Record<string, unknown> = { ...PUBLISHED };
   if (query.collection && query.collection !== 'all') {
-    where.collections = { some: { collection: { handle: query.collection } } };
+    // A parent collection shows its sub-collections' products too, the way a
+    // WordPress category page carries the posts of its subcategories.
+    where.collections = {
+      some: {
+        collection: {
+          OR: [{ handle: query.collection }, { parent: { handle: query.collection } }],
+        },
+      },
+    };
   }
   if (query.maxPrice) where.basePrice = { lte: query.maxPrice };
   if (query.q) where.title = { contains: query.q };

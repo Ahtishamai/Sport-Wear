@@ -217,6 +217,10 @@ export const TRASH: Record<string, Spec> = {
         required: [{ fk: 'productId', model: 'product' }],
       },
     ],
+    // Trashing a parent leaves its sub-collections behind, standing on their
+    // own — the database nulls their parentId rather than taking them with it.
+    // Restoring the parent puts back the ones nobody has since re-filed.
+    relinks: [{ key: 'subCollections', model: 'collection', fk: 'parentId' }],
     unique: [{ field: 'handle', onClash: 'suffix' }],
   },
 

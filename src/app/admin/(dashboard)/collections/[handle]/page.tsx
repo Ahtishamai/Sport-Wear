@@ -21,11 +21,24 @@ export default async function EditCollection({
 
   const memberIds = products.filter((p) => p.collectionIds.includes(collection.id)).map((p) => p.id);
 
+  // Only the primary collections can be a parent, and never itself: that is
+  // what keeps the tree two levels deep and loop-free.
+  const [parents, childCount] = await Promise.all([
+    prisma.collection.findMany({
+      where: { parentId: null, id: { not: collection.id } },
+      orderBy: { position: 'asc' },
+      select: { id: true, title: true },
+    }),
+    prisma.collection.count({ where: { parentId: collection.id } }),
+  ]);
+
   return (
     <CollectionEditor
       collection={plain(collection) as unknown as EditableCollection}
       products={products}
       memberIds={memberIds}
+      parents={parents}
+      childCount={childCount}
     />
   );
 }

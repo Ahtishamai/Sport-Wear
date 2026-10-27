@@ -114,7 +114,13 @@ export function Header({
 }: {
   nav: NavLink[];
   /** Shown inside the mobile menu, which stands in for the catalogue sidebar. */
-  collections?: { id: string; handle: string; title: string; count: number }[];
+  collections?: {
+    id: string;
+    handle: string;
+    title: string;
+    count: number;
+    parentId: string | null;
+  }[];
   logo: string;
   phone: string;
   phoneHref: string;
@@ -281,17 +287,35 @@ export function Header({
                     All products
                     <Icon name="arrowRight" size={15} />
                   </Link>
-                  {collections.map((c) => (
-                    <Link
-                      key={c.id}
-                      href={`/collections/${c.handle}`}
-                      data-active={isActive(`/collections/${c.handle}`)}
-                      className="flex items-center justify-between gap-3 border-b border-hairline py-3 text-[14px] font-medium text-body data-[active=true]:font-semibold data-[active=true]:text-brand-text"
-                    >
-                      {c.title}
-                      <span className="text-[12px] text-muted">{c.count}</span>
-                    </Link>
-                  ))}
+                  {/* Sub-collections are listed stepped in under their parent,
+                      so the menu reads the way the catalogue is organised. */}
+                  {collections
+                    .filter((c) => !c.parentId)
+                    .flatMap((parent) => [
+                      parent,
+                      ...collections.filter((c) => c.parentId === parent.id),
+                    ])
+                    .map((c) => (
+                      <Link
+                        key={c.id}
+                        href={`/collections/${c.handle}`}
+                        data-active={isActive(`/collections/${c.handle}`)}
+                        data-sub={c.parentId ? true : undefined}
+                        className="flex items-center justify-between gap-3 border-b border-hairline py-3 text-[14px] font-medium text-body data-[active=true]:font-semibold data-[active=true]:text-brand-text data-[sub=true]:pl-4 data-[sub=true]:text-[13.5px]"
+                      >
+                        {c.parentId ? (
+                          <span className="flex items-center gap-2">
+                            <span aria-hidden="true" className="text-muted">
+                              └
+                            </span>
+                            {c.title}
+                          </span>
+                        ) : (
+                          c.title
+                        )}
+                        <span className="text-[12px] text-muted">{c.count}</span>
+                      </Link>
+                    ))}
                 </>
               )}
 

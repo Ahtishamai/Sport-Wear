@@ -32,6 +32,7 @@ export type EditableCollection = {
   status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
   position: number;
   showInNav: boolean;
+  parentId: string | null;
   seoTitle: string | null;
   seoDescription: string | null;
   blocks: unknown;
@@ -45,14 +46,22 @@ type ProductOption = {
   collectionIds: string[];
 };
 
+/** The collections this one could sit under: the primary ones, bar itself. */
+export type ParentOption = { id: string; title: string };
+
 export function CollectionEditor({
   collection,
   products,
   memberIds,
+  parents = [],
+  childCount = 0,
 }: {
   collection: EditableCollection;
   products: ProductOption[];
   memberIds: string[];
+  parents?: ParentOption[];
+  /** How many sub-collections sit under this one, which pins it to the top. */
+  childCount?: number;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -69,6 +78,7 @@ export function CollectionEditor({
     status: collection.status ?? 'PUBLISHED',
     position: collection.position ?? 0,
     showInNav: collection.showInNav ?? true,
+    parentId: collection.parentId ?? '',
     seoTitle: collection.seoTitle ?? '',
     seoDescription: collection.seoDescription ?? '',
   }));
@@ -193,6 +203,28 @@ export function CollectionEditor({
                     placeholder="Custom sublimated jerseys"
                   />
                 </div>
+              </div>
+              <div>
+                <span className="field-label">Sits under</span>
+                <Select
+                  value={f.parentId}
+                  disabled={childCount > 0}
+                  onChange={(e) => set('parentId', e.target.value)}
+                >
+                  <option value="">Nothing — this is a primary collection</option>
+                  {parents.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.title}
+                    </option>
+                  ))}
+                </Select>
+                <p className="mt-1.5 text-[12px] text-[#8A8C93]">
+                  {childCount > 0
+                    ? `A primary collection: ${childCount} sub-collection${childCount === 1 ? '' : 's'} sit under it. Move those out before filing this one somewhere.`
+                    : f.parentId
+                      ? 'A sub-collection. It appears indented under its parent in the menu and the sidebar, and the parent’s page shows its products too.'
+                      : 'A primary collection, shown at the top level of the menu. Pick a parent to make this one a sub-collection instead.'}
+                </p>
               </div>
               <div>
                 <span className="field-label">Intro copy</span>

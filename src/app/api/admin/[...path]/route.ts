@@ -26,6 +26,38 @@ function model(cfg: ResourceConfig) {
   };
 }
 
+/**
+ * Keeps the collection tree two levels deep and free of loops.
+ *
+ * A collection may sit under a primary collection — one with no parent of its
+ * own. Anything further would put a third tier in the menu, and pointing two
+ * collections at each other would make a page that cannot render.
+ */
+async function checkCollectionParent(data: Record<string, any>, selfId?: string) {
+  if (!('parentId' in data)) return null;
+  const parentId = data.parentId ? String(data.parentId) : null;
+  if (!parentId) return null;
+
+  if (parentId === selfId) return 'A collection cannot sit under itself.';
+
+  const parent = await prisma.collection.findUnique({
+    where: { id: parentId },
+    select: { id: true, title: true, parentId: true, parent: { select: { title: true } } },
+  });
+  if (!parent) return 'That parent collection no longer exists.';
+  if (parent.parentId) {
+    return `“${parent.title}” already sits under “${parent.parent?.title ?? 'another collection'}”. Pick a collection that is not itself a sub-collection.`;
+  }
+
+  if (selfId) {
+    const kids = await prisma.collection.count({ where: { parentId: selfId } });
+    if (kids > 0) {
+      return `This collection has ${kids === 1 ? 'a sub-collection' : kids + ' sub-collections'} of its own, so it has to stay at the top level. Move those out first.`;
+    }
+  }
+  return null;
+}
+
 function bump(cfg: ResourceConfig, row: Record<string, any>) {
   for (const p of cfg.revalidate(row)) {
     try {
@@ -209,6 +241,11 @@ export async function POST(req: Request, ctx: Ctx) {
     if (resource === 'pages' && data.blocks === undefined) data.blocks = [];
     if (resource === 'products' && data.description === undefined) data.description = '';
 
+    if (resource === 'collections') {
+      const wrong = await checkCollectionParent(data);
+      if (wrong) return badRequest(wrong);
+    }
+
     await ensureSlug(cfg, data);
 
     const row = await m.create({ data, include: cfg.include });
@@ -273,6 +310,11 @@ export async function PATCH(req: Request, ctx: Ctx) {
     }
 
     const data = coerce(cfg, body ?? {});
+
+    if (resource === 'collections') {
+      const wrong = await checkCollectionParent(data, id);
+      if (wrong) return badRequest(wrong);
+    }
 
     if (resource === 'users' && body?.password) {
       const password = String(body.password);

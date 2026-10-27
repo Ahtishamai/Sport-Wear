@@ -2,11 +2,18 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState, useTransition } from 'react';
+import { Fragment, useEffect, useState, useTransition } from 'react';
 import { cn } from '@/lib/utils';
 import { useQuote } from './QuoteProvider';
 
-export type Facet = { handle: string; title: string; count: number };
+export type Facet = {
+  id: string;
+  handle: string;
+  title: string;
+  count: number;
+  /** Set when this one is filed under another collection. */
+  parentId: string | null;
+};
 
 export function CatalogSidebar({
   facets,
@@ -45,6 +52,14 @@ export function CatalogSidebar({
   const priceNarrowed = showPriceFilter && maxParam !== priceBounds.max;
   const hasFilters = fabric.length > 0 || priceNarrowed || activeCollection !== 'all';
 
+  // Primary collections, each with whatever is filed under it. A standing-open
+  // list rather than a disclosure: nothing is hidden behind a tap, and the
+  // page a shopper is on is always visible in context.
+  const current = facets.find((f) => f.handle === activeCollection);
+  const tree = facets
+    .filter((f) => !f.parentId)
+    .map((parent) => ({ parent, children: facets.filter((f) => f.parentId === parent.id) }));
+
   return (
     <aside className="flex flex-col gap-7 lg:sticky lg:top-[110px] lg:self-start">
       <section>
@@ -68,14 +83,28 @@ export function CatalogSidebar({
             count={total}
             active={activeCollection === 'all'}
           />
-          {facets.map((f) => (
-            <FacetRow
-              key={f.handle}
-              href={`/collections/${f.handle}`}
-              label={f.title}
-              count={f.count}
-              active={activeCollection === f.handle}
-            />
+          {tree.map(({ parent, children }) => (
+            <Fragment key={parent.handle}>
+              <FacetRow
+                href={`/collections/${parent.handle}`}
+                label={parent.title}
+                count={parent.count}
+                active={activeCollection === parent.handle}
+                // The parent of the page being looked at stays lit, so a
+                // sub-collection never looks like it came from nowhere.
+                within={current?.parentId === parent.id}
+              />
+              {children.map((c) => (
+                <FacetRow
+                  key={c.handle}
+                  href={`/collections/${c.handle}`}
+                  label={c.title}
+                  count={c.count}
+                  active={activeCollection === c.handle}
+                  indent
+                />
+              ))}
+            </Fragment>
           ))}
         </ul>
       </section>
@@ -160,21 +189,30 @@ function FacetRow({
   label,
   count,
   active,
+  indent = false,
+  within = false,
 }: {
   href: string;
   label: string;
   count: number;
   active: boolean;
+  /** A sub-collection, stepped in under its parent. */
+  indent?: boolean;
+  /** A parent of the collection being looked at. */
+  within?: boolean;
 }) {
   return (
     <li>
       <Link
         href={href}
         className={cn(
-          'flex items-center justify-between border-l-2 px-3 py-[11px] text-[14px] transition-colors',
+          'flex items-center justify-between border-l-2 transition-colors',
+          indent ? 'py-[9px] pl-6 pr-3 text-[13.5px]' : 'px-3 py-[11px] text-[14px]',
           active
             ? 'border-brand bg-brand-tint font-semibold text-ink'
-            : 'border-transparent text-body hover:text-ink'
+            : within
+              ? 'border-brand/40 font-semibold text-ink'
+              : 'border-transparent text-body hover:text-ink'
         )}
       >
         {label}

@@ -85,6 +85,7 @@ export const RESOURCES: Record<string, ResourceConfig> = {
       'status',
       'position',
       'showInNav',
+      'parentId',
       'seoTitle',
       'seoDescription',
       'blocks',

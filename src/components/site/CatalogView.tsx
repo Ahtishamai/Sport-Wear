@@ -41,6 +41,12 @@ export async function CatalogView({
   const showPrice = settings.showPrices !== false;
   const maxPrice = Number(searchParams.max) || bounds.max;
 
+  // Where this collection sits in the tree: the facets already carry it, so
+  // the breadcrumb and the sub-collection links cost no extra query.
+  const self = handle === 'all' ? null : facets.collections.find((c) => c.handle === handle);
+  const parent = self?.parentId ? facets.collections.find((c) => c.id === self.parentId) : null;
+  const subs = self ? facets.collections.filter((c) => c.parentId === self.id) : [];
+
   const products = await getCatalog({
     collection: handle,
     maxPrice,
@@ -69,6 +75,16 @@ export async function CatalogView({
                 </Link>
               )}
             </li>
+            {parent && (
+              <>
+                <li aria-hidden="true">/</li>
+                <li>
+                  <Link href={`/collections/${parent.handle}`} className="hover:text-ink">
+                    {parent.title}
+                  </Link>
+                </li>
+              </>
+            )}
             {handle !== 'all' && (
               <>
                 <li aria-hidden="true">/</li>
@@ -81,6 +97,26 @@ export async function CatalogView({
           {title}
         </h1>
         {intro && <p className="mt-4 max-w-[760px] text-[17px] leading-relaxed text-body">{intro}</p>}
+        {subs.length > 0 && (
+          <div className="mt-6">
+            <h2 className="mb-2.5 font-display text-[12px] font-extrabold uppercase tracking-[.16em] text-muted">
+              Shop by category
+            </h2>
+            <ul className="flex flex-wrap gap-2.5">
+              {subs.map((c) => (
+                <li key={c.handle}>
+                  <Link
+                    href={`/collections/${c.handle}`}
+                    className="flex items-center gap-2 border border-field bg-white px-3.5 py-2 text-[14px] font-semibold text-ink transition-colors hover:border-ink"
+                  >
+                    {c.title}
+                    <span className="text-[12px] font-medium text-muted">{c.count}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         {banner && (
           <div
             className="relative mt-8 w-full bg-plate"
