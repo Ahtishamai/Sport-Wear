@@ -149,15 +149,33 @@ export async function CatalogView({
 
           {products.length === 0 ? (
             <div className="border border-hairline bg-surface px-8 py-16 text-center">
-              <h2 className="h-display text-[22px]">Nothing matches those filters</h2>
+              {/* A collection that holds nothing of its own but has
+                  sub-collections is not an empty shelf — it is a signpost, and
+                  "nothing matches those filters" is not what it should say. */}
+              <h2 className="h-display text-[22px]">
+                {subs.length > 0 ? 'Pick a style to see' : 'Nothing matches those filters'}
+              </h2>
               <p className="mx-auto mt-3 max-w-[420px] text-[15px] text-body">
-                Widen the price range or clear the filters — or tell us what you are after and we
-                will quote it directly.
+                {subs.length > 0
+                  ? `${title} is split into ${subs.length === 2 ? 'two' : subs.length}. Choose one — or tell us what you are after and we will quote it directly.`
+                  : 'Widen the price range or clear the filters — or tell us what you are after and we will quote it directly.'}
               </p>
               <div className="mt-6 flex flex-wrap justify-center gap-3">
-                <Link href="/collections" className="btn btn-outline btn-md">
-                  Clear filters
-                </Link>
+                {subs.length > 0 ? (
+                  subs.map((c) => (
+                    <Link
+                      key={c.handle}
+                      href={`/collections/${c.handle}`}
+                      className="btn btn-outline btn-md"
+                    >
+                      {c.title}
+                    </Link>
+                  ))
+                ) : (
+                  <Link href="/collections" className="btn btn-outline btn-md">
+                    Clear filters
+                  </Link>
+                )}
                 <QuoteButton subject="Custom request" className="btn btn-yellow btn-md">
                   Request a quote
                 </QuoteButton>
