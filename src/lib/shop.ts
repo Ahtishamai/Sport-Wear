@@ -92,6 +92,16 @@ export async function priceShopCart(lines: ShopLineInput[], currency = 'USD'): P
     const product = byId.get(id);
     if (!product) throw new ShopError('One of the items is no longer available.');
 
+    // The product page is what the cart is filled from, so a product that
+    // does not offer a cart cannot be in one: a stale cart, or a line posted
+    // straight at the API, is turned away rather than quietly sold.
+    if (!product.sellOnline) {
+      throw new ShopError(
+        `${product.title} is quoted rather than sold online. Ask us for a price.`,
+        409
+      );
+    }
+
     const orderType = clean(raw.orderType, 16) === 'team' ? 'team' : 'individual';
     const runForProduct = totalPer.get(id) ?? 0;
     if (orderType === 'team' && runForProduct < TEAM_MINIMUM) {

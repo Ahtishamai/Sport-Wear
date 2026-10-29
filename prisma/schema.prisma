@@ -118,6 +118,11 @@ model Product {
   askTeamName   Boolean       @default(false)
   /// Asks for the number printed on the back.
   askNumber     Boolean       @default(false)
+  /// On, the product page offers Individual / Team and an Add to cart button,
+  /// so this one can be bought outright. Off, it is sold the way everything
+  /// was before the shop existed: a size run and "Request a quote". A price
+  /// above zero is still needed before anything can actually be charged.
+  sellOnline    Boolean       @default(false)
 
   // Structured, admin-editable JSON
   sports      Json? // ["Baseball","Softball","Other"]

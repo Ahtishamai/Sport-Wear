@@ -37,6 +37,7 @@ export type EditableProduct = {
   showPrice?: boolean;
   askTeamName?: boolean;
   askNumber?: boolean;
+  sellOnline?: boolean;
   sports: string[] | null;
   colorways: { name: string; from: string; to: string }[] | null;
   sizes: string[] | null;
@@ -81,6 +82,7 @@ export function ProductEditor({
     showPrice: product.showPrice !== false,
     askTeamName: product.askTeamName === true,
     askNumber: product.askNumber === true,
+    sellOnline: product.sellOnline === true,
     seoTitle: product.seoTitle ?? '',
     seoDescription: product.seoDescription ?? '',
   }));
@@ -549,6 +551,24 @@ export function ProductEditor({
               </div>
 
               <div>
+                <span className="field-label">How it is sold</span>
+                <Select
+                  value={f.sellOnline ? 'cart' : 'quote'}
+                  onChange={(e) => set('sellOnline', e.target.value === 'cart')}
+                >
+                  <option value="quote">Quote only — one size run, “Request a quote”</option>
+                  <option value="cart">Sell it online — Individual / Team and Add to cart</option>
+                </Select>
+                <p className="mt-1.5 text-[12px] text-[#8A8C93]">
+                  {f.sellOnline
+                    ? Number(f.basePrice) > 0 && f.showPrice
+                      ? 'The product page offers Individual or Team, and a shopper can put it in the cart and pay. Team orders start at 10.'
+                      : 'Add to cart needs a price as well: set “Starting at” above zero and leave the price showing, or this product keeps “Request a quote”.'
+                    : 'The product page asks for a size run and nothing else — no Individual / Team, no cart. This is how a product is sold until you switch it on.'}
+                </p>
+              </div>
+
+              <div>
                 <span className="field-label">Printed on it</span>
                 <div className="space-y-2">
                   <Checkbox
@@ -563,8 +583,9 @@ export function ProductEditor({
                   />
                 </div>
                 <p className="mt-1.5 text-[12px] text-[#8A8C93]">
-                  Shown on the product page for shirts, which carry a name and number. Leave both
-                  off for bags and anything that is not personalised.
+                  Each one adds its own box to the product page, and what is typed there follows the
+                  order through to the quote or the invoice. Ticked for shirts, which carry a name
+                  and a number; left off for bags and anything that is not personalised.
                 </p>
               </div>
 

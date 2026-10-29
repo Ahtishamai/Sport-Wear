@@ -54,40 +54,51 @@ export function ProductDetail({
   const [qty, setQty] = useState<Record<string, number>>(() => ({ ...product.defaultQty }));
   const [spec, setSpec] = useState(product.specs[0]?.q ?? '');
 
+  // Sold outright, or quoted? Switched per product in the admin, under
+  // Status & pricing. Off, this page does what it has always done: ask for a
+  // size run and send it over as a quote, with no choice to make and no cart.
+  const sellsOnline = product.sellOnline === true;
+
   // One person buying for themselves, or a coach kitting out a roster. They
   // need different things asked of them: one size and a count, against a
   // size run and the team's name.
   const [mode, setMode] = useState<'individual' | 'team'>('individual');
   const [teamName, setTeamName] = useState('');
   // Printed on the shirt: the team across the chest, the number on the back.
-  // Bags and anything not personalised do not ask.
+  // Each is asked for only where it is ticked on the product, so a bag is
+  // never asked for a squad number.
   const [number, setNumber] = useState('');
-  const asksTeamName = product.askTeamName || mode === 'team';
-  const asksNumber = product.askNumber;
+  const asksTeamName = product.askTeamName === true;
+  const asksNumber = product.askNumber === true;
   const [oneSize, setOneSize] = useState(product.sizes[0] ?? '');
   const [oneQty, setOneQty] = useState(1);
   // A bag comes in one size, so a team buying them is asked how many, not
-  // how many of each.
-  const [teamQty, setTeamQty] = useState(TEAM_MINIMUM);
+  // how many of each. A quote starts at one; a team order at ten.
+  const [teamQty, setTeamQty] = useState(product.sellOnline ? TEAM_MINIMUM : 1);
   const { add: addLines } = useShopCart();
   const [added, setAdded] = useState(false);
 
   const hasSizes = product.sizes.length > 0;
   const noun = unitNoun(product);
 
+  // A box per size, or one size and a count. A quote-only product keeps the
+  // size run whoever is buying it, which is the shape a quote has always had.
+  const perSize = !sellsOnline || mode === 'team';
+
   /** What is being ordered, as lines of size and count. */
-  const lines =
-    mode === 'team'
-      ? hasSizes
-        ? Object.entries(qty)
-            .filter(([size, n]) => size && Number(n) > 0)
-            .map(([size, n]) => ({ size, quantity: Number(n) }))
-        : [{ size: '', quantity: teamQty }]
-      : [{ size: hasSizes ? oneSize : '', quantity: oneQty }];
+  const lines = perSize
+    ? hasSizes
+      ? Object.entries(qty)
+          .filter(([size, n]) => size && Number(n) > 0)
+          .map(([size, n]) => ({ size, quantity: Number(n) }))
+      : [{ size: '', quantity: teamQty }]
+    : [{ size: hasSizes ? oneSize : '', quantity: oneQty }];
 
   const sizeRun = Object.fromEntries(lines.map((l) => [l.size || 'One size', l.quantity]));
   const units = lines.reduce((n, l) => n + l.quantity, 0);
-  const shortOfMinimum = mode === 'team' && units < TEAM_MINIMUM;
+  // The ten only binds a team order being bought outright. Nothing stops
+  // anyone asking for a quote on two.
+  const shortOfMinimum = sellsOnline && mode === 'team' && units < TEAM_MINIMUM;
   const tiers = product.volumeTiers;
   const tierIdx = activeTier(tiers, units);
   const unitPrice = unitPriceFor(product.basePrice, tiers, units);
@@ -97,9 +108,9 @@ export function ProductDetail({
   // and this product's own. A product sold only by quote must not show a figure
   // because prices happen to be on everywhere else.
   const priced = showPrices && product.showPrice !== false;
-  // Sold outright only when there is a real figure behind it; a $0 product is
-  // one nobody has priced yet, not a free one.
-  const sellable = priced && unitPrice > 0;
+  // Sold outright only where it is switched on and there is a real figure
+  // behind it; a $0 product is one nobody has priced yet, not a free one.
+  const sellable = sellsOnline && priced && unitPrice > 0;
 
   const images = product.images.length ? product.images : [];
   const colorway = product.colorways[color];
@@ -114,7 +125,9 @@ export function ProductDetail({
       unitPrice,
       estTotal,
       sport,
-      orderType: mode,
+      // Left unsaid on a quote-only product, where nobody chose: the quote
+      // form then asks for the team the way it did before this choice existed.
+      orderType: sellsOnline ? mode : undefined,
       teamName: asksTeamName ? teamName.trim() : '',
       // A team order is a run of shirts, so one number only belongs on an
       // individual one; the roster's numbers are settled on the mockup.
@@ -129,6 +142,7 @@ export function ProductDetail({
       unitPrice,
       estTotal,
       sport,
+      sellsOnline,
       mode,
       teamName,
       number,
@@ -168,10 +182,9 @@ export function ProductDetail({
 
   const requestQuote = () => {
     if (shortOfMinimum) return;
-    const what =
-      mode === 'team'
-        ? `${teamName.trim() ? teamName.trim() + ' — ' : ''}${units} ${units === 1 ? noun[0] : noun[1]}`
-        : `${units} × ${oneSize}`;
+    const what = perSize
+      ? `${teamName.trim() ? teamName.trim() + ' — ' : ''}${units} ${units === 1 ? noun[0] : noun[1]}`
+      : `${units} × ${oneSize}`;
     open(`${product.title} — ${what}`, quotePayload);
   };
 
@@ -412,6 +425,7 @@ export function ProductDetail({
             </div>
 
             {/* One control, two halves — it reads as a choice rather than two buttons. */}
+            {sellsOnline && (
             <div
               className="mb-5 grid grid-cols-2 overflow-hidden border border-ink"
               role="group"
@@ -446,8 +460,9 @@ export function ProductDetail({
                 );
               })}
             </div>
+            )}
 
-            {(asksTeamName || (asksNumber && mode === 'individual')) && (
+            {(asksTeamName || (asksNumber && !perSize)) && (
               <div className="mb-5 grid gap-3 sm:grid-cols-[1fr_auto]">
                 {asksTeamName && (
                   <label className="block">
@@ -463,7 +478,7 @@ export function ProductDetail({
                     />
                   </label>
                 )}
-                {asksNumber && mode === 'individual' && (
+                {asksNumber && !perSize && (
                   <label className="block">
                     <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-[.14em] text-muted">
                       Number
@@ -478,7 +493,7 @@ export function ProductDetail({
                     />
                   </label>
                 )}
-                {asksNumber && mode === 'team' && (
+                {asksNumber && perSize && (
                   <p className="self-end pb-3 text-[12.5px] text-muted sm:max-w-[220px]">
                     Names and numbers for the roster are collected with your mockup.
                   </p>
@@ -486,7 +501,7 @@ export function ProductDetail({
               </div>
             )}
 
-            {mode === 'individual' ? (
+            {!perSize ? (
               <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
                 <div className={hasSizes ? undefined : 'hidden'}>
                   <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-[.14em] text-muted">
@@ -539,9 +554,11 @@ export function ProductDetail({
                     aria-label={`How many ${noun[1]}`}
                     className="w-[140px] border border-hairline px-4 py-2.5 text-center font-display text-[22px] font-black outline-none focus:border-ink"
                   />
-                  <span className="text-[13px] text-muted">
-                    Team orders start at {TEAM_MINIMUM} {noun[1]}.
-                  </span>
+                  {sellsOnline && (
+                    <span className="text-[13px] text-muted">
+                      Team orders start at {TEAM_MINIMUM} {noun[1]}.
+                    </span>
+                  )}
                 </span>
               </label>
             ) : (
@@ -590,7 +607,7 @@ export function ProductDetail({
             <div className="mt-5 flex flex-wrap items-end justify-between gap-4 border-t border-hairline pt-4">
               <div>
                 <span className="block text-[11px] font-bold uppercase tracking-[.14em] text-muted">
-                  {mode === 'team' ? `Total ${noun[1]}` : noun[1].replace(/^./, (c) => c.toUpperCase())}
+                  {perSize ? `Total ${noun[1]}` : noun[1].replace(/^./, (c) => c.toUpperCase())}
                 </span>
                 <span className="font-display text-[22px] font-black">{units}</span>
               </div>
@@ -609,9 +626,9 @@ export function ProductDetail({
           {/* CTAs */}
           <div className="mt-6 flex flex-wrap gap-3">
             {/*
-              Buying outright only makes sense once there is a price to charge.
-              A product still waiting for one keeps the quote button, which is
-              how it has always been sold.
+              Buying outright only makes sense where it is switched on and
+              there is a price to charge. Anything else keeps the quote button,
+              which is how everything here has always been sold.
             */}
             {sellable ? (
               <>
@@ -734,7 +751,7 @@ export function ProductDetail({
               {product.title}
             </div>
             <div className="text-[13px] text-muted">
-              {mode === 'team' ? 'Team · ' : ''}
+              {sellsOnline && mode === 'team' ? 'Team · ' : ''}
               {units} {units === 1 ? noun[0] : noun[1]}
               {priced ? ` · est. ${money(estTotal)}` : ''}
             </div>
