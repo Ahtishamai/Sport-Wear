@@ -54,12 +54,15 @@ export function CollectionEditor({
   products,
   memberIds,
   parents = [],
+  parentIds = [],
   childCount = 0,
 }: {
   collection: EditableCollection;
   products: ProductOption[];
   memberIds: string[];
   parents?: ParentOption[];
+  /** The collections it is filed under today — it may be more than one. */
+  parentIds?: string[];
   /** How many sub-collections sit under this one, which pins it to the top. */
   childCount?: number;
 }) {
@@ -78,7 +81,6 @@ export function CollectionEditor({
     status: collection.status ?? 'PUBLISHED',
     position: collection.position ?? 0,
     showInNav: collection.showInNav ?? true,
-    parentId: collection.parentId ?? '',
     seoTitle: collection.seoTitle ?? '',
     seoDescription: collection.seoDescription ?? '',
   }));
@@ -87,6 +89,9 @@ export function CollectionEditor({
     Array.isArray(collection.blocks) ? (collection.blocks as Block[]) : []
   );
   const [members, setMembers] = useState<string[]>(memberIds);
+  // Kept in the order they were ticked: the first is the one the breadcrumb
+  // and the admin list treat as this collection's main home.
+  const [under, setUnder] = useState<string[]>(parentIds);
   const [q, setQ] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -107,6 +112,7 @@ export function CollectionEditor({
         ...f,
         handle: f.handle.trim() || slugify(f.title),
         position: Number(f.position) || 0,
+        parentIds: under,
         blocks,
       };
 
@@ -206,24 +212,53 @@ export function CollectionEditor({
               </div>
               <div>
                 <span className="field-label">Sits under</span>
-                <Select
-                  value={f.parentId}
-                  disabled={childCount > 0}
-                  onChange={(e) => set('parentId', e.target.value)}
-                >
-                  <option value="">Nothing — this is a primary collection</option>
-                  {parents.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.title}
-                    </option>
-                  ))}
-                </Select>
+                {childCount > 0 || parents.length === 0 ? (
+                  <p className="border border-[#E3E3DF] bg-[#F7F7F5] px-3 py-2.5 text-[13px] text-[#6B6D74]">
+                    {childCount > 0
+                      ? `A primary collection: ${childCount} sub-collection${childCount === 1 ? '' : 's'} sit under it.`
+                      : 'Nothing to sit under yet — this is the first collection.'}
+                  </p>
+                ) : (
+                  <div className="max-h-[220px] space-y-1 overflow-y-auto border border-[#E3E3DF] p-1.5">
+                    {parents.map((p) => {
+                      const i = under.indexOf(p.id);
+                      return (
+                        <label
+                          key={p.id}
+                          className="flex cursor-pointer items-center gap-3 border border-transparent px-2 py-1.5 text-[13px] hover:border-[#E3E3DF]"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={i >= 0}
+                            onChange={(e) =>
+                              setUnder((prev) =>
+                                e.target.checked
+                                  ? [...prev, p.id]
+                                  : prev.filter((x) => x !== p.id)
+                              )
+                            }
+                            style={{ accentColor: '#101114' }}
+                            className="h-4 w-4"
+                          />
+                          <span className="flex-1">{p.title}</span>
+                          {i === 0 && (
+                            <span className="text-[11px] font-semibold uppercase tracking-[.08em] text-[#8A8C93]">
+                              Main
+                            </span>
+                          )}
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
                 <p className="mt-1.5 text-[12px] text-[#8A8C93]">
                   {childCount > 0
-                    ? `A primary collection: ${childCount} sub-collection${childCount === 1 ? '' : 's'} sit under it. Move those out before filing this one somewhere.`
-                    : f.parentId
-                      ? 'A sub-collection. It appears indented under its parent in the menu and the sidebar, and the parent’s page shows its products too.'
-                      : 'A primary collection, shown at the top level of the menu. Pick a parent to make this one a sub-collection instead.'}
+                    ? 'Move those sub-collections out before filing this one somewhere itself.'
+                    : under.length > 1
+                      ? `Under ${under.map((id) => parents.find((p) => p.id === id)?.title ?? '?').join(', ')}. It is listed under each of them in the menu and the sidebar, and each of their pages shows its products. The first one ticked is its main home, used for the breadcrumb.`
+                      : under.length === 1
+                        ? 'A sub-collection. It appears indented under its parent in the menu and the sidebar, and the parent’s page shows its products too. Tick more than one to file it in several places at once.'
+                        : 'A primary collection, shown at the top level of the menu. Tick one or more parents to make this one a sub-collection instead.'}
                 </p>
               </div>
               <div>

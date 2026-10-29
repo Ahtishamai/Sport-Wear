@@ -57,7 +57,14 @@ export default async function CollectionPage({
       where: {
         status: 'PUBLISHED',
         collections: {
-          some: { collection: { OR: [{ id: collection.id }, { parentId: collection.id }] } },
+          some: {
+            collection: {
+              OR: [
+                { id: collection.id },
+                { parentLinks: { some: { parentId: collection.id } } },
+              ],
+            },
+          },
         },
       },
     }),

@@ -85,6 +85,34 @@ export function tierPrice(base: number, tier?: VolumeTier) {
   return Math.max(0, base - (tier.discount ?? 0));
 }
 
+/**
+ * What to call a tier. A typed label wins; otherwise it names itself from the
+ * quantities — "1", "2–5", "10+" — so a price list can be typed as nothing
+ * but a quantity and a price.
+ */
+export function tierLabel(tier?: VolumeTier) {
+  if (!tier) return '';
+  if (tier.label?.trim()) return tier.label.trim();
+  const min = Math.max(1, Number(tier.minQty) || 1);
+  const max = tier.maxQty === null || tier.maxQty === undefined ? null : Number(tier.maxQty);
+  if (max === null || !Number.isFinite(max)) return `${min}+`;
+  return max <= min ? String(min) : `${min}–${max}`;
+}
+
+/**
+ * The saving shown on a tier: whatever was typed, or how far its price falls
+ * below the first tier's — the price of buying one — worked out for them.
+ */
+export function tierSavings(base: number, tiers: VolumeTier[], index: number) {
+  const tier = tiers[index];
+  if (!tier) return '';
+  if (tier.savingsLabel?.trim()) return tier.savingsLabel.trim();
+  const one = tierPrice(base, tiers[0]);
+  const here = tierPrice(base, tier);
+  if (index === 0 || !(one > 0) || here >= one) return '';
+  return `Save ${Math.round(((one - here) / one) * 100)}%`;
+}
+
 export const SIZE_RUN = ['YS', 'YM', 'YL', 'S', 'M', 'L', 'XL', '2XL', '3XL'];
 
 export function sumQty(qty: Record<string, number>) {

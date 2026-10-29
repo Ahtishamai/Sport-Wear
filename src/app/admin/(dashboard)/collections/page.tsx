@@ -7,24 +7,36 @@ export const dynamic = 'force-dynamic';
 export default async function CollectionsIndex() {
   const collections = await prisma.collection.findMany({
     orderBy: { position: 'asc' },
-    include: { _count: { select: { products: true } } },
+    include: {
+      _count: { select: { products: true } },
+      parentLinks: { orderBy: { position: 'asc' }, select: { parentId: true } },
+    },
   });
 
   // Listed as a tree: every primary collection, each followed by the
   // sub-collections filed under it, so the table reads like the menu does.
-  const rows = plain(collections);
+  // One filed under two parents is listed under both, as it is on the site.
+  const rows = plain(collections).map((c) => ({
+    ...c,
+    parentIds: c.parentLinks.map((l: { parentId: string }) => l.parentId),
+  }));
   const ordered = rows
-    .filter((c) => !c.parentId)
+    .filter((c) => c.parentIds.length === 0)
     .flatMap((parent) => [
-      { ...parent, depth: 0 },
-      ...rows.filter((c) => c.parentId === parent.id).map((c) => ({ ...c, depth: 1 })),
+      { ...parent, depth: 0, under: '' },
+      ...rows
+        .filter((c) => c.parentIds.includes(parent.id))
+        .map((c) => ({ ...c, depth: 1, under: parent.id })),
     ]);
   // A sub-collection whose parent is a draft, or otherwise unreachable above,
   // would drop off the list entirely — keep it at the end rather than lose it.
   const shown = [
     ...ordered,
-    ...rows.filter((c) => !ordered.some((o) => o.id === c.id)).map((c) => ({ ...c, depth: 0 })),
+    ...rows
+      .filter((c) => !ordered.some((o) => o.id === c.id))
+      .map((c) => ({ ...c, depth: 0, under: '' })),
   ];
+  const titleOf = (id: string) => rows.find((r) => r.id === id)?.title ?? '—';
 
   return (
     <AdminPage
@@ -50,7 +62,7 @@ export default async function CollectionsIndex() {
         </thead>
         <tbody>
           {shown.map((c) => (
-            <tr key={c.id}>
+            <tr key={c.under ? `${c.under}-${c.id}` : c.id}>
               <Td>
                 <span style={c.depth ? { paddingLeft: 18 } : undefined} className="block">
                   {c.depth > 0 && <span className="mr-1.5 text-[#B5B7BC]">└</span>}
@@ -66,9 +78,9 @@ export default async function CollectionsIndex() {
                 </span>
               </Td>
               <Td className="text-[13px] text-[#6B6D74]">
-                {c.parentId
-                  ? (rows.find((r) => r.id === c.parentId)?.title ?? '—')
-                  : 'Primary collection'}
+                {c.parentIds.length === 0
+                  ? 'Primary collection'
+                  : c.parentIds.map(titleOf).join(' · ')}
               </Td>
               <Td className="text-[13px] text-[#6B6D74]">/collections/{c.handle}</Td>
               <Td className="text-[13px]">{c._count.products}</Td>

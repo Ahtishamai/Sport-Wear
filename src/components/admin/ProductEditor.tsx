@@ -5,7 +5,15 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { api } from '@/lib/admin-client';
-import { DEFAULT_TIERS, money, slugify, type VolumeTier } from '@/lib/utils';
+import {
+  DEFAULT_TIERS,
+  money,
+  slugify,
+  tierLabel,
+  tierPrice,
+  tierSavings,
+  type VolumeTier,
+} from '@/lib/utils';
 import {
   AdminPage,
   Button,
@@ -136,7 +144,9 @@ export function ProductEditor({
         sizes,
         defaultQty,
         colorways,
-        volumeTiers: tiers,
+        // Smallest quantity first, whatever order the rows were typed in:
+        // the price a buyer is shown is the last tier their count falls in.
+        volumeTiers: [...tiers].sort((a, b) => (Number(a.minQty) || 0) - (Number(b.minQty) || 0)),
         specs,
         trustPoints,
         images,
@@ -353,7 +363,7 @@ export function ProductEditor({
 
           <Card
             title="Volume pricing"
-            description="The price each at different quantities, shown on the product page as the buyer changes the count."
+            description="The price each at different quantities, shown on the product page as the buyer changes the count. One row per price: 1 at one price, 2 at another, 10 and up at a third. Type the price each; leave the label and the note blank and they write themselves."
           >
             <div className="hidden gap-2 pb-1 sm:grid sm:grid-cols-6">
               {['Label', 'From qty', 'To qty', 'Price each', 'Or $ off', 'Note'].map((h) => (
@@ -368,7 +378,7 @@ export function ProductEditor({
                   <Input
                     value={t.label}
                     onChange={(e) => setTiers(tiers.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))}
-                    placeholder="6–10"
+                    placeholder={tierLabel({ ...t, label: '' })}
                     className="!py-2 text-[13px]"
                   />
                   <Input
@@ -426,7 +436,7 @@ export function ProductEditor({
                       onChange={(e) =>
                         setTiers(tiers.map((x, j) => (j === i ? { ...x, savingsLabel: e.target.value } : x)))
                       }
-                      placeholder="Save 10%"
+                      placeholder={tierSavings(Number(f.basePrice) || 0, tiers, i) || 'Save 10%'}
                       className="!py-2 text-[13px]"
                     />
                     <button
@@ -445,15 +455,25 @@ export function ProductEditor({
               size="sm"
               variant="outline"
               className="mt-3"
-              onClick={() =>
-                setTiers([...tiers, { label: '', minQty: 0, maxQty: null, price: null, discount: 0, savingsLabel: '' }])
-              }
+              onClick={() => {
+                // A new row picks up where the last one stopped, so adding
+                // one is a quantity and a price rather than arithmetic.
+                const last = tiers[tiers.length - 1];
+                const from = last ? Math.max(1, (Number(last.maxQty) || Number(last.minQty) || 0) + 1) : 1;
+                setTiers([
+                  ...tiers,
+                  { label: '', minQty: from, maxQty: null, price: null, discount: 0, savingsLabel: '' },
+                ]);
+              }}
             >
               + Add tier
             </Button>
             <p className="mt-3 text-[12px] text-[#8A8C93]">
-              At {tiers[tiers.length - 1]?.minQty ?? 48}+ units the unit price becomes{' '}
-              {money(Math.max(0, Number(f.basePrice || 0) - (tiers[tiers.length - 1]?.discount ?? 0)))}.
+              {tiers.length === 0
+                ? 'No tiers: every quantity is charged the starting price above.'
+                : `At ${tierLabel(tiers[tiers.length - 1])} units the price each becomes ${money(
+                    tierPrice(Number(f.basePrice) || 0, tiers[tiers.length - 1])
+                  )}.`}
             </p>
           </Card>
 

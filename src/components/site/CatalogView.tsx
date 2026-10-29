@@ -44,8 +44,12 @@ export async function CatalogView({
   // Where this collection sits in the tree: the facets already carry it, so
   // the breadcrumb and the sub-collection links cost no extra query.
   const self = handle === 'all' ? null : facets.collections.find((c) => c.handle === handle);
-  const parent = self?.parentId ? facets.collections.find((c) => c.id === self.parentId) : null;
-  const subs = self ? facets.collections.filter((c) => c.parentId === self.id) : [];
+  // A breadcrumb can only walk one path, so it follows the first parent even
+  // when this collection is filed under several.
+  const parent = self?.parentIds.length
+    ? (facets.collections.find((c) => c.id === self.parentIds[0]) ?? null)
+    : null;
+  const subs = self ? facets.collections.filter((c) => c.parentIds.includes(self.id)) : [];
 
   const products = await getCatalog({
     collection: handle,

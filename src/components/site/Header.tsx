@@ -119,7 +119,7 @@ export function Header({
     handle: string;
     title: string;
     count: number;
-    parentId: string | null;
+    parentIds: string[];
   }[];
   logo: string;
   phone: string;
@@ -290,20 +290,23 @@ export function Header({
                   {/* Sub-collections are listed stepped in under their parent,
                       so the menu reads the way the catalogue is organised. */}
                   {collections
-                    .filter((c) => !c.parentId)
+                    .filter((c) => c.parentIds.length === 0)
                     .flatMap((parent) => [
-                      parent,
-                      ...collections.filter((c) => c.parentId === parent.id),
+                      { c: parent, under: '' },
+                      // One filed under two parents is listed under each.
+                      ...collections
+                        .filter((c) => c.parentIds.includes(parent.id))
+                        .map((c) => ({ c, under: parent.id })),
                     ])
-                    .map((c) => (
+                    .map(({ c, under }) => (
                       <Link
-                        key={c.id}
+                        key={under ? `${under}-${c.id}` : c.id}
                         href={`/collections/${c.handle}`}
                         data-active={isActive(`/collections/${c.handle}`)}
-                        data-sub={c.parentId ? true : undefined}
+                        data-sub={under ? true : undefined}
                         className="flex items-center justify-between gap-3 border-b border-hairline py-3 text-[14px] font-medium text-body data-[active=true]:font-semibold data-[active=true]:text-brand-text data-[sub=true]:pl-4 data-[sub=true]:text-[13.5px]"
                       >
-                        {c.parentId ? (
+                        {under ? (
                           <span className="flex items-center gap-2">
                             <span aria-hidden="true" className="text-muted">
                               └

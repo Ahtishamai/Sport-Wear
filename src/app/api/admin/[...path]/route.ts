@@ -33,29 +33,66 @@ function model(cfg: ResourceConfig) {
  * own. Anything further would put a third tier in the menu, and pointing two
  * collections at each other would make a page that cannot render.
  */
-async function checkCollectionParent(data: Record<string, any>, selfId?: string) {
-  if (!('parentId' in data)) return null;
-  const parentId = data.parentId ? String(data.parentId) : null;
-  if (!parentId) return null;
+/**
+ * The parents a write is asking for, or undefined when it says nothing about
+ * them. `parentIds` is what the editor sends; a lone `parentId` is still
+ * accepted, so anything written against the older shape keeps working.
+ */
+function wantedParents(body: Record<string, any>): string[] | undefined {
+  if (Array.isArray(body?.parentIds)) {
+    return [...new Set(body.parentIds.map((v: unknown) => String(v)).filter(Boolean))];
+  }
+  if ('parentId' in (body ?? {})) return body.parentId ? [String(body.parentId)] : [];
+  return undefined;
+}
 
-  if (parentId === selfId) return 'A collection cannot sit under itself.';
+async function checkCollectionParents(parentIds: string[], selfId?: string) {
+  if (parentIds.length === 0) return null;
+  if (selfId && parentIds.includes(selfId)) return 'A collection cannot sit under itself.';
 
-  const parent = await prisma.collection.findUnique({
-    where: { id: parentId },
-    select: { id: true, title: true, parentId: true, parent: { select: { title: true } } },
+  const parents = await prisma.collection.findMany({
+    where: { id: { in: parentIds } },
+    select: {
+      id: true,
+      title: true,
+      parentLinks: { select: { parent: { select: { title: true } } } },
+    },
   });
-  if (!parent) return 'That parent collection no longer exists.';
-  if (parent.parentId) {
-    return `“${parent.title}” already sits under “${parent.parent?.title ?? 'another collection'}”. Pick a collection that is not itself a sub-collection.`;
+  if (parents.length !== parentIds.length) return 'One of those parent collections no longer exists.';
+
+  const nested = parents.find((p) => p.parentLinks.length > 0);
+  if (nested) {
+    const above = nested.parentLinks[0]?.parent.title ?? 'another collection';
+    return `“${nested.title}” already sits under “${above}”. Pick collections that are not themselves sub-collections.`;
   }
 
   if (selfId) {
-    const kids = await prisma.collection.count({ where: { parentId: selfId } });
+    const kids = await prisma.collectionParent.count({ where: { parentId: selfId } });
     if (kids > 0) {
       return `This collection has ${kids === 1 ? 'a sub-collection' : kids + ' sub-collections'} of its own, so it has to stay at the top level. Move those out first.`;
     }
   }
   return null;
+}
+
+/**
+ * Files a collection under the parents asked for. `parentId` on the row is
+ * kept in step as the first of them: the breadcrumb and the admin tree each
+ * need one path to follow.
+ */
+async function syncCollectionParents(id: string, parentIds: string[]) {
+  await prisma.$transaction([
+    prisma.collectionParent.deleteMany({
+      where: parentIds.length ? { childId: id, parentId: { notIn: parentIds } } : { childId: id },
+    }),
+    ...parentIds.map((parentId, position) =>
+      prisma.collectionParent.upsert({
+        where: { childId_parentId: { childId: id, parentId } },
+        create: { childId: id, parentId, position },
+        update: { position },
+      })
+    ),
+  ]);
 }
 
 function bump(cfg: ResourceConfig, row: Record<string, any>) {
@@ -241,15 +278,18 @@ export async function POST(req: Request, ctx: Ctx) {
     if (resource === 'pages' && data.blocks === undefined) data.blocks = [];
     if (resource === 'products' && data.description === undefined) data.description = '';
 
-    if (resource === 'collections') {
-      const wrong = await checkCollectionParent(data);
+    const newParents = resource === 'collections' ? wantedParents(body) : undefined;
+    if (newParents) {
+      const wrong = await checkCollectionParents(newParents);
       if (wrong) return badRequest(wrong);
+      data.parentId = newParents[0] ?? null;
     }
 
     await ensureSlug(cfg, data);
 
     const row = await m.create({ data, include: cfg.include });
 
+    if (newParents) await syncCollectionParents(row.id, newParents);
     if (resource === 'products') await syncProductRelations(row.id, body);
     if (resource === 'pages') await snapshot(row.id, row.blocks, user.id, 'Created');
 
@@ -311,9 +351,11 @@ export async function PATCH(req: Request, ctx: Ctx) {
 
     const data = coerce(cfg, body ?? {});
 
-    if (resource === 'collections') {
-      const wrong = await checkCollectionParent(data, id);
+    const nextParents = resource === 'collections' ? wantedParents(body) : undefined;
+    if (nextParents) {
+      const wrong = await checkCollectionParents(nextParents, id);
       if (wrong) return badRequest(wrong);
+      data.parentId = nextParents[0] ?? null;
     }
 
     if (resource === 'users' && body?.password) {
@@ -330,6 +372,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
 
     const row = await m.update({ where: { id }, data, include: cfg.include });
 
+    if (nextParents) await syncCollectionParents(id, nextParents);
     if (resource === 'products') await syncProductRelations(id, body);
     if (resource === 'pages' && body?.blocks !== undefined) {
       await snapshot(id, row.blocks, user.id, body?.revisionLabel);

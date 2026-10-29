@@ -24,7 +24,7 @@ export default async function NewCollection() {
   const [products, parents] = await Promise.all([
     loadProductOptions(),
     prisma.collection.findMany({
-      where: { parentId: null },
+      where: { parentLinks: { none: {} } },
       orderBy: { position: 'asc' },
       select: { id: true, title: true },
     }),

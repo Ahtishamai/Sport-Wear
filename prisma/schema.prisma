@@ -72,13 +72,21 @@ model Collection {
   position    Int           @default(0)
   showInNav   Boolean       @default(true)
 
-  // A collection may sit under one other collection, WordPress-style: the
-  // ones with no parent are the primary collections, the rest are their
+  // A collection may sit under other collections, WordPress-style: the ones
+  // with no parent are the primary collections, the rest are their
   // sub-collections. Only two levels deep — a sub-collection cannot itself
   // be a parent — so the menu never grows a third tier nobody asked for.
+  //
+  // `parentLinks` holds every parent it appears under. `parentId` is the first
+  // of them, kept here as the one place it calls home: the breadcrumb, which
+  // can only walk one path, and the admin list, which prints one tree. The
+  // admin API writes both together, so they never disagree.
   parentId String?
   parent   Collection?  @relation("CollectionTree", fields: [parentId], references: [id], onDelete: SetNull)
   children Collection[] @relation("CollectionTree")
+
+  parentLinks CollectionParent[] @relation("ChildCollection")
+  childLinks  CollectionParent[] @relation("ParentCollection")
 
   seoTitle       String?
   seoDescription String? @db.Text
@@ -94,6 +102,25 @@ model Collection {
   @@index([status, position])
   @@index([parentId, position])
   @@map("collections")
+}
+
+/**
+ * One collection filed under another. A sub-collection can be filed under
+ * several parents at once — pinstripe pants belong under both the baseball
+ * and the softball side of the catalogue — so it shows up under each of them
+ * in the menu, the sidebar and the parent's own product grid.
+ */
+model CollectionParent {
+  childId  String
+  parentId String
+  position Int    @default(0)
+
+  child  Collection @relation("ChildCollection", fields: [childId], references: [id], onDelete: Cascade)
+  parent Collection @relation("ParentCollection", fields: [parentId], references: [id], onDelete: Cascade)
+
+  @@id([childId, parentId])
+  @@index([parentId, position])
+  @@map("collection_parents")
 }
 
 model Product {

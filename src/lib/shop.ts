@@ -1,6 +1,6 @@
 import 'server-only';
 import { prisma } from './db';
-import { activeTier, unitPriceFor, type VolumeTier } from './utils';
+import { activeTier, tierLabel, unitPriceFor, type VolumeTier } from './utils';
 import { DEFAULT_TIERS } from './utils';
 
 /**
@@ -150,7 +150,7 @@ export async function priceShopCart(lines: ShopLineInput[], currency = 'USD'): P
 
 /** Which tier a quantity falls in, for showing the saving on the cart page. */
 export function tierLabelFor(tiers: VolumeTier[], units: number) {
-  return tiers[activeTier(tiers, units)]?.label ?? '';
+  return tierLabel(tiers[activeTier(tiers, units)]);
 }
 
 /** A reference in the same shape as the store ones, kept unique across both. */

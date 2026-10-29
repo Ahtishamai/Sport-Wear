@@ -11,8 +11,8 @@ export type Facet = {
   handle: string;
   title: string;
   count: number;
-  /** Set when this one is filed under another collection. */
-  parentId: string | null;
+  /** The collections this one is filed under; it is listed beneath each. */
+  parentIds: string[];
 };
 
 export function CatalogSidebar({
@@ -55,10 +55,15 @@ export function CatalogSidebar({
   // Primary collections, each with whatever is filed under it. A standing-open
   // list rather than a disclosure: nothing is hidden behind a tap, and the
   // page a shopper is on is always visible in context.
+  // A sub-collection filed under two parents is listed under both, the way
+  // a post in two categories shows up in each.
   const current = facets.find((f) => f.handle === activeCollection);
   const tree = facets
-    .filter((f) => !f.parentId)
-    .map((parent) => ({ parent, children: facets.filter((f) => f.parentId === parent.id) }));
+    .filter((f) => f.parentIds.length === 0)
+    .map((parent) => ({
+      parent,
+      children: facets.filter((f) => f.parentIds.includes(parent.id)),
+    }));
 
   return (
     <aside className="flex flex-col gap-7 lg:sticky lg:top-[110px] lg:self-start">
@@ -92,7 +97,7 @@ export function CatalogSidebar({
                 active={activeCollection === parent.handle}
                 // The parent of the page being looked at stays lit, so a
                 // sub-collection never looks like it came from nowhere.
-                within={current?.parentId === parent.id}
+                within={current?.parentIds.includes(parent.id) ?? false}
               />
               {children.map((c) => (
                 <FacetRow

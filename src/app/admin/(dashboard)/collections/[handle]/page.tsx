@@ -23,13 +23,18 @@ export default async function EditCollection({
 
   // Only the primary collections can be a parent, and never itself: that is
   // what keeps the tree two levels deep and loop-free.
-  const [parents, childCount] = await Promise.all([
+  const [parents, childCount, links] = await Promise.all([
     prisma.collection.findMany({
-      where: { parentId: null, id: { not: collection.id } },
+      where: { parentLinks: { none: {} }, id: { not: collection.id } },
       orderBy: { position: 'asc' },
       select: { id: true, title: true },
     }),
-    prisma.collection.count({ where: { parentId: collection.id } }),
+    prisma.collectionParent.count({ where: { parentId: collection.id } }),
+    prisma.collectionParent.findMany({
+      where: { childId: collection.id },
+      orderBy: { position: 'asc' },
+      select: { parentId: true },
+    }),
   ]);
 
   return (
@@ -38,6 +43,7 @@ export default async function EditCollection({
       products={products}
       memberIds={memberIds}
       parents={parents}
+      parentIds={links.map((l) => l.parentId)}
       childCount={childCount}
     />
   );

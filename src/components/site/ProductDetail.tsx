@@ -4,7 +4,15 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import type { ProductDetail as Product } from '@/lib/queries';
-import { activeTier, cn, money, tierPrice, unitPriceFor } from '@/lib/utils';
+import {
+  activeTier,
+  cn,
+  money,
+  tierLabel,
+  tierPrice,
+  tierSavings,
+  unitPriceFor,
+} from '@/lib/utils';
 import { useQuote } from './QuoteProvider';
 import { useShopCart } from '@/components/shop/CartProvider';
 import { ImagePlaceholder } from '@/components/blocks/primitives';
@@ -336,7 +344,7 @@ export function ProductDetail({
             <div className="mt-6 grid grid-cols-2 gap-2 border-t border-hairline pt-5 sm:grid-cols-4">
               {tiers.map((t, i) => (
                 <div
-                  key={t.label}
+                  key={i}
                   className="border px-3 py-3 text-center transition-colors"
                   style={{
                     borderColor: i === tierIdx ? '#101114' : '#E6E6E2',
@@ -344,14 +352,14 @@ export function ProductDetail({
                   }}
                 >
                   <div className="text-[11px] font-bold uppercase tracking-[.1em] text-muted">
-                    {t.label}
+                    {tierLabel(t)}
                   </div>
                   <div className="mt-1.5 font-display text-[18px] font-black leading-none">
                     {money(tierPrice(product.basePrice, t))}
                   </div>
-                  {t.savingsLabel && (
+                  {tierSavings(product.basePrice, tiers, i) && (
                     <div className="mt-1 text-[11px] font-semibold text-success">
-                      {t.savingsLabel}
+                      {tierSavings(product.basePrice, tiers, i)}
                     </div>
                   )}
                 </div>

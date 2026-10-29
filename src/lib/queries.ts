@@ -194,7 +194,12 @@ export type CollectionNode = {
   handle: string;
   title: string;
   count: number;
-  parentId: string | null;
+  /**
+   * The collections this one sits under — empty when it is a primary one.
+   * More than one is normal: a pinstripe pants collection is filed under
+   * both the baseball and the softball side, and is listed under each.
+   */
+  parentIds: string[];
 };
 
 type NavNode = CollectionNode & { showInNav: boolean };
@@ -212,7 +217,13 @@ const publishedCollections = cache(async (): Promise<NavNode[]> => {
     prisma.collection.findMany({
       where: PUBLISHED,
       orderBy: { position: 'asc' },
-      select: { id: true, handle: true, title: true, parentId: true, showInNav: true },
+      select: {
+        id: true,
+        handle: true,
+        title: true,
+        showInNav: true,
+        parentLinks: { select: { parentId: true } },
+      },
     }),
     prisma.productCollection.findMany({
       where: { product: PUBLISHED },
@@ -230,14 +241,14 @@ const publishedCollections = cache(async (): Promise<NavNode[]> => {
   return rows.map((c) => {
     const products = new Set(own.get(c.id) ?? []);
     for (const child of rows) {
-      if (child.parentId !== c.id) continue;
+      if (!child.parentLinks.some((l) => l.parentId === c.id)) continue;
       for (const id of own.get(child.id) ?? []) products.add(id);
     }
     return {
       id: c.id,
       handle: c.handle,
       title: c.title,
-      parentId: c.parentId,
+      parentIds: c.parentLinks.map((l) => l.parentId),
       count: products.size,
       showInNav: c.showInNav,
     };
@@ -255,14 +266,14 @@ export const getNavCollections = cache(async (): Promise<CollectionNode[]> => {
   const rows = await publishedCollections();
   const shown = rows.filter((c) => c.showInNav && c.count > 0);
   const ids = new Set(shown.map((c) => c.id));
-  return shown.map(({ id, handle, title, count, parentId }) => ({
+  return shown.map(({ id, handle, title, count, parentIds }) => ({
     id,
     handle,
     title,
     count,
-    // A child whose parent is hidden or empty has nothing to indent under, so
-    // it stands at the top level rather than disappearing with it.
-    parentId: parentId && ids.has(parentId) ? parentId : null,
+    // A child whose parents are hidden or empty has nothing to indent under,
+    // so it stands at the top level rather than disappearing with them.
+    parentIds: parentIds.filter((p) => ids.has(p)),
   }));
 });
 
@@ -286,7 +297,7 @@ export const getCatalogFacets = cache(async () => {
       handle: c.handle,
       title: c.title,
       count: c.count,
-      parentId: c.parentId && ids.has(c.parentId) ? c.parentId : null,
+      parentIds: c.parentIds.filter((p) => ids.has(p)),
     })),
   };
 });
@@ -308,7 +319,10 @@ export async function getCatalog(query: CatalogQuery) {
     where.collections = {
       some: {
         collection: {
-          OR: [{ handle: query.collection }, { parent: { handle: query.collection } }],
+          OR: [
+            { handle: query.collection },
+            { parentLinks: { some: { parent: { handle: query.collection } } } },
+          ],
         },
       },
     };

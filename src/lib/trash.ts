@@ -216,6 +216,24 @@ export const TRASH: Record<string, Spec> = {
         where: (id) => ({ collectionId: id }),
         required: [{ fk: 'productId', model: 'product' }],
       },
+      // Where it sits in the tree, from both sides: the parents it is filed
+      // under, and the sub-collections filed under it. Trashing it drops
+      // those links; restoring it files everything back where it was, bar a
+      // collection that has since been deleted outright.
+      {
+        key: 'parentLinks',
+        model: 'collectionParent',
+        noun: ['collection it sits under', 'collections it sits under'],
+        where: (id) => ({ childId: id }),
+        required: [{ fk: 'parentId', model: 'collection' }],
+      },
+      {
+        key: 'childLinks',
+        model: 'collectionParent',
+        noun: ['sub-collection', 'sub-collections'],
+        where: (id) => ({ parentId: id }),
+        required: [{ fk: 'childId', model: 'collection' }],
+      },
     ],
     // Trashing a parent leaves its sub-collections behind, standing on their
     // own — the database nulls their parentId rather than taking them with it.
