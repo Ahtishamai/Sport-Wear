@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { api } from '@/lib/admin-client';
 import {
   DEFAULT_TIERS,
+  SHIRT_TIERS,
   money,
   slugify,
   tierLabel,
@@ -467,6 +468,20 @@ export function ProductEditor({
               }}
             >
               + Add tier
+            </Button>
+            {/* The house shirt prices, filled in for this one product only. */}
+            <Button
+              size="sm"
+              variant="outline"
+              className="ml-2 mt-3"
+              onClick={() => {
+                setTiers(SHIRT_TIERS.map((t) => ({ ...t })));
+                // The list starts at $50 for one, and nothing shows a price
+                // until the starting price is set, so set it along with them.
+                if (!(Number(f.basePrice) > 0)) set('basePrice', String(SHIRT_TIERS[0].price));
+              }}
+            >
+              Use the shirt price list
             </Button>
             <p className="mt-3 text-[12px] text-[#8A8C93]">
               {tiers.length === 0

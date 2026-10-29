@@ -58,6 +58,22 @@ export type VolumeTier = {
   savingsLabel: string;
 };
 
+/**
+ * The shirt price list: what a jersey costs each at every quantity. It is the
+ * house price for shirts, so it lives here rather than being typed out per
+ * product — the product editor fills a product's tiers from it in one click,
+ * and only the products it is clicked on are priced this way.
+ */
+export const SHIRT_TIERS: VolumeTier[] = [
+  { label: '', minQty: 1, maxQty: 1, price: 50, discount: 0, savingsLabel: '' },
+  { label: '', minQty: 2, maxQty: 2, price: 40, discount: 0, savingsLabel: '' },
+  { label: '', minQty: 3, maxQty: 4, price: 35, discount: 0, savingsLabel: '' },
+  { label: '', minQty: 5, maxQty: 5, price: 30, discount: 0, savingsLabel: '' },
+  { label: '', minQty: 6, maxQty: 10, price: 25, discount: 0, savingsLabel: '' },
+  { label: '', minQty: 11, maxQty: 20, price: 22, discount: 0, savingsLabel: '' },
+  { label: '', minQty: 21, maxQty: null, price: 20, discount: 0, savingsLabel: '' },
+];
+
 export const DEFAULT_TIERS: VolumeTier[] = [
   { label: '1–11', minQty: 1, maxQty: 11, discount: 0, savingsLabel: '' },
   { label: '12–23', minQty: 12, maxQty: 23, discount: 1.5, savingsLabel: 'Save 5%' },
