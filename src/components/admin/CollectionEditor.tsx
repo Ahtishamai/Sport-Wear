@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { api } from '@/lib/admin-client';
 import { slugify } from '@/lib/utils';
 import type { Block } from '@/lib/blocks/types';
@@ -36,6 +36,8 @@ export type EditableCollection = {
   seoTitle: string | null;
   seoDescription: string | null;
   blocks: unknown;
+  /** When this row was last written, to save against the right version. */
+  updatedAt?: string;
 };
 
 type ProductOption = {
@@ -95,6 +97,10 @@ export function CollectionEditor({
   const [q, setQ] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  // The version this editor loaded. A collection's extra sections can also be
+  // edited inline from the front of the site, so a save says which version it
+  // is replacing rather than flattening whatever arrived in the meantime.
+  const version = useRef<string | null>(collection.updatedAt ?? null);
 
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((p) => ({ ...p, [k]: v }));
 
@@ -128,12 +134,21 @@ export function CollectionEditor({
         return;
       }
 
-      await api.update('collections', collection.id!, payload);
+      const res = await api.update<{ updatedAt: string }>('collections', collection.id!, {
+        ...payload,
+        expectedUpdatedAt: version.current,
+      });
+      version.current = res.item?.updatedAt ?? version.current;
       await assignMembers(collection.id!, members, products);
       toast('Collection saved');
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Save failed');
+      const message = e instanceof Error ? e.message : 'Save failed';
+      if (/changed somewhere else/i.test(message)) {
+        toast('Someone else changed this collection — reloading so nothing is lost', 'error');
+        setTimeout(() => window.location.reload(), 1800);
+      }
+      setError(message);
     } finally {
       setBusy(false);
     }
