@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Field } from '@/lib/blocks/types';
 import { emptyRow } from '@/lib/blocks/types';
 import { ICON_CHOICES } from '@/lib/blocks/registry';
+import { api } from '@/lib/admin-client';
 import { Button, Checkbox, Input, Select, Textarea } from './ui';
 import { ImageField } from './MediaPicker';
 import { Icon } from '@/components/site/Icon';
@@ -224,6 +225,14 @@ function FieldControl({
       );
 
     case 'link':
+      return (
+        <div>
+          {label}
+          <LinkField id={id} value={value ?? ''} placeholder={field.placeholder} onChange={onChange} />
+          {help}
+        </div>
+      );
+
     case 'text':
     default:
       return (
@@ -239,6 +248,109 @@ function FieldControl({
         </div>
       );
   }
+}
+
+type Destination = { href: string; label: string; group: string };
+
+/**
+ * Where a link points, picked from the pages and collections that exist
+ * rather than typed from memory — a card that points at a deleted collection
+ * is a dead end nobody notices until a customer hits it.
+ *
+ * The box underneath always shows what is actually saved, so an address the
+ * list does not offer (an outside link, an anchor) can still be typed.
+ */
+function LinkField({
+  id,
+  value,
+  placeholder,
+  onChange,
+}: {
+  id: string;
+  value: string;
+  placeholder?: string;
+  onChange: (v: string) => void;
+}) {
+  const [places, setPlaces] = useState<Destination[] | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const [cols, pages] = await Promise.all([
+          api.list<{ handle: string; title: string; status: string }>('collections', { take: 200 }),
+          api.list<{ slug: string; title: string; status: string }>('pages', { take: 200 }),
+        ]);
+        if (!alive) return;
+        setPlaces([
+          { href: '/', label: 'Home', group: 'Pages' },
+          ...pages.items
+            .filter((p) => p.slug !== 'home')
+            .map((p) => ({
+              href: `/${p.slug}`,
+              label: p.title + (p.status === 'PUBLISHED' ? '' : ` (${p.status.toLowerCase()})`),
+              group: 'Pages',
+            })),
+          { href: '/collections', label: 'All products', group: 'Collections' },
+          ...cols.items.map((c) => ({
+            href: `/collections/${c.handle}`,
+            label: c.title + (c.status === 'PUBLISHED' ? '' : ` (${c.status.toLowerCase()})`),
+            group: 'Collections',
+          })),
+        ]);
+      } catch {
+        if (alive) setPlaces([]);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const known = places?.some((p) => p.href === value);
+  const groups = [...new Set((places ?? []).map((p) => p.group))];
+
+  return (
+    <div className="space-y-2">
+      <Select
+        value={known ? value : ''}
+        disabled={!places || places.length === 0}
+        onChange={(e) => e.target.value && onChange(e.target.value)}
+      >
+        <option value="">
+          {!places
+            ? 'Loading pages…'
+            : value
+              ? known
+                ? 'Pick a different page…'
+                : `Typed in: ${value}`
+              : 'Pick a page…'}
+        </option>
+        {groups.map((g) => (
+          <optgroup key={g} label={g}>
+            {places!
+              .filter((p) => p.group === g)
+              .map((p) => (
+                <option key={p.href} value={p.href}>
+                  {p.label}
+                </option>
+              ))}
+          </optgroup>
+        ))}
+      </Select>
+      <Input
+        id={id}
+        value={value}
+        placeholder={placeholder ?? '/collections/…'}
+        onChange={(e) => onChange(e.target.value)}
+      />
+      {places && value && !known && (
+        <p className="text-[12px] text-[#C42027]">
+          No page or collection has this address — check it before saving.
+        </p>
+      )}
+    </div>
+  );
 }
 
 function TagsInput({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {

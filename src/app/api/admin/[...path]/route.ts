@@ -76,6 +76,68 @@ async function checkCollectionParents(parentIds: string[], selfId?: string) {
 }
 
 /**
+ * Sets which products are in a collection, from a list the editor sends.
+ *
+ * It is done here, against the collection, rather than by patching every
+ * product from the browser: a save then cannot half-apply, and a list that
+ * arrives empty by mistake cannot quietly clear a full collection — emptying
+ * one is refused unless the caller says it means to.
+ */
+async function syncCollectionMembers(
+  collectionId: string,
+  memberIds: string[],
+  allowEmptying: boolean
+) {
+  const wanted = [...new Set(memberIds.filter(Boolean))];
+  const have = (
+    await prisma.productCollection.findMany({
+      where: { collectionId },
+      select: { productId: true },
+    })
+  ).map((r) => r.productId);
+
+  if (wanted.length === 0 && have.length > 0 && !allowEmptying) {
+    return `This save would take all ${have.length} products out of the collection. Reload the page and try again — or, if emptying it is what you want, untick them and confirm.`;
+  }
+
+  const gone = have.filter((id) => !wanted.includes(id));
+  const added = wanted.filter((id) => !have.includes(id));
+  if (gone.length === 0 && added.length === 0) return null;
+
+  await prisma.$transaction([
+    ...(gone.length
+      ? [prisma.productCollection.deleteMany({ where: { collectionId, productId: { in: gone } } })]
+      : []),
+    ...(added.length
+      ? [
+          prisma.productCollection.createMany({
+            data: added.map((productId, i) => ({
+              collectionId,
+              productId,
+              position: have.length + i,
+            })),
+            skipDuplicates: true,
+          }),
+        ]
+      : []),
+  ]);
+
+  // Every product that moved now lists a different set of collections.
+  const moved = await prisma.product.findMany({
+    where: { id: { in: [...gone, ...added] } },
+    select: { handle: true },
+  });
+  for (const p of moved) {
+    try {
+      revalidatePath(`/products/${p.handle}`);
+    } catch {
+      /* revalidation is best-effort */
+    }
+  }
+  return null;
+}
+
+/**
  * Files a collection under the parents asked for. `parentId` on the row is
  * kept in step as the first of them: the breadcrumb and the admin tree each
  * need one path to follow.
@@ -290,6 +352,9 @@ export async function POST(req: Request, ctx: Ctx) {
     const row = await m.create({ data, include: cfg.include });
 
     if (newParents) await syncCollectionParents(row.id, newParents);
+    if (resource === 'collections' && Array.isArray(body?.memberIds)) {
+      await syncCollectionMembers(row.id, body.memberIds.map(String), true);
+    }
     if (resource === 'products') await syncProductRelations(row.id, body);
     if (resource === 'pages') await snapshot(row.id, row.blocks, user.id, 'Created');
 
@@ -356,6 +421,17 @@ export async function PATCH(req: Request, ctx: Ctx) {
       const wrong = await checkCollectionParents(nextParents, id);
       if (wrong) return badRequest(wrong);
       data.parentId = nextParents[0] ?? null;
+    }
+
+    // Membership goes first: if the list looks like it arrived empty by
+    // mistake this refuses before anything at all has been written.
+    if (resource === 'collections' && Array.isArray(body?.memberIds)) {
+      const wrong = await syncCollectionMembers(
+        id,
+        body.memberIds.map(String),
+        body?.allowEmptying === true
+      );
+      if (wrong) return badRequest(wrong);
     }
 
     if (resource === 'users' && body?.password) {

@@ -114,20 +114,30 @@ export function CollectionEditor({
 
     setBusy(true);
     try {
+      // Emptying a collection is a real thing to want, but it is also what a
+      // stale page would do by accident, so it is asked about out loud.
+      if (members.length === 0 && memberIds.length > 0) {
+        const sure = window.confirm(
+          `This takes all ${memberIds.length} products out of “${f.title}”. The products themselves stay. Go ahead?`
+        );
+        if (!sure) {
+          setBusy(false);
+          return;
+        }
+      }
+
       const payload = {
         ...f,
         handle: f.handle.trim() || slugify(f.title),
         position: Number(f.position) || 0,
         parentIds: under,
+        memberIds: members,
+        allowEmptying: members.length === 0 && memberIds.length > 0,
         blocks,
       };
 
-      let collectionId = collection.id;
       if (isNew) {
         const res = await api.create<{ id: string; handle: string }>('collections', payload);
-        collectionId = res.item.id;
-        // Membership is stored on the product side, so assign after creation.
-        await assignMembers(collectionId, members, products);
         toast('Collection created');
         router.push(`/admin/collections/${res.item.handle}`);
         router.refresh();
@@ -139,7 +149,6 @@ export function CollectionEditor({
         expectedUpdatedAt: version.current,
       });
       version.current = res.item?.updatedAt ?? version.current;
-      await assignMembers(collection.id!, members, products);
       toast('Collection saved');
       router.refresh();
     } catch (e) {
@@ -412,29 +421,3 @@ export function CollectionEditor({
   );
 }
 
-/**
- * Collection membership lives on the product records, so syncing means
- * patching each product whose membership actually changed.
- */
-async function assignMembers(
-  collectionId: string,
-  members: string[],
-  products: ProductOption[]
-) {
-  const wanted = new Set(members);
-  const jobs: Promise<unknown>[] = [];
-
-  for (const p of products) {
-    const current = new Set(p.collectionIds ?? []);
-    const has = current.has(collectionId);
-    const should = wanted.has(p.id);
-    if (has === should) continue;
-
-    const next = should
-      ? [...current, collectionId]
-      : [...current].filter((id) => id !== collectionId);
-    jobs.push(api.update('products', p.id, { collectionIds: next }));
-  }
-
-  await Promise.all(jobs);
-}
