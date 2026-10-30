@@ -74,6 +74,12 @@ export const SHIRT_TIERS: VolumeTier[] = [
   { label: '', minQty: 21, maxQty: null, price: 20, discount: 0, savingsLabel: '' },
 ];
 
+/**
+ * What a product with no volume pricing of its own falls back to — the old
+ * percentage ladder. A new product starts on SHIRT_TIERS instead; this is
+ * only here so the handful of products that never had tiers keep behaving
+ * exactly as they did.
+ */
 export const DEFAULT_TIERS: VolumeTier[] = [
   { label: '1–11', minQty: 1, maxQty: 11, discount: 0, savingsLabel: '' },
   { label: '12–23', minQty: 12, maxQty: 23, discount: 1.5, savingsLabel: 'Save 5%' },

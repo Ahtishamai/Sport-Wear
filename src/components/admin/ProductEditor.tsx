@@ -8,6 +8,7 @@ import { api } from '@/lib/admin-client';
 import {
   DEFAULT_TIERS,
   SHIRT_TIERS,
+  cn,
   money,
   slugify,
   tierLabel,
@@ -819,6 +820,18 @@ function ListEditor({
   placeholder?: string;
 }) {
   const [draft, setDraft] = useState('');
+  // Which chip is being dragged. Order matters on the product page — the
+  // sizes are listed in this order — so one added late has to be movable.
+  const [held, setHeld] = useState<number | null>(null);
+
+  function move(from: number, to: number) {
+    if (from === to || to < 0 || to >= values.length) return;
+    const next = [...values];
+    const [one] = next.splice(from, 1);
+    next.splice(to, 0, one);
+    onChange(next);
+  }
+
   return (
     <div>
       {label && <span className="field-label">{label}</span>}
@@ -826,20 +839,56 @@ function ListEditor({
         {values.map((v, i) => (
           <span
             key={`${v}-${i}`}
-            className="inline-flex items-center gap-1.5 border border-[#E3E3DF] bg-[#F7F7F5] px-2 py-1 text-[12px]"
+            draggable
+            onDragStart={() => setHeld(i)}
+            onDragEnd={() => setHeld(null)}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              if (held !== null) move(held, i);
+              setHeld(null);
+            }}
+            title="Drag to reorder"
+            className={cn(
+              'inline-flex cursor-grab items-center gap-1 border px-2 py-1 text-[12px] active:cursor-grabbing',
+              held === i ? 'border-ink bg-white opacity-60' : 'border-[#E3E3DF] bg-[#F7F7F5]'
+            )}
           >
+            <button
+              type="button"
+              onClick={() => move(i, i - 1)}
+              disabled={i === 0}
+              aria-label={`Move ${v} earlier`}
+              className="text-[#B5B7BC] hover:text-ink disabled:opacity-30"
+            >
+              ‹
+            </button>
             {v}
+            <button
+              type="button"
+              onClick={() => move(i, i + 1)}
+              disabled={i === values.length - 1}
+              aria-label={`Move ${v} later`}
+              className="text-[#B5B7BC] hover:text-ink disabled:opacity-30"
+            >
+              ›
+            </button>
             <button
               type="button"
               onClick={() => onChange(values.filter((_, j) => j !== i))}
               aria-label={`Remove ${v}`}
-              className="text-[#8A8C93] hover:text-ink"
+              className="ml-0.5 text-[#8A8C93] hover:text-ink"
             >
               <Icon name="close" size={11} />
             </button>
           </span>
         ))}
       </div>
+      {values.length > 1 && (
+        <p className="mb-2 text-[11px] text-[#9A9CA2]">
+          Drag a tag to move it, or use ‹ › — this is the order they appear in on the product page.
+        </p>
+      )}
       <div className="flex gap-2">
         <Input
           value={draft}

@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/db';
 import { ProductEditor, type EditableProduct } from '@/components/admin/ProductEditor';
-import { DEFAULT_TIERS } from '@/lib/utils';
+import { SHIRT_TIERS } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,7 +9,10 @@ const BLANK: EditableProduct = {
   title: '',
   subtitle: '',
   description: '',
-  basePrice: 35,
+  // The house shirt prices, since that is what most new products are: $50
+  // for one, down to $20 each past twenty. Anything priced differently is a
+  // matter of typing over them.
+  basePrice: SHIRT_TIERS[0].price ?? 50,
   compareAt: null,
   badge: '',
   categoryLabel: 'Fully customizable',
@@ -27,7 +30,7 @@ const BLANK: EditableProduct = {
   ],
   sizes: ['YS', 'YM', 'YL', 'S', 'M', 'L', 'XL', '2XL', '3XL'],
   defaultQty: { S: 2, M: 4, L: 4, XL: 2 },
-  volumeTiers: DEFAULT_TIERS,
+  volumeTiers: SHIRT_TIERS,
   specs: [
     { q: 'Fabric & construction', a: '' },
     { q: 'Customization included', a: '' },
