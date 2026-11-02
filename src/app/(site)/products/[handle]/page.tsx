@@ -8,6 +8,7 @@ import { getSettings } from '@/lib/settings';
 import { ProductDetail } from '@/components/site/ProductDetail';
 import { BlockRenderer } from '@/components/blocks/Renderer';
 import { ProductPlateCard, Section, SectionHeading } from '@/components/blocks/primitives';
+import { tierPrice } from '@/lib/utils';
 
 export const revalidate = 300;
 
@@ -71,6 +72,18 @@ export default async function ProductPage({ params }: { params: Promise<{ handle
 
   // The site-wide setting and the product's own switch; either hides the price.
   const priced = settings.showPrices !== false && product.showPrice !== false;
+
+  // What this product actually costs, across the whole volume ladder.
+  const tierPrices = (product.volumeTiers ?? []).map((t) => tierPrice(product.basePrice, t));
+  const everyPrice = (tierPrices.length ? tierPrices : [product.basePrice]).filter((n) => n > 0);
+  const priceRange = {
+    low: everyPrice.length ? Math.min(...everyPrice) : product.basePrice,
+    high: everyPrice.length ? Math.max(...everyPrice) : product.basePrice,
+    count: everyPrice.length || 1,
+  };
+
+  // The collection it is filed in, so the trail reads the way the site does.
+  const home = product.collections[0];
 
   return (
     <>
@@ -143,12 +156,19 @@ export default async function ProductPage({ params }: { params: Promise<{ handle
             // A hidden price must stay hidden here too. Left in, the figure
             // would still surface in Google's result for a product whose page
             // says "Request a quote", which is worse than showing no price.
+            category: product.categoryLabel || undefined,
+            itemCondition: 'https://schema.org/NewCondition',
             ...(priced
               ? {
                   offers: {
                     '@type': 'AggregateOffer',
                     priceCurrency: 'USD',
-                    lowPrice: product.basePrice,
+                    // The ladder, not the headline figure: one shirt costs the
+                    // most and a big order the least, so the range a result
+                    // shows is "from $20 to $50" rather than "from $50".
+                    lowPrice: priceRange.low,
+                    highPrice: priceRange.high,
+                    offerCount: priceRange.count,
                     availability: 'https://schema.org/InStock',
                     url: `${base}/products/${product.handle}`,
                   },
@@ -169,20 +189,18 @@ export default async function ProductPage({ params }: { params: Promise<{ handle
             '@context': 'https://schema.org',
             '@type': 'BreadcrumbList',
             itemListElement: [
-              { '@type': 'ListItem', position: 1, name: 'Home', item: `${base}/` },
-              {
-                '@type': 'ListItem',
-                position: 2,
-                name: 'Collections',
-                item: `${base}/collections`,
-              },
-              {
-                '@type': 'ListItem',
-                position: 3,
-                name: product.title,
-                item: `${base}/products/${product.handle}`,
-              },
-            ],
+              { name: 'Home', path: '/' },
+              { name: 'Collections', path: '/collections' },
+              // The collection it belongs to, when it has one: the trail a
+              // shopper walked, rather than a jump from the index.
+              ...(home ? [{ name: home.title.trim(), path: `/collections/${home.handle}` }] : []),
+              { name: product.title.trim(), path: `/products/${product.handle}` },
+            ].map((step, i) => ({
+              '@type': 'ListItem',
+              position: i + 1,
+              name: step.name,
+              item: `${base}${step.path}`,
+            })),
           }),
         }}
       />

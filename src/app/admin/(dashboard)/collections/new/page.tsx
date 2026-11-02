@@ -9,6 +9,7 @@ const BLANK: EditableCollection = {
   title: '',
   subtitle: '',
   description: '',
+  bodyCopy: '',
   bannerUrl: '',
   thumbUrl: '',
   status: 'PUBLISHED',

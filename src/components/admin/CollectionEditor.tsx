@@ -29,6 +29,7 @@ export type EditableCollection = {
   description: string | null;
   bannerUrl: string | null;
   thumbUrl: string | null;
+  bodyCopy: string | null;
   status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
   position: number;
   showInNav: boolean;
@@ -78,6 +79,7 @@ export function CollectionEditor({
     title: collection.title ?? '',
     subtitle: collection.subtitle ?? '',
     description: collection.description ?? '',
+    bodyCopy: collection.bodyCopy ?? '',
     bannerUrl: collection.bannerUrl ?? '',
     thumbUrl: collection.thumbUrl ?? '',
     status: collection.status ?? 'PUBLISHED',
@@ -293,6 +295,20 @@ export function CollectionEditor({
                   onChange={(e) => set('description', e.target.value)}
                   placeholder="Shown under the H1 on the collection page."
                 />
+              </div>
+              <div>
+                <span className="field-label">Copy under the products</span>
+                <Textarea
+                  rows={6}
+                  value={f.bodyCopy}
+                  onChange={(e) => set('bodyCopy', e.target.value)}
+                  placeholder="A paragraph or two printed below the product grid — what this collection is, who it suits, fabrics, sizing, turnaround."
+                />
+                <p className="mt-1.5 text-[12px] text-[#8A8C93]">
+                  Shown at the foot of the collection page, after the products. Leave a blank
+                  line between paragraphs. This is where search engines look for the words that
+                  describe the collection, so it is worth writing properly.
+                </p>
               </div>
             </div>
           </Card>

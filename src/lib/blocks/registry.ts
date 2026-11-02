@@ -693,6 +693,13 @@ export const BLOCKS: BlockDefinition[] = [
             width: 'half',
             default: 'chat',
           },
+          {
+            name: 'image',
+            label: 'Illustration (optional)',
+            type: 'image',
+            width: 'half',
+            help: 'Shown instead of the icon. A PNG or SVG with a see-through background works best.',
+          },
           { name: 'body', label: 'Body', type: 'textarea', rows: 2 },
         ],
       },
@@ -757,6 +764,13 @@ export const BLOCKS: BlockDefinition[] = [
         fields: [
           { name: 'title', label: 'Title', type: 'text', width: 'half' },
           { name: 'icon', label: 'Icon', type: 'icon', width: 'half', default: 'star' },
+          {
+            name: 'image',
+            label: 'Illustration (optional)',
+            type: 'image',
+            width: 'half',
+            help: 'Shown instead of the icon chip. A PNG or SVG with a see-through background works best.',
+          },
           { name: 'body', label: 'Body', type: 'textarea', rows: 3 },
         ],
       },

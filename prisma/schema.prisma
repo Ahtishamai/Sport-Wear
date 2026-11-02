@@ -88,6 +88,12 @@ model Collection {
   parentLinks CollectionParent[] @relation("ChildCollection")
   childLinks  CollectionParent[] @relation("ParentCollection")
 
+  /// Copy printed under the product grid, where a shopper who has scrolled
+  /// the whole collection lands — and where search engines look for the words
+  /// that say what this collection is. `description` is the line above the
+  /// grid; this is the longer piece below it.
+  bodyCopy String? @db.Text
+
   seoTitle       String?
   seoDescription String? @db.Text
 

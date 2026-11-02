@@ -14,17 +14,52 @@ export type CatalogSearchParams = {
   q?: string;
 };
 
+/**
+ * The collection's own writing, printed after the products.
+ *
+ * Plain paragraphs, split on blank lines: the field is a textarea in the
+ * admin, not an editor, so a shop owner can type into it without learning
+ * anything, and nothing a shopper sees depends on them getting markup right.
+ */
+function CollectionCopy({ text }: { text: string }) {
+  const paragraphs = text
+    .split(/\n{2,}/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (paragraphs.length === 0) return null;
+
+  return (
+    <section
+      aria-labelledby="collection-copy"
+      className="gutter border-t border-hairline bg-surface py-12 md:py-16"
+      data-reveal-root
+    >
+      <h2 id="collection-copy" className="h-display text-[22px] md:text-[26px]">
+        About this collection
+      </h2>
+      <div className="mt-4 max-w-[760px] space-y-4 text-[15px] leading-relaxed text-body md:text-[16px]">
+        {paragraphs.map((p, i) => (
+          <p key={i}>{p}</p>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export async function CatalogView({
   handle,
   title,
   intro,
   banner,
+  bodyCopy,
   searchParams,
 }: {
   handle: string; // 'all' or a collection handle
   title: string;
   intro?: string | null;
   banner?: string | null;
+  /** The collection's own writing, printed after the grid. */
+  bodyCopy?: string | null;
   searchParams: CatalogSearchParams;
 }) {
   const fabric = searchParams.fabric
@@ -204,6 +239,7 @@ export async function CatalogView({
           )}
         </div>
       </div>
+      {bodyCopy ? <CollectionCopy text={bodyCopy} /> : null}
     </>
   );
 }

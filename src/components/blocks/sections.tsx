@@ -634,6 +634,64 @@ export function CollectionListBlock({
 
 // -------------------------------------------------------------------- conversion
 
+/**
+ * The mark beside a step or a feature: an uploaded illustration when one is
+ * picked, otherwise the line icon it has always used.
+ *
+ * An illustration is shown whole and on nothing — no yellow chip, no frame —
+ * because a drawing arrives with its own colours and shape, and boxing it in
+ * a brand-coloured square fights both.
+ */
+function BlockMark({
+  icon,
+  image,
+  alt,
+  size,
+}: {
+  icon?: string;
+  image?: string;
+  alt?: string;
+  size: 'step' | 'feature' | 'large';
+}) {
+  const box = size === 'large' ? 72 : size === 'feature' ? 60 : 56;
+
+  if (image) {
+    return (
+      <span
+        className={cn('flex items-center justify-center', size === 'step' ? '' : 'mb-4')}
+        style={{ width: box, height: box }}
+      >
+        <Image
+          src={image}
+          alt={alt ? `${alt} illustration` : ''}
+          width={box * 2}
+          height={box * 2}
+          className="h-full w-full object-contain"
+        />
+      </span>
+    );
+  }
+
+  if (size === 'step') {
+    return (
+      <span className="flex h-11 w-11 items-center justify-center border border-hairline text-ink">
+        <Icon name={icon || 'star'} size={22} />
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className={cn(
+        'mb-4 flex items-center justify-center bg-brand text-ink',
+        size === 'large' ? 'h-[56px] w-[56px]' : 'h-[46px] w-[46px]'
+      )}
+    >
+      <Icon name={icon || 'star'} size={size === 'large' ? 26 : 22} />
+    </span>
+  );
+}
+
 export function StepsBlock({ p, bid }: BlockComponentProps) {
   const steps: P[] = p.steps ?? [];
   return (
@@ -649,9 +707,7 @@ export function StepsBlock({ p, bid }: BlockComponentProps) {
               <span className="flex h-[34px] w-[34px] items-center justify-center bg-brand font-display text-[15px] font-black">
                 {i + 1}
               </span>
-              <span className="flex h-11 w-11 items-center justify-center border border-hairline text-ink">
-                <Icon name={s.icon || 'star'} size={22} />
-              </span>
+              <BlockMark icon={s.icon} image={s.image} alt={s.title} size="step" />
             </div>
             <h3
               className="font-display text-[19px] font-extrabold uppercase leading-tight"
@@ -707,14 +763,12 @@ export function IconFeaturesBlock({ p, bid }: BlockComponentProps) {
               large ? 'px-8 py-9' : standard ? 'px-7 py-8' : 'px-6 py-7'
             )}
           >
-            <span
-              className={cn(
-                'mb-4 flex items-center justify-center bg-brand text-ink',
-                large ? 'h-[56px] w-[56px]' : 'h-[46px] w-[46px]'
-              )}
-            >
-              <Icon name={f.icon || 'star'} size={large ? 26 : 22} />
-            </span>
+            <BlockMark
+              icon={f.icon}
+              image={f.image}
+              alt={f.title}
+              size={large ? 'large' : 'feature'}
+            />
             <h3
               className={cn(
                 'font-display font-extrabold uppercase leading-tight',

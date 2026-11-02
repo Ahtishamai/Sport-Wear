@@ -386,6 +386,47 @@
     min-height: 0;
   }
 
+  /*
+   * The hero's words sit on a soft slab rather than a bordered card: solid
+   * behind the text, fading to nothing on the right so it meets the photo
+   * without an edge. It reaches past the gutter on both sides so the fade
+   * starts outside the content box, not next to the first letter.
+   */
+  .hero-panel {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .hero-panel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    left: calc(-1 * var(--gutter));
+    right: -12%;
+    z-index: -1;
+    background: linear-gradient(
+      90deg,
+      rgba(16, 17, 20, 0.86) 0%,
+      rgba(16, 17, 20, 0.8) 55%,
+      rgba(16, 17, 20, 0) 100%
+    );
+  }
+
+  /* On a phone the column is the whole width, so the slab covers it evenly
+     and fades at the bottom instead of the side. */
+  @media (max-width: 767px) {
+    .hero-panel::before {
+      left: calc(-1 * var(--gutter));
+      right: calc(-1 * var(--gutter));
+      background: linear-gradient(
+        180deg,
+        rgba(16, 17, 20, 0.82) 0%,
+        rgba(16, 17, 20, 0.78) 70%,
+        rgba(16, 17, 20, 0.6) 100%
+      );
+    }
+  }
+
   @media (min-width: 768px) {
     .hero-band {
       min-height: min(var(--hero-height, 720px), 92svh);

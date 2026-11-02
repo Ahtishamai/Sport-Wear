@@ -121,7 +121,9 @@ export function HeroSlider({
         className="pointer-events-none absolute inset-0 md:hidden"
         style={{
           background:
-            "linear-gradient(180deg, rgba(16,17,20,.82) 0%, rgba(16,17,20,.74) 55%, rgba(16,17,20,.86) 100%)",
+            // The panel behind the words does the heavy lifting now, so this
+            // only has to keep the top and bottom from glaring.
+            "linear-gradient(180deg, rgba(16,17,20,.55) 0%, rgba(16,17,20,.4) 55%, rgba(16,17,20,.7) 100%)",
         }}
       />
       <div
@@ -136,12 +138,14 @@ export function HeroSlider({
       />
 
       {/* The photo fills the window; the words sit in a panel inside the
-          content box. Dark enough behind the text to read over any slide,
-          which the gradient alone could not promise. */}
+          content box. The panel fades out to the right rather than ending on
+          a line, so it reads as part of the picture instead of a card pasted
+          over it — and every slide is a different photograph, so the words
+          cannot depend on one of them being dark in the right place. */}
       <div className="gutter relative w-full">
         <div
-          className="max-w-[720px] border border-white/15 bg-ink/55 p-7 backdrop-blur-[3px] md:p-10"
-          style={{ textShadow: "0 2px 18px rgba(16,17,20,.65)" }}
+          className="hero-panel w-full max-w-[640px] py-8 pr-6 md:py-11 lg:max-w-[700px]"
+          style={{ textShadow: "0 2px 18px rgba(16,17,20,.75)" }}
         >
           {badge && (
             <span

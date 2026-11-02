@@ -118,6 +118,7 @@ export default async function CollectionPage({
         title={collection.title}
         intro={collection.description || collection.subtitle}
         banner={collection.bannerUrl}
+        bodyCopy={collection.bodyCopy}
         searchParams={sp}
       />
       {collection.blocks ? <BlockRenderer blocks={collection.blocks} /> : null}
