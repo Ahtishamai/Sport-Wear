@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import Image from 'next/image';
-import { useCallback, useEffect, useState } from 'react';
-import { cn } from '@/lib/utils';
+import Image from "next/image";
+import { useCallback, useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
 
 export type HeroSlide = {
   image?: string;
@@ -49,7 +49,7 @@ export function HeroSlider({
 
   const go = useCallback(
     (next: number) => setIndex(((next % count) + count) % count),
-    [count]
+    [count],
   );
 
   useEffect(() => {
@@ -62,21 +62,23 @@ export function HeroSlider({
   // Respect a visitor who has asked for less motion: show the first slide and
   // leave the controls for them to move it themselves.
   useEffect(() => {
-    const q = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const q = window.matchMedia("(prefers-reduced-motion: reduce)");
     const apply = () => setPaused(q.matches);
     apply();
-    q.addEventListener('change', apply);
-    return () => q.removeEventListener('change', apply);
+    q.addEventListener("change", apply);
+    return () => q.removeEventListener("change", apply);
   }, []);
 
   // The words never move, so they always edit the block's own fields.
   const edit = (field: string) =>
-    bid ? { 'data-edit': `block:${bid}:${field}`, 'data-edit-kind': 'text' } : {};
+    bid
+      ? { "data-edit": `block:${bid}:${field}`, "data-edit-kind": "text" }
+      : {};
 
   return (
     <section
       className="hero-band relative flex items-center overflow-hidden bg-ink py-16 md:py-0"
-      style={{ ['--hero-height' as string]: `${height}px` }}
+      style={{ ["--hero-height" as string]: `${height}px` }}
       data-hero
       data-reveal-root
       onMouseEnter={() => count > 1 && setPaused(true)}
@@ -89,11 +91,14 @@ export function HeroSlider({
           key={i}
           aria-hidden={i !== index}
           className={cn(
-            'absolute inset-0 transition-opacity duration-700',
-            i === index ? 'opacity-100' : 'opacity-0'
+            "absolute inset-0 transition-opacity duration-700",
+            i === index ? "opacity-100" : "opacity-0",
           )}
           {...(bid && i === index
-            ? { 'data-edit': `block:${bid}:${s.path}`, 'data-edit-kind': 'image' }
+            ? {
+                "data-edit": `block:${bid}:${s.path}`,
+                "data-edit-kind": "image",
+              }
             : {})}
         >
           {s.image ? (
@@ -103,9 +108,9 @@ export function HeroSlider({
               fill
               priority={priority && i === 0}
               sizes="100vw"
-              data-parallax={parallax ? '0.18' : undefined}
+              data-parallax={parallax ? "0.18" : undefined}
               className="h-full w-full object-cover"
-              style={{ transform: 'scale(1.14)' }}
+              style={{ transform: "scale(1.14)" }}
             />
           ) : null}
         </div>
@@ -116,7 +121,7 @@ export function HeroSlider({
         className="pointer-events-none absolute inset-0 md:hidden"
         style={{
           background:
-            'linear-gradient(180deg, rgba(16,17,20,.82) 0%, rgba(16,17,20,.74) 55%, rgba(16,17,20,.86) 100%)',
+            "linear-gradient(180deg, rgba(16,17,20,.82) 0%, rgba(16,17,20,.74) 55%, rgba(16,17,20,.86) 100%)",
         }}
       />
       <div
@@ -124,38 +129,48 @@ export function HeroSlider({
         className="pointer-events-none absolute inset-0 hidden md:block"
         style={{
           background:
-            'linear-gradient(90deg, rgba(16,17,20,.92) 0%, rgba(16,17,20,.72) 42%, rgba(16,17,20,.35) 100%)',
+            // Lighter than it was: the panel behind the words now carries the
+            // contrast, so the photograph can be seen rather than dimmed.
+            "linear-gradient(90deg, rgba(16,17,20,.78) 0%, rgba(16,17,20,.5) 42%, rgba(16,17,20,.2) 100%)",
         }}
       />
 
-      <div className="gutter relative w-full" style={{ textShadow: '0 2px 18px rgba(16,17,20,.65)' }}>
-        {badge && (
-          <span
-            className="mb-5 inline-block bg-brand px-3 py-2 text-[10px] font-bold uppercase leading-snug tracking-[.12em] text-ink md:mb-6 md:px-[15px] md:py-[9px] md:text-[12px] md:tracking-[.16em]"
-            {...edit('badge')}
-          >
-            {badge}
-          </span>
-        )}
-
-        <h1
-          className="h-display max-w-[900px] text-white"
-          style={{ fontSize: 'clamp(30px,7vw,70px)' }}
-          {...edit('heading')}
+      {/* The photo fills the window; the words sit in a panel inside the
+          content box. Dark enough behind the text to read over any slide,
+          which the gradient alone could not promise. */}
+      <div className="gutter relative w-full">
+        <div
+          className="max-w-[720px] border border-white/15 bg-ink/55 p-7 backdrop-blur-[3px] md:p-10"
+          style={{ textShadow: "0 2px 18px rgba(16,17,20,.65)" }}
         >
-          {heading}
-        </h1>
+          {badge && (
+            <span
+              className="mb-5 inline-block bg-brand px-3 py-2 text-[10px] font-bold uppercase leading-snug tracking-[.12em] text-ink md:mb-6 md:px-[15px] md:py-[9px] md:text-[12px] md:tracking-[.16em]"
+              {...edit("badge")}
+            >
+              {badge}
+            </span>
+          )}
 
-        {body && (
-          <p
-            className="mt-5 max-w-[560px] text-[16px] leading-relaxed text-ondark md:mt-6 md:text-[19px]"
-            {...edit('body')}
+          <h1
+            className="h-display max-w-[900px] text-white"
+            style={{ fontSize: "clamp(30px,7vw,70px)" }}
+            {...edit("heading")}
           >
-            {body}
-          </p>
-        )}
+            {heading}
+          </h1>
 
-        {children}
+          {body && (
+            <p
+              className="mt-5 max-w-[560px] text-[16px] leading-relaxed text-ondark md:mt-6 md:text-[19px]"
+              {...edit("body")}
+            >
+              {body}
+            </p>
+          )}
+
+          {children}
+        </div>
 
         {count > 1 && (
           <div className="mt-8 flex items-center gap-3">
@@ -185,8 +200,10 @@ export function HeroSlider({
                   aria-label={`Slide ${i + 1}`}
                   aria-current={i === index}
                   className={cn(
-                    'h-2 rounded-full transition-all',
-                    i === index ? 'w-7 bg-brand' : 'w-2 bg-white/45 hover:bg-white/70'
+                    "h-2 rounded-full transition-all",
+                    i === index
+                      ? "w-7 bg-brand"
+                      : "w-2 bg-white/45 hover:bg-white/70",
                   )}
                 />
               ))}

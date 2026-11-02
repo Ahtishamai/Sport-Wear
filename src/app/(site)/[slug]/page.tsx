@@ -6,6 +6,8 @@ import { getSettings } from '@/lib/settings';
 import { BlockRenderer } from '@/components/blocks/Renderer';
 import { getTeamStore, getStoreSlugs } from '@/lib/store-queries';
 import { StoreFront } from '@/components/store/StoreFront';
+import { JsonLd } from '@/components/site/JsonLd';
+import { breadcrumbLd, pageDescription, pageTitle } from '@/lib/seo';
 
 export const revalidate = 300;
 
@@ -45,15 +47,13 @@ export async function generateMetadata({
       robots: { index: false, follow: true },
     };
   }
+  const title = pageTitle(page.seoTitle || page.title, s.siteName);
+  const description = pageDescription(page.seoDescription, s.defaultSeoDescription);
   return {
-    title: page.seoTitle || page.title,
-    description: page.seoDescription || s.defaultSeoDescription,
+    title: { absolute: title },
+    description,
     alternates: { canonical: `/${slug}` },
-    openGraph: {
-      title: page.seoTitle || page.title,
-      description: page.seoDescription || s.defaultSeoDescription,
-      images: page.ogImage ? [page.ogImage] : undefined,
-    },
+    openGraph: { title, description, images: page.ogImage ? [page.ogImage] : undefined },
   };
 }
 
@@ -72,9 +72,17 @@ export default async function CmsPage({ params }: { params: Promise<{ slug: stri
   }
 
   return (
-    <BlockRenderer
-      blocks={page.blocks}
-      context={{ breadcrumb: [{ label: 'Home', href: '/' }, { label: page.title }] }}
-    />
+    <>
+      <BlockRenderer
+        blocks={page.blocks}
+        context={{ breadcrumb: [{ label: 'Home', href: '/' }, { label: page.title }] }}
+      />
+      <JsonLd
+        data={breadcrumbLd([
+          { name: 'Home', path: '/' },
+          { name: page.title, path: `/${slug}` },
+        ])}
+      />
+    </>
   );
 }

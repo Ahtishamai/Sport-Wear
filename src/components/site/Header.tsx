@@ -148,7 +148,9 @@ export function Header({
     <>
       <header className="sticky top-0 z-[60] border-b border-hairline bg-[rgba(255,255,255,.94)] backdrop-blur-[14px]">
         {/* One row at every width — never wraps. */}
-        <div className="flex items-center gap-3 px-4 py-2.5 md:gap-7 md:px-10 md:py-3.5">
+        {/* The same box as the page below it, so the logo lines up with the
+            content instead of hugging the corner of the screen. */}
+        <div className="gutter flex items-center gap-3 py-2.5 md:gap-7 md:py-3.5">
           <Link
             href="/"
             aria-label={`${siteName} — home`}

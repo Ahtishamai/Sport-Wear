@@ -5,6 +5,9 @@ import { getCollectionByHandle } from '@/lib/queries';
 import { CatalogView, type CatalogSearchParams } from '@/components/site/CatalogView';
 import { BlockRenderer } from '@/components/blocks/Renderer';
 import { PageHeaderBlock } from '@/components/blocks/sections';
+import { JsonLd } from '@/components/site/JsonLd';
+import { breadcrumbLd, pageDescription, pageTitle } from '@/lib/seo';
+import { getSettings } from '@/lib/settings';
 
 export const revalidate = 120;
 
@@ -24,17 +27,22 @@ export async function generateMetadata({
   params: Promise<{ handle: string }>;
 }): Promise<Metadata> {
   const { handle } = await params;
-  const c = await getCollectionByHandle(handle);
+  const [c, s] = await Promise.all([getCollectionByHandle(handle), getSettings()]);
   if (!c) return {};
+  const title = pageTitle(c.seoTitle || c.title, s.siteName);
+  // A collection with nothing written about it still needs a sentence, or
+  // Google writes one out of whatever text the page happens to start with.
+  const description = pageDescription(
+    c.seoDescription,
+    c.description,
+    c.subtitle,
+    `Custom ${c.title.trim().toLowerCase()} from ${s.siteName} — sublimated in-house, names and numbers included, free digital mockup in 24 hours.`
+  );
   return {
-    title: c.seoTitle || c.title,
-    description: c.seoDescription || c.description || c.subtitle || undefined,
+    title: { absolute: title },
+    description,
     alternates: { canonical: `/collections/${handle}` },
-    openGraph: {
-      title: c.seoTitle || c.title,
-      description: c.seoDescription || c.description || undefined,
-      images: c.bannerUrl ? [c.bannerUrl] : undefined,
-    },
+    openGraph: { title, description, images: c.bannerUrl ? [c.bannerUrl] : undefined },
   };
 }
 
@@ -113,6 +121,14 @@ export default async function CollectionPage({
         searchParams={sp}
       />
       {collection.blocks ? <BlockRenderer blocks={collection.blocks} /> : null}
+      <JsonLd
+        data={breadcrumbLd([
+          { name: 'Home', path: '/' },
+          { name: 'Collections', path: '/collections' },
+          ...(parent ? [{ name: parent.title, path: `/collections/${parent.handle}` }] : []),
+          { name: collection.title.trim(), path: `/collections/${handle}` },
+        ])}
+      />
     </>
   );
 }

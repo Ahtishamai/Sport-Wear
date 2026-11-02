@@ -186,14 +186,21 @@ export async function CatalogView({
               </div>
             </div>
           ) : (
-            <div
-              className="grid gap-[18px]"
-              style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(258px, 1fr))' }}
-            >
-              {products.map((p) => (
-                <ProductCatalogCard key={p.id} p={p} showPrice={showPrice} />
-              ))}
-            </div>
+            <>
+              {/* Each card is an h3, so without this the page jumps from its
+                  h1 straight to h3 — a gap screen readers and search engines
+                  both read as a missing section. The toolbar above says the
+                  same thing visually, hence nothing new to look at. */}
+              <h2 className="sr-only">{handle === 'all' ? 'All products' : `${title} products`}</h2>
+              <div
+                className="grid gap-[18px]"
+                style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(258px, 1fr))' }}
+              >
+                {products.map((p) => (
+                  <ProductCatalogCard key={p.id} p={p} showPrice={showPrice} />
+                ))}
+              </div>
+            </>
           )}
         </div>
       </div>

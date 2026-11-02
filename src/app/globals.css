@@ -36,6 +36,12 @@
 
   --radius-btn: 2px;
 
+  /* How wide the content box is, and the least space either side of it.
+     The footer was already built to 1320px; this is the same box, applied
+     to every section through .gutter. */
+  --shell: 1320px;
+  --gutter: 40px;
+
   --shadow-card-hover: 0 16px 30px -20px rgb(16 17 20 / 0.4);
   --shadow-btn-hover: 0 14px 30px -10px rgb(16 17 20 / 0.4);
   --shadow-review: 0 12px 30px -22px rgb(16 17 20 / 0.4);
@@ -225,15 +231,24 @@
     }
   }
 
+  /*
+   * The content box.
+   *
+   * The element itself still spans the window — a hero image, a tinted band
+   * or a dark section reaches both edges as before — while what is inside it
+   * is held to --shell and centred. On a wide monitor the padding grows
+   * instead of the line length, so a heading never runs the width of a 27in
+   * screen; below that the padding bottoms out at the old gutter and nothing
+   * about the phone layout changes.
+   */
   .gutter {
-    padding-left: 40px;
-    padding-right: 40px;
+    padding-left: max(var(--gutter), (100% - var(--shell)) / 2);
+    padding-right: max(var(--gutter), (100% - var(--shell)) / 2);
   }
 
   @media (max-width: 720px) {
     .gutter {
-      padding-left: 20px;
-      padding-right: 20px;
+      --gutter: 20px;
     }
   }
 

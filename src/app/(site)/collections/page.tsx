@@ -3,17 +3,23 @@ import { getSettings } from '@/lib/settings';
 import { CatalogView, type CatalogSearchParams } from '@/components/site/CatalogView';
 import { getPage } from '@/lib/queries';
 import { BlockRenderer } from '@/components/blocks/Renderer';
+import { JsonLd } from '@/components/site/JsonLd';
+import { breadcrumbLd, pageDescription, pageTitle } from '@/lib/seo';
 
 export const revalidate = 120;
 
 export async function generateMetadata(): Promise<Metadata> {
   const [page, s] = await Promise.all([getPage('collections'), getSettings()]);
+  const title = pageTitle(page?.seoTitle || 'Sportswear collection', s.siteName);
+  const description = pageDescription(
+    page?.seoDescription,
+    'Browse every custom baseball and softball uniform, pant, jacket and bag we make. Free mockup in 24 hours.'
+  );
   return {
-    title: page?.seoTitle || 'Sportswear collection',
-    description:
-      page?.seoDescription ||
-      'Browse every custom baseball and softball uniform, pant, jacket and bag we make. Free mockup in 24 hours.',
+    title: { absolute: title },
+    description,
     alternates: { canonical: '/collections' },
+    openGraph: { title, description },
   };
 }
 
@@ -37,6 +43,12 @@ export default async function CollectionsPage({
         searchParams={sp}
       />
       {page && <BlockRenderer blocks={page.blocks} />}
+      <JsonLd
+        data={breadcrumbLd([
+          { name: 'Home', path: '/' },
+          { name: 'Collections', path: '/collections' },
+        ])}
+      />
     </>
   );
 }

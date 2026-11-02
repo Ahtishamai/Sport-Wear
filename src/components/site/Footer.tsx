@@ -17,7 +17,7 @@ export function Footer({
 }) {
   return (
     <footer className="bg-ink text-white" data-reveal-root>
-      <div className="mx-auto grid max-w-[1320px] gap-9 px-5 pt-[66px] pb-10 md:px-10 lg:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
+      <div className="gutter grid gap-9 pt-[66px] pb-10 lg:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
         <div>
           <div className="inline-block" {...edSetting('logoLight', 'image')}>
           <Image
@@ -80,7 +80,7 @@ export function Footer({
       </div>
 
       <div className="border-t border-white/12">
-        <div className="mx-auto flex max-w-[1320px] flex-wrap items-center justify-between gap-3 px-5 py-5 text-[13px] font-medium text-ondark-4 md:px-10">
+        <div className="gutter flex flex-wrap items-center justify-between gap-3 py-5 text-[13px] font-medium text-ondark-4">
           <span {...edSetting('copyright')}>{settings.copyright}</span>
           <span {...edSetting('footerMeta')}>{settings.footerMeta}</span>
         </div>
