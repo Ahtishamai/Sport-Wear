@@ -54,9 +54,9 @@ export const AREAS: Area[] = [
   {
     key: 'settings',
     label: 'Settings & navigation',
-    description: 'Site settings, payments and the menus. Sensitive.',
-    resources: ['settings', 'nav'],
-    paths: ['/admin/settings', '/admin/navigation'],
+    description: 'Site settings, payments, the menus and the redirects. Sensitive.',
+    resources: ['settings', 'nav', 'redirects', 'notFound'],
+    paths: ['/admin/settings', '/admin/navigation', '/admin/redirects', '/admin/not-found'],
   },
   {
     key: 'users',

@@ -143,6 +143,36 @@ export const api = {
   },
 
   stats: () => request<AdminStats>('/api/admin/stats'),
+
+  /** The 404 report. A log, so it is read and cleared rather than edited. */
+  notFound: {
+    list: (params?: { q?: string; ignored?: boolean }) => {
+      const sp = new URLSearchParams();
+      if (params?.q) sp.set('q', params.q);
+      if (params?.ignored) sp.set('ignored', '1');
+      const qs = sp.toString();
+      return request<{ items: NotFoundRow[]; ignoredCount: number; truncated: boolean }>(
+        `/api/admin/not-found${qs ? `?${qs}` : ''}`
+      );
+    },
+    act: (body: { action: 'ignore' | 'unignore' | 'delete' | 'clear'; id?: string; includeIgnored?: boolean }) =>
+      request<{ ok?: true; cleared?: number; item?: NotFoundRow }>('/api/admin/not-found', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }),
+  },
+};
+
+export type NotFoundRow = {
+  id: string;
+  path: string;
+  hits: number;
+  referrer: string | null;
+  ignored: boolean;
+  firstSeenAt: string;
+  lastSeenAt: string;
+  /** True when a redirect already answers this address. */
+  covered: boolean;
 };
 
 export type MediaItem = {

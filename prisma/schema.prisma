@@ -731,3 +731,60 @@ model TrashItem {
   @@index([deletedAt])
   @@map("trash_items")
 }
+
+enum RedirectKind {
+  PERMANENT
+  TEMPORARY
+}
+
+/// An address that used to work, and where a visitor who asks for it should
+/// be sent now.
+///
+/// Consulted only once the site has already failed to find the page itself,
+/// so a rule can never shadow a live page: adding one by mistake cannot take
+/// a working product, collection or page off the site. It is also why there
+/// is no hit counter here — the answer is given from a cached render, so any
+/// count kept would be a number that quietly lies. What is actually
+/// happening is in the dead-ends report.
+model Redirect {
+  id String @id @default(cuid())
+  /// The old address, in the form it is matched in: lower case, no query, no
+  /// trailing slash. A trailing "/*" matches everything below it.
+  from String @unique @db.VarChar(512)
+  /// Where to send it. A path on this site, or a full https address. A
+  /// trailing "/*" carries the rest of the old address across.
+  to     String       @db.VarChar(512)
+  kind   RedirectKind @default(PERMANENT)
+  active Boolean      @default(true)
+  note   String?      @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([active])
+  @@map("redirects")
+}
+
+/// An address that was asked for and did not exist.
+///
+/// One row per address, counted up — a report of where visitors and search
+/// engines are getting lost, which is the list worth writing redirects from.
+/// Addresses only a vulnerability scanner asks for are not recorded, since
+/// they would bury the ones that matter.
+model NotFoundHit {
+  id       String  @id @default(cuid())
+  path     String  @unique @db.VarChar(512)
+  hits     Int     @default(0)
+  /// The page that linked to it, when the browser said — which is how a bad
+  /// link of your own is told from a stale one on someone else's site.
+  referrer String? @db.VarChar(512)
+  /// Set by hand for an address that is never coming back, so the report
+  /// stays short without losing the count.
+  ignored  Boolean @default(false)
+
+  firstSeenAt DateTime @default(now())
+  lastSeenAt  DateTime @default(now())
+
+  @@index([ignored, hits])
+  @@map("not_found_hits")
+}

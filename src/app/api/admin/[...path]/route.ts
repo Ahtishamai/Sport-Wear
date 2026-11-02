@@ -9,6 +9,7 @@ import { savePaymentSecret, clearPaymentSecret, paypalSecretSummary } from '@/li
 import { saveMailConfig, mailConfigSummary, type MailConfig } from '@/lib/mail';
 import { duplicateProduct } from '@/lib/duplicate';
 import { moveToTrash, TrashError } from '@/lib/trash';
+import { normalizePath, normalizeTarget, redirectProblem } from '@/lib/redirects';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -113,6 +114,26 @@ function checkDiscount(data: Record<string, any>): string | null {
   if (data.startsAt && data.endsAt && new Date(data.startsAt) > new Date(data.endsAt)) {
     return 'The end of the run cannot be before the start.';
   }
+  return null;
+}
+
+/**
+ * Tidies and checks a redirect before it is saved.
+ *
+ * The old address is forced into the one form the site matches on, so a rule
+ * typed with the host in front, a capital letter or a trailing slash still
+ * fires. `existing` fills in whichever half a partial save left out, since a
+ * rule only makes sense judged as a pair.
+ */
+function checkRedirect(data: Record<string, any>, existing?: Record<string, any>): string | null {
+  const from = 'from' in data ? String(data.from ?? '') : String(existing?.from ?? '');
+  const to = 'to' in data ? String(data.to ?? '') : String(existing?.to ?? '');
+
+  const wrong = redirectProblem(from, to);
+  if (wrong) return wrong;
+
+  if ('from' in data) data.from = normalizePath(from);
+  if ('to' in data) data.to = normalizeTarget(to);
   return null;
 }
 
@@ -386,6 +407,11 @@ export async function POST(req: Request, ctx: Ctx) {
       if (wrong) return badRequest(wrong);
     }
 
+    if (resource === 'redirects') {
+      const wrong = checkRedirect(data);
+      if (wrong) return badRequest(wrong);
+    }
+
     const newParents = resource === 'collections' ? wantedParents(body) : undefined;
     if (newParents) {
       const wrong = await checkCollectionParents(newParents);
@@ -464,6 +490,11 @@ export async function PATCH(req: Request, ctx: Ctx) {
 
     if (resource === 'discounts') {
       const wrong = checkDiscount(data);
+      if (wrong) return badRequest(wrong);
+    }
+
+    if (resource === 'redirects') {
+      const wrong = checkRedirect(data, existing);
       if (wrong) return badRequest(wrong);
     }
 
@@ -730,10 +761,42 @@ async function stats() {
   });
 }
 
+/** What a person calls the columns the database insists are unique. */
+const UNIQUE_LABEL: Record<string, string> = {
+  from: 'old address',
+  code: 'code',
+  handle: 'handle',
+  slug: 'address',
+  email: 'email address',
+  path: 'address',
+  reference: 'reference',
+};
+
+/**
+ * The column a unique clash tripped on, whichever way the driver names it.
+ *
+ * MySQL reports the index rather than the field, so `Redirect_from_key` has
+ * to be read back down to `from`.
+ */
+function clashedField(err: unknown): string | null {
+  const target = (err as { meta?: { target?: unknown } })?.meta?.target;
+  const raw = Array.isArray(target) ? String(target[0] ?? '') : String(target ?? '');
+  if (!raw) return null;
+  if (raw in UNIQUE_LABEL) return raw;
+  const parts = raw.replace(/_key$|_unique$/i, '').split('_');
+  return parts.length > 1 ? parts.slice(1).join('_') : parts[0];
+}
+
 function handleWriteError(err: unknown) {
   const message = err instanceof Error ? err.message : '';
   if (message.includes('Unique constraint')) {
-    return badRequest('That handle or email is already taken.');
+    const field = clashedField(err);
+    const label = field ? (UNIQUE_LABEL[field] ?? field) : null;
+    return badRequest(
+      label
+        ? `That ${label} is already used by another record. Change it, or edit the one that has it.`
+        : 'That handle or email is already taken.'
+    );
   }
   if (
     message.includes('must be a number') ||

@@ -55,6 +55,8 @@ const NAV: {
     group: 'Settings',
     items: [
       { label: 'Navigation', href: '/admin/navigation', icon: 'ruler', area: 'settings' },
+      { label: 'Dead ends', href: '/admin/not-found', icon: 'close', area: 'settings' },
+      { label: 'Redirects', href: '/admin/redirects', icon: 'truck', area: 'settings' },
       { label: 'Site settings', href: '/admin/settings', icon: 'factory', area: 'settings' },
       { label: 'Users', href: '/admin/users', icon: 'check', area: 'users' },
       // No area: everyone sees Trash, filtered to what they can manage.

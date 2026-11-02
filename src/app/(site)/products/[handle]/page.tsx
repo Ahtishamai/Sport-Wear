@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { redirectAwayIfMoved } from '@/lib/not-found';
 import { prisma } from '@/lib/db';
 import { getPage, getProductByHandle, getProductsForBlock } from '@/lib/queries';
 import { RandomPick } from '@/components/blocks/RandomPick';
@@ -59,7 +60,10 @@ export async function generateMetadata({
 export default async function ProductPage({ params }: { params: Promise<{ handle: string }> }) {
   const { handle } = await params;
   const [product, settings] = await Promise.all([getProductByHandle(handle), getSettings()]);
-  if (!product) notFound();
+  if (!product) {
+    await redirectAwayIfMoved(`/products/${handle}`);
+    notFound();
+  }
 
   const [related, pdpExtras] = await Promise.all([
     // Random, and never the product being looked at: the same four suggestions

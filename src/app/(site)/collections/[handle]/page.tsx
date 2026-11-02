@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { redirectAwayIfMoved } from '@/lib/not-found';
 import { prisma } from '@/lib/db';
 import { getCollectionByHandle } from '@/lib/queries';
 import { CatalogView, type CatalogSearchParams } from '@/components/site/CatalogView';
@@ -55,7 +56,10 @@ export default async function CollectionPage({
 }) {
   const [{ handle }, sp] = await Promise.all([params, searchParams]);
   const collection = await getCollectionByHandle(handle);
-  if (!collection) notFound();
+  if (!collection) {
+    await redirectAwayIfMoved(`/collections/${handle}`);
+    notFound();
+  }
 
   const blocks = Array.isArray(collection.blocks) ? collection.blocks : [];
   // Its own products plus those of its sub-collections: a parent collection

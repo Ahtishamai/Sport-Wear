@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { redirectAwayIfMoved } from '@/lib/not-found';
 import { prisma } from '@/lib/db';
 import { getPage } from '@/lib/queries';
 import { getSettings } from '@/lib/settings';
@@ -67,7 +68,10 @@ export default async function CmsPage({ params }: { params: Promise<{ slug: stri
   // root so teams can be given a short link such as /mid-illini-bandits.
   if (!page) {
     const store = await getTeamStore(slug);
-    if (!store) notFound();
+    if (!store) {
+      await redirectAwayIfMoved(`/${slug}`);
+      notFound();
+    }
     return <StoreFront store={store.header} items={store.items} sections={store.sections} />;
   }
 

@@ -249,6 +249,30 @@ export const TRASH: Record<string, Spec> = {
     unique: [{ field: 'handle', onClash: 'suffix' }],
   },
 
+  redirects: {
+    model: 'redirect',
+    kind: 'Redirect',
+    label: (r) => `${clip(r.from, 60)} → ${clip(r.to, 60)}`,
+    unique: [{ field: 'from', onClash: 'refuse' }],
+  },
+
+  discounts: {
+    model: 'discount',
+    kind: 'Discount code',
+    label: (r) => `Code ${clip(r.code, 40)}`,
+    children: [
+      {
+        key: 'uses',
+        model: 'discountUse',
+        noun: ['redemption', 'redemptions'],
+        where: (id) => ({ discountId: id }),
+      },
+    ],
+    // Two codes cannot share a word a customer types, so a clash on restore
+    // is refused rather than quietly renamed to something nobody was given.
+    unique: [{ field: 'code', onClash: 'refuse' }],
+  },
+
   reviews: { model: 'review', kind: 'Review', label: (r) => `Review by ${clip(r.name, 60)}` },
   faqs: { model: 'faq', kind: 'FAQ', label: (r) => clip(r.question, 90) },
   contacts: { model: 'contactMessage', kind: 'Contact message', label: (r) => `Message from ${clip(r.name, 60)}` },

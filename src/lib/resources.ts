@@ -204,6 +204,21 @@ export const RESOURCES: Record<string, ResourceConfig> = {
     searchFields: ['code', 'label'],
   },
 
+  redirects: {
+    model: 'redirect',
+    fields: ['from', 'to', 'kind', 'active', 'note'],
+    defaultOrder: { createdAt: 'desc' },
+    bools: ['active'],
+    /*
+     * A rule is read out of the render that failed to find the page, and that
+     * render is cached like any other. Clearing the old address is what makes
+     * a rule take effect at once rather than whenever the cache next turns
+     * over — and what makes switching one off stop it at once.
+     */
+    revalidate: (r) => (r.from ? [String(r.from)] : []),
+    searchFields: ['from', 'to', 'note'],
+  },
+
   nav: {
     model: 'navItem',
     fields: ['menu', 'label', 'href', 'position', 'newTab'],
