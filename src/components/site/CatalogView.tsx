@@ -132,7 +132,7 @@ export async function CatalogView({
             )}
           </ol>
         </nav>
-        <h1 className="h-display" style={{ fontSize: 'clamp(34px,4.6vw,62px)', lineHeight: 0.98 }}>
+        <h1 className="h-display" style={{ fontSize: 'clamp(26px,3vw,40px)', lineHeight: 0.98 }}>
           {title}
         </h1>
         {intro && <p className="mt-4 max-w-[760px] text-[17px] leading-relaxed text-body">{intro}</p>}

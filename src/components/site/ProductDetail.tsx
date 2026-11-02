@@ -331,7 +331,7 @@ export function ProductDetail({
             )}
           </div>
 
-          <h1 className="h-display mt-4" style={{ fontSize: 'clamp(30px,3.8vw,50px)' }}>
+          <h1 className="h-display mt-4" style={{ fontSize: 'clamp(26px,2.8vw,40px)' }}>
             {product.title}
           </h1>
 

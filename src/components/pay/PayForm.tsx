@@ -53,7 +53,7 @@ export function PayForm({
         <span className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#E4F4EA] text-[22px] text-[#1F8A4C]">
           ✓
         </span>
-        <h2 className="h-section" style={{ fontSize: 'clamp(22px,3vw,30px)' }}>
+        <h2 className="h-section" style={{ fontSize: 'clamp(20px,2vw,26px)' }}>
           {successTitle}
         </h2>
         <p className="mx-auto mt-3 max-w-[520px] text-[15px] leading-relaxed text-body">

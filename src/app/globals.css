@@ -182,11 +182,18 @@
   line-height: 1;
 }
 
+/*
+ * Section headings — the h2 over most blocks.
+ *
+ * The scale used to run to 50px, which read as a poster rather than a
+ * heading once the content box widened: a heading is there to label what
+ * follows, and at that size it competed with the h1 above it.
+ */
 @utility h-section {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: clamp(30px, 3.6vw, 50px);
-  line-height: 1;
+  font-size: clamp(24px, 2.4vw, 34px);
+  line-height: 1.05;
   letter-spacing: -0.015em;
 }
 

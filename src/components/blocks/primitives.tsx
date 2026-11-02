@@ -216,7 +216,7 @@ export function PhotoTile({
         )}
         <h3
           className="h-display text-white"
-          style={{ fontSize: 'clamp(28px,2.9vw,42px)', lineHeight: 0.98 }}
+          style={{ fontSize: 'clamp(22px,2vw,30px)', lineHeight: 0.98 }}
           {...edText(bid, path('title'))}
         >
           {title}

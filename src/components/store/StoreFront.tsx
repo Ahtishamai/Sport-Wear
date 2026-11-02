@@ -88,7 +88,7 @@ function StoreBody({
             <section key={category} className="mb-12 last:mb-0">
               <h2
                 className="h-section mb-8 text-center"
-                style={{ fontSize: 'clamp(26px,3.6vw,42px)' }}
+                style={{ fontSize: 'clamp(22px,2.2vw,32px)' }}
               >
                 {category}
               </h2>
@@ -217,7 +217,7 @@ function StoreHero({
             <span className="block text-[12px] font-bold uppercase tracking-[.16em] text-brand">
               Team store
             </span>
-            <h1 className="h-display mt-1 text-white" style={{ fontSize: 'clamp(28px,4.4vw,52px)' }}>
+            <h1 className="h-display mt-1 text-white" style={{ fontSize: 'clamp(26px,3vw,40px)' }}>
               {store.name}
             </h1>
             {store.intro && (

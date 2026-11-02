@@ -142,7 +142,7 @@ export function PageHeaderBlock({
       </Eyebrow>
       <h1
         className="h-display"
-        style={{ fontSize: 'clamp(34px,4.6vw,62px)', lineHeight: 0.98 }}
+        style={{ fontSize: 'clamp(26px,3vw,40px)', lineHeight: 0.98 }}
         {...edText(bid, 'heading')}
       >
         {p.heading}

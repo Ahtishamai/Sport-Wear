@@ -158,7 +158,7 @@ export function HeroSlider({
 
           <h1
             className="h-display max-w-[900px] text-white"
-            style={{ fontSize: "clamp(30px,7vw,70px)" }}
+            style={{ fontSize: "clamp(30px,4.2vw,52px)" }}
             {...edit("heading")}
           >
             {heading}

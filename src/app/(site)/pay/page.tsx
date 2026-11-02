@@ -38,7 +38,7 @@ export default async function PayPage() {
           <span className="mb-4 inline-block bg-brand px-3 py-2 text-[10px] font-bold uppercase leading-snug tracking-[.14em] text-ink md:text-[12px]">
             Secure payment
           </span>
-          <h1 className="h-display max-w-[760px] text-white" style={{ fontSize: 'clamp(28px,5vw,52px)' }}>
+          <h1 className="h-display max-w-[760px] text-white" style={{ fontSize: 'clamp(26px,3vw,38px)' }}>
             {s.payHeading}
           </h1>
           {s.payIntro && (
