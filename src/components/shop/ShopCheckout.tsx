@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { KeepThisOrder } from '@/components/account/KeepThisOrder';
 import { useCallback, useEffect, useState } from 'react';
 import { money } from '@/lib/utils';
 import { useShopCart } from './CartProvider';
@@ -147,6 +148,12 @@ export function ShopCheckout({
             Keep shopping
           </Link>
         </div>
+
+        <KeepThisOrder
+          reference={paid.reference}
+          name={form.customerName}
+          email={form.email}
+        />
       </div>
     );
   }

@@ -335,11 +335,37 @@ export function ReviewsBlock({
   p,
   bid,
   reviews,
-}: BlockComponentProps & { reviews: ReviewItem[] }) {
+  siteName = 'this shop',
+}: BlockComponentProps & { reviews: ReviewItem[]; siteName?: string }) {
   if (!reviews.length) return null;
   const row = [...reviews, ...reviews];
+
+  /*
+   * The rating search engines are shown is the rating printed below.
+   *
+   * Worked out from these reviews, on the page that carries them, every time
+   * it renders — so it cannot drift from what a visitor reads, and deleting
+   * a review in the admin changes both at once. Marking up a number that
+   * nothing on the page supports is what earns a manual penalty.
+   */
+  const scores = reviews.map((r) => Number(r.rating) || 5);
+  const average = Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10;
+
   return (
     <section data-reveal-root className="overflow-hidden bg-white py-[76px] md:py-[88px]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'AggregateRating',
+            itemReviewed: { '@type': 'Organization', name: siteName },
+            ratingValue: average,
+            bestRating: 5,
+            reviewCount: reviews.length,
+          }),
+        }}
+      />
       <div className="gutter mb-10 text-center">
         <Eyebrow bid={bid} path="eyebrow">
           {p.eyebrow}

@@ -23,6 +23,18 @@ export async function sendShopOrderEmail(
   });
   if (!order) return { ok: false, error: 'Order not found.' };
 
+  /*
+   * Whether to invite them to make an account.
+   *
+   * Not if the order already belongs to one, and not if an account already
+   * exists for the address — a letter telling somebody to sign up for a thing
+   * they signed up for last season reads as a machine talking, and tends to
+   * be the line people remember about a shop.
+   */
+  const hasAccount =
+    Boolean(order.customerId) ||
+    (await prisma.customer.count({ where: { email: order.email } })) > 0;
+
   const settings = await getSettings();
   const base = (process.env.NEXT_PUBLIC_SITE_URL || '').replace(/\/+$/, '');
 
@@ -71,6 +83,7 @@ export async function sendShopOrderEmail(
     supportEmail: settings.email,
     supportPhone: settings.phone,
     trackUrl: settings.trackingEnabled && base ? `${base}/track-order` : null,
+    accountUrl: hasAccount || !base ? null : `${base}/account/sign-up`,
   });
 
   const asked = Array.isArray(opts.to) ? opts.to.join(',') : opts.to;

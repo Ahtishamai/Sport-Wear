@@ -2,7 +2,7 @@ import { prisma } from '@/lib/db';
 import { badRequest, clientIp, json, rateLimit, serverError } from '@/lib/api';
 import { priceShopCart, nextShopReference, ShopError, type ShopLineInput } from '@/lib/shop';
 import { createPayPalOrder, getPayPalConfig, PayPalError } from '@/lib/paypal';
-import { getCustomerSession } from '@/lib/customer';
+import { getCustomerSession, rememberOrder } from '@/lib/customer';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -76,7 +76,7 @@ export async function POST(req: Request) {
       description: 'Design Sportswear order',
     });
 
-    await prisma.shopOrder.create({
+    const order = await prisma.shopOrder.create({
       data: {
         reference,
         customerId: session?.id ?? null,
@@ -112,6 +112,10 @@ export async function POST(req: Request) {
         },
       },
     });
+
+    // So the thank-you page can offer to keep this order in a new account.
+    // Only this browser is told, and only for the next couple of hours.
+    if (!session) await rememberOrder(order.id);
 
     // The address this order is going to becomes the one the next checkout
     // starts from. Never fails the order: it is a convenience, not a record.

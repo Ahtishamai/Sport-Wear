@@ -178,11 +178,15 @@ export default async function ProductPage({ params }: { params: Promise<{ handle
                   },
                 }
               : {}),
-            aggregateRating: {
-              '@type': 'AggregateRating',
-              ratingValue: '4.9',
-              reviewCount: '128',
-            },
+            /*
+             * No aggregateRating.
+             *
+             * Reviews on this site are about the shop, not about one jersey,
+             * so there is no honest figure to put here — and a number that
+             * cannot be traced to reviews on the page is the thing search
+             * engines take manual action over. The price ladder above is the
+             * rich result this page has earned.
+             */
           }),
         }}
       />

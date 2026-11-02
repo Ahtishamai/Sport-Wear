@@ -157,8 +157,10 @@ async function renderBlock(block: Block, index: number, ctx: RenderContext) {
       return <QuoteCalloutBlock key={key} p={p} bid={block.id} />;
 
     case 'reviews': {
-      const reviews = await getReviews(Number(p.limit) || 12);
-      return <ReviewsBlock key={key} p={p} bid={block.id} reviews={reviews} />;
+      const [reviews, s] = await Promise.all([getReviews(Number(p.limit) || 12), getSettings()]);
+      return (
+        <ReviewsBlock key={key} p={p} bid={block.id} reviews={reviews} siteName={s.siteName} />
+      );
     }
 
     case 'googleReviews': {

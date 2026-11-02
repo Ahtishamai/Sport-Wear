@@ -48,6 +48,12 @@ export type OrderEmailData = {
   supportEmail: string;
   supportPhone: string;
   trackUrl: string | null;
+  /**
+   * Where to make an account, for a shopper who does not have one. Null when
+   * they already do, or when the shop has no accounts — a letter that invites
+   * someone to do a thing they have already done reads as a machine talking.
+   */
+  accountUrl?: string | null;
 };
 
 const INK = '#101114';
@@ -273,6 +279,22 @@ export function renderOrderEmail(d: OrderEmailData): {
       : ''
   }
 
+  ${
+    d.accountUrl
+      ? `<tr><td style="padding:24px 28px 0;">
+           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+             <tr><td style="border:1px solid ${LINE};background:#fafafa;padding:18px 20px;">
+               <p style="margin:0;font:700 13px/1.4 Arial,Helvetica,sans-serif;color:${INK};text-transform:uppercase;letter-spacing:.08em;">Keep this order</p>
+               <p style="margin:8px 0 0;font:400 14px/1.6 Arial,Helvetica,sans-serif;color:#2c2e33;">
+                 Set a password and ${esc(d.reference)} is saved to an account, so next season you can order the same kit, in the same sizes, in one press.
+               </p>
+               <p style="margin:12px 0 0;"><a href="${esc(d.accountUrl)}" style="font:700 13px/1 Arial,Helvetica,sans-serif;color:${INK};">Set up my account &rarr;</a></p>
+             </td></tr>
+           </table>
+         </td></tr>`
+      : ''
+  }
+
   <tr>
     <td style="padding:24px 28px 28px;">
       <p style="margin:0;font:400 14px/1.6 Arial,Helvetica,sans-serif;color:#2c2e33;">${esc(d.footer)}</p>
@@ -338,6 +360,13 @@ export function renderOrderEmail(d: OrderEmailData): {
   if (d.trackUrl) {
     lines.push('');
     lines.push(`Track this order: ${d.trackUrl}`);
+  }
+  if (d.accountUrl) {
+    lines.push('');
+    lines.push(
+      `Keep this order: set a password and ${d.reference} is saved to an account, so next ` +
+        `season you can order the same kit in one press. ${d.accountUrl}`
+    );
   }
   lines.push('');
   lines.push(d.footer);

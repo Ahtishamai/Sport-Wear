@@ -58,11 +58,15 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
             email: settings.email,
             address: { '@type': 'PostalAddress', streetAddress: settings.address },
             url: process.env.NEXT_PUBLIC_SITE_URL,
-            aggregateRating: {
-              '@type': 'AggregateRating',
-              ratingValue: '4.9',
-              reviewCount: '1000',
-            },
+            /*
+             * No aggregateRating here.
+             *
+             * This runs on every page, including the cart and the checkout,
+             * where no review is shown at all. A rating has to match reviews
+             * the visitor can actually read on the page carrying it — so the
+             * real one is emitted by the reviews section itself, from the
+             * reviews it has just printed. See ReviewsBlock.
+             */
           }),
         }}
       />

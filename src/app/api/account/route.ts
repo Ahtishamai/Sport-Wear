@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db';
 import { badRequest, clientIp, json, rateLimit, serverError } from '@/lib/api';
 import {
   checkPassword,
+  claimRememberedOrder,
   CustomerError,
   endCustomerSession,
   getCustomer,
@@ -139,10 +140,15 @@ async function register(ip: string, body: Record<string, any>) {
 
   await startCustomerSession(customer);
 
+  // An order placed in this browser minutes ago belongs to whoever is making
+  // this account — the browser that checked out is the one asking.
+  const claimed = await claimRememberedOrder(customer.id);
+
   const mail = await sendVerification(customer.id, customer.email, customer.name);
   return json({
     ok: true,
     customer: { id: customer.id, email: customer.email, name: customer.name, verified: false },
+    claimed,
     mail,
   });
 }
@@ -184,9 +190,11 @@ async function login(ip: string, body: Record<string, any>) {
 
   await startCustomerSession({ id: row.id, email: row.email, name: row.name });
   await prisma.customer.update({ where: { id: row.id }, data: { lastLoginAt: new Date() } });
+  const claimed = await claimRememberedOrder(row.id);
 
   return json({
     ok: true,
+    claimed,
     customer: { id: row.id, email: row.email, name: row.name, verified: Boolean(row.verifiedAt) },
   });
 }
@@ -250,7 +258,8 @@ async function reset(ip: string, body: Record<string, any>) {
   });
 
   await startCustomerSession(row);
-  return json({ ok: true, customer: { ...row, verified: true } });
+  const claimed = await claimRememberedOrder(row.id);
+  return json({ ok: true, claimed, customer: { ...row, verified: true } });
 }
 
 async function changePassword(body: Record<string, any>) {
@@ -294,7 +303,8 @@ async function verify(body: Record<string, any>) {
   // Following the link is proof of reading the inbox, so it also signs them
   // in — on whichever device opened the email.
   await startCustomerSession(row);
-  return json({ ok: true, customer: { ...row, verified: true } });
+  const claimed = await claimRememberedOrder(row.id);
+  return json({ ok: true, claimed, customer: { ...row, verified: true } });
 }
 
 async function resend(ip: string) {

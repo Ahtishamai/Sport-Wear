@@ -190,3 +190,71 @@ export function ordersWhere(c: { id: string; email: string; verifiedAt: Date | n
     ? { OR: [{ customerId: c.id }, { email: c.email }] }
     : { customerId: c.id };
 }
+
+// ------------------------------------------------------------------ claiming
+
+const ORDER_COOKIE = 'ds_order';
+const ORDER_MAX_AGE = 60 * 60 * 2; // long enough to make an account afterwards
+
+/**
+ * Remembers, in this browser alone, the order it has just placed.
+ *
+ * So that making an account on the thank-you page can pick that order up.
+ * It has to be a signed cookie rather than the order number: references are
+ * DS plus five digits, which anyone could work through in an afternoon, and a
+ * claim based on one would hand over other people's orders. A cookie set by
+ * this server to the browser that actually checked out cannot be guessed.
+ */
+export async function rememberOrder(orderId: string) {
+  try {
+    const token = await new SignJWT({ oid: orderId, t: 'o' })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setIssuedAt()
+      .setExpirationTime(`${ORDER_MAX_AGE}s`)
+      .sign(secret());
+
+    (await cookies()).set(ORDER_COOKIE, token, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: ORDER_MAX_AGE,
+    });
+  } catch (err) {
+    // A convenience, never a reason to fail a checkout.
+    console.error('[account] could not remember the order:', err);
+  }
+}
+
+/**
+ * Hands the order this browser just placed to an account.
+ *
+ * Called whenever a session starts, so it catches both the shopper who makes
+ * an account on the thank-you page and the one who remembers they already had
+ * one. An order that already belongs to somebody is left alone.
+ */
+export async function claimRememberedOrder(customerId: string): Promise<string | null> {
+  try {
+    const jar = await cookies();
+    const token = jar.get(ORDER_COOKIE)?.value;
+    if (!token) return null;
+
+    const { payload } = await jwtVerify(token, secret());
+    if (payload.t !== 'o' || !payload.oid) return null;
+
+    const { count } = await prisma.shopOrder.updateMany({
+      where: { id: String(payload.oid), customerId: null },
+      data: { customerId },
+    });
+    jar.delete(ORDER_COOKIE);
+    if (count === 0) return null;
+
+    const row = await prisma.shopOrder.findUnique({
+      where: { id: String(payload.oid) },
+      select: { reference: true },
+    });
+    return row?.reference ?? null;
+  } catch {
+    return null;
+  }
+}
