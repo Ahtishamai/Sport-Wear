@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import { getAccessor } from '@/lib/auth';
 import { allowedAreas, canUsePath, landingPath } from '@/lib/permissions';
 import { AdminShell } from '@/components/admin/AdminShell';
+import { adminFont } from '../admin-font';
 
 export const metadata = {
   title: 'Admin — Design Sportswear',
@@ -23,8 +24,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
   }
 
   return (
-    <AdminShell user={session} areas={allowedAreas(session)}>
-      {children}
-    </AdminShell>
+    <div className={`${adminFont.variable} admin-type`}>
+      <AdminShell user={session} areas={allowedAreas(session)}>
+        {children}
+      </AdminShell>
+    </div>
   );
 }

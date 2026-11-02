@@ -37,9 +37,9 @@
   --radius-btn: 2px;
 
   /* How wide the content box is, and the least space either side of it.
-     The footer was already built to 1320px; this is the same box, applied
-     to every section through .gutter. */
-  --shell: 1320px;
+     Everything that uses .gutter — header, sections, footer — reads these,
+     so the whole site widens or narrows from one line. */
+  --shell: 1520px;
   --gutter: 40px;
 
   --shadow-card-hover: 0 16px 30px -20px rgb(16 17 20 / 0.4);
@@ -244,6 +244,14 @@
   .gutter {
     padding-left: max(var(--gutter), (100% - var(--shell)) / 2);
     padding-right: max(var(--gutter), (100% - var(--shell)) / 2);
+  }
+
+  /* The admin is set in its own face. Both tokens are redefined, so every
+     heading and every field inside /admin follows without touching a file. */
+  .admin-type {
+    --font-display: var(--font-montserrat), system-ui, sans-serif;
+    --font-sans: var(--font-montserrat), system-ui, sans-serif;
+    font-family: var(--font-sans);
   }
 
   @media (max-width: 720px) {

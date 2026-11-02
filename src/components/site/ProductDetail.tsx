@@ -57,7 +57,16 @@ export function ProductDetail({
 }) {
   const { open } = useQuote();
   const [view, setView] = useState(0);
-  const [sport, setSport] = useState(product.sports[0] ?? 'Baseball');
+  // The sport the product is plainly for, rather than whichever happens to
+  // be first in the list: a softball kit opening with Baseball selected
+  // reads like a mistake and invites a wrong order.
+  const impliedSport =
+    product.sports.find((s) =>
+      new RegExp(s, 'i').test(
+        `${product.title} ${product.subtitle ?? ''} ${product.collections.map((c) => c.title).join(' ')}`
+      )
+    ) ?? product.sports[0];
+  const [sport, setSport] = useState(impliedSport ?? 'Baseball');
   const [color, setColor] = useState(0);
   const [qty, setQty] = useState<Record<string, number>>(() => ({ ...product.defaultQty }));
   const [spec, setSpec] = useState(product.specs[0]?.q ?? '');
@@ -269,6 +278,37 @@ export function ProductDetail({
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* What comes with it, and a way to ask — on desktop this column
+              is shorter than the one beside it, and the gap under the photo
+              was doing nothing for anyone deciding whether to order. */}
+          <div className="mt-2.5 hidden border border-hairline lg:block">
+            <div className="border-b border-hairline px-5 py-3.5">
+              <h2 className="font-display text-[13px] font-extrabold uppercase tracking-[.12em]">
+                What you get
+              </h2>
+            </div>
+            <ul className="space-y-2.5 px-5 py-4">
+              {product.trustPoints.map((t) => (
+                <li key={t} className="flex items-start gap-2.5 text-[14px] leading-snug text-body">
+                  <span aria-hidden="true" className="shrink-0 text-success">
+                    ✓
+                  </span>
+                  {t}
+                </li>
+              ))}
+            </ul>
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-hairline bg-surface px-5 py-3.5">
+              <span className="text-[13px] text-muted">Not sure on sizes or fabric?</span>
+              <button
+                type="button"
+                onClick={requestQuote}
+                className="text-[13px] font-semibold text-ink underline underline-offset-2 hover:text-brand-text"
+              >
+                Ask us — we reply same day
+              </button>
+            </div>
           </div>
         </div>
 
