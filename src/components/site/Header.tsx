@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { Icon } from "./Icon";
 import { useQuote } from "./QuoteProvider";
 import { CartButton } from "@/components/shop/CartButton";
+import { AccountButton } from "@/components/account/AccountButton";
 import { edSetting } from "@/components/blocks/primitives";
 
 export type NavLink = {
@@ -185,6 +186,7 @@ export function Header({
 
           <div className="ml-auto flex shrink-0 items-center gap-2 md:gap-4">
             <CartButton />
+            <AccountButton />
 
             <a
               href={phoneHref}
@@ -327,9 +329,18 @@ export function Header({
               <Link
                 href="/contact"
                 data-active={isActive("/contact")}
-                className="mb-5 flex items-center justify-between border-b border-hairline py-4 text-[15px] font-semibold uppercase tracking-[.04em] text-ink data-[active=true]:text-brand-text"
+                className="flex items-center justify-between border-b border-hairline py-4 text-[15px] font-semibold uppercase tracking-[.04em] text-ink data-[active=true]:text-brand-text"
               >
                 Contact us
+                <Icon name="arrowRight" size={16} />
+              </Link>
+
+              <Link
+                href="/account"
+                data-active={isActive("/account")}
+                className="mb-5 flex items-center justify-between border-b border-hairline py-4 text-[15px] font-semibold uppercase tracking-[.04em] text-ink data-[active=true]:text-brand-text"
+              >
+                My account
                 <Icon name="arrowRight" size={16} />
               </Link>
             </nav>

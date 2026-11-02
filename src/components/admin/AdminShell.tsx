@@ -22,6 +22,7 @@ const NAV: {
     items: [
       { label: 'Quote requests', href: '/admin/quotes', icon: 'tag', area: 'orders' },
       { label: 'Contact messages', href: '/admin/contacts', icon: 'mail', area: 'orders' },
+      { label: 'Customers', href: '/admin/customers', icon: 'users', area: 'orders' },
     ],
   },
   {

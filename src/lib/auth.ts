@@ -65,6 +65,10 @@ export async function getSession(): Promise<SessionUser | null> {
     const token = (await cookies()).get(COOKIE)?.value;
     if (!token) return null;
     const { payload } = await jwtVerify(token, secret());
+    // Shop accounts are signed with the same secret, and an unknown role
+    // falls through to EDITOR below — so a shopper's token presented here
+    // would otherwise read as a member of staff. See lib/customer.ts.
+    if (payload.t === 'c') return null;
     return {
       id: String(payload.id),
       email: String(payload.email),

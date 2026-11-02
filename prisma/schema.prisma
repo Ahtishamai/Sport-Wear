@@ -619,8 +619,13 @@ model DiscountUse {
 }
 
 model ShopOrder {
-  id           String           @id @default(cuid())
-  reference    String           @unique @db.VarChar(32)
+  id        String    @id @default(cuid())
+  reference String    @unique @db.VarChar(32)
+  /// The account it was placed from, when it was placed from one. An order
+  /// made as a guest has none, and is matched to an account by email instead
+  /// — but only once that account has proved the address.
+  customerId   String?
+  customer     Customer?        @relation(fields: [customerId], references: [id], onDelete: SetNull)
   customerName String           @db.VarChar(120)
   email        String           @db.VarChar(160)
   phone        String?          @db.VarChar(40)
@@ -644,6 +649,8 @@ model ShopOrder {
   updatedAt DateTime @updatedAt
 
   @@index([status])
+  @@index([customerId])
+  @@index([email])
   @@map("shop_orders")
 }
 
@@ -787,4 +794,60 @@ model NotFoundHit {
 
   @@index([ignored, hits])
   @@map("not_found_hits")
+}
+
+/// Someone who buys from the shop.
+///
+/// Deliberately a different table from `User`, which is the admin. The two
+/// are never the same person in the same role, and keeping them apart means
+/// no bug in the shop can ever hand someone a panel login.
+model Customer {
+  id           String  @id @default(cuid())
+  email        String  @unique @db.VarChar(160)
+  name         String  @db.VarChar(120)
+  phone        String? @db.VarChar(40)
+  passwordHash String  @db.VarChar(100)
+  /// Where their last order went, offered again at the next checkout.
+  shipTo       Json?
+
+  /// Set once they have followed a link sent to the address.
+  ///
+  /// Orders placed as a guest are matched to an account by email address, and
+  /// an order carries a name, a phone number and a home address. Until the
+  /// address is proved, those orders stay hidden — otherwise signing up with
+  /// somebody else's email would be enough to read their order history.
+  verifiedAt  DateTime?
+  lastLoginAt DateTime?
+
+  orders ShopOrder[]
+  tokens CustomerToken[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("customers")
+}
+
+enum CustomerTokenKind {
+  VERIFY
+  RESET
+}
+
+/// A single-use link sent by email, for proving an address or resetting a
+/// password.
+///
+/// Only the hash of the token is kept. The database must never hold anything
+/// that would let a reader of it sign in as somebody.
+model CustomerToken {
+  id         String            @id @default(cuid())
+  customerId String
+  customer   Customer          @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  kind       CustomerTokenKind
+  tokenHash  String            @unique @db.VarChar(64)
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime          @default(now())
+
+  @@index([customerId, kind])
+  @@map("customer_tokens")
 }

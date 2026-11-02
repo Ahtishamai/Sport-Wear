@@ -12,7 +12,17 @@ import { breadcrumbLd, pageDescription, pageTitle } from '@/lib/seo';
 
 export const revalidate = 300;
 
-const RESERVED = new Set(['home', 'collections', 'products', 'team-packages', 'admin', 'api']);
+const RESERVED = new Set([
+  'home',
+  'collections',
+  'products',
+  'team-packages',
+  'account',
+  'cart',
+  'checkout',
+  'admin',
+  'api',
+]);
 
 export async function generateStaticParams() {
   try {

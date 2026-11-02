@@ -58,6 +58,43 @@ export function ShopCheckout({
 
   const set = <K extends keyof typeof form>(k: K, v: string) => setForm((p) => ({ ...p, [k]: v }));
 
+  /*
+   * Fill the form in for anyone who is signed in.
+   *
+   * Only where they have not typed something already, so this can never
+   * overwrite a one-off address being entered for this order. The server
+   * still decides whose order it is, from the cookie, whatever ends up here.
+   */
+  const [account, setAccount] = useState<{ name: string; email: string } | null>(null);
+  useEffect(() => {
+    let alive = true;
+    fetch('/api/account')
+      .then((r) => r.json())
+      .then((d) => {
+        const c = d?.customer;
+        if (!alive || !c) return;
+        setAccount({ name: c.name, email: c.email });
+        const ship = (c.shipTo ?? {}) as Record<string, string>;
+        setForm((p) => ({
+          ...p,
+          customerName: p.customerName || c.name || '',
+          email: p.email || c.email || '',
+          phone: p.phone || c.phone || '',
+          address1: p.address1 || ship.line1 || '',
+          address2: p.address2 || ship.line2 || '',
+          city: p.city || ship.city || '',
+          state: p.state || ship.state || '',
+          postcode: p.postcode || ship.postcode || '',
+        }));
+      })
+      .catch(() => {
+        /* not signed in, or offline: the form is simply empty */
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   // Ask the server what this costs, and ask again whenever the cart changes.
   const cartKey = JSON.stringify(lines.map((l) => [l.productId, l.size, l.quantity, l.orderType]));
   const repriceNow = useCallback(async () => {
@@ -139,6 +176,24 @@ export function ShopCheckout({
         <h2 className="font-display text-[13px] font-extrabold uppercase tracking-[.14em]">
           Where is it going?
         </h2>
+
+        {account ? (
+          <p className="mt-3 text-[13.5px] text-body">
+            Filled in from your account ({account.email}). Change anything that is different for
+            this order.
+          </p>
+        ) : (
+          <p className="mt-3 text-[13.5px] text-body">
+            Been here before?{' '}
+            <Link
+              href="/account/sign-in?next=/checkout"
+              className="font-semibold underline underline-offset-4 hover:text-ink"
+            >
+              Sign in
+            </Link>{' '}
+            and we will fill this in for you.
+          </p>
+        )}
 
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <Field label="Your name *" value={form.customerName} onChange={(v) => set('customerName', v)} placeholder="Coach name" span />

@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db';
 import { badRequest, clientIp, json, rateLimit, serverError } from '@/lib/api';
 import { priceShopCart, nextShopReference, ShopError, type ShopLineInput } from '@/lib/shop';
 import { createPayPalOrder, getPayPalConfig, PayPalError } from '@/lib/paypal';
+import { getCustomerSession } from '@/lib/customer';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -59,6 +60,15 @@ export async function POST(req: Request) {
     if (cart.discountError) return badRequest(cart.discountError);
     const reference = await nextShopReference();
 
+    /*
+     * Tie the order to the account, when there is one.
+     *
+     * Only ever from the session cookie — never from the email typed into the
+     * form. Matching by address here would let anyone attach an order to
+     * somebody else's account simply by typing their address at checkout.
+     */
+    const session = await getCustomerSession();
+
     const paypalOrderId = await createPayPalOrder({
       reference,
       total: cart.total,
@@ -69,6 +79,7 @@ export async function POST(req: Request) {
     await prisma.shopOrder.create({
       data: {
         reference,
+        customerId: session?.id ?? null,
         customerName,
         email,
         phone: phone || null,
@@ -101,6 +112,14 @@ export async function POST(req: Request) {
         },
       },
     });
+
+    // The address this order is going to becomes the one the next checkout
+    // starts from. Never fails the order: it is a convenience, not a record.
+    if (session) {
+      await prisma.customer
+        .update({ where: { id: session.id }, data: { phone: phone || undefined, shipTo } })
+        .catch((err) => console.error('[shop/checkout] could not save the address:', err));
+    }
 
     return json({ ok: true, reference, paypalOrderId, total: cart.total, currency: cart.currency });
   } catch (err) {
