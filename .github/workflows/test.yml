@@ -1,0 +1,33 @@
+name: Tests
+
+# Every push to main is what the live site deploys from, so this is the last
+# chance anything has to object. It runs only the checks that need nothing of
+# this shop — no database, no secrets: see tests/README.md.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      # The Prisma client is generated code, so it is not in the repo, and
+      # the types in it are what half the project is checked against. This
+      # reads the schema only; it does not connect to anything.
+      - run: npx prisma generate
+
+      - run: npm run typecheck
+
+      - run: npm test

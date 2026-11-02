@@ -5,12 +5,24 @@ import { isDbCapacityError } from './db';
 
 export { isDbCapacityError };
 
+/**
+ * No answer from the API may be kept by anything.
+ *
+ * Every one of them is about one signed-in person, one order, or a change
+ * just made — and Next sends no cache headers of its own on a route handler,
+ * which leaves a 200 that a proxy is within its rights to store. That would
+ * be one shopper's name and address handed to the next person who asked.
+ * A response that is meant to be cached, such as an upload, sets its own
+ * headers and does not come through here.
+ */
+const PRIVATE = { 'Cache-Control': 'private, no-store' };
+
 export function json(data: unknown, status = 200) {
-  return NextResponse.json(data, { status });
+  return NextResponse.json(data, { status, headers: PRIVATE });
 }
 
 export function badRequest(error: string, details?: unknown) {
-  return NextResponse.json({ error, details }, { status: 400 });
+  return NextResponse.json({ error, details }, { status: 400, headers: PRIVATE });
 }
 
 export function forbidden() {
@@ -18,7 +30,7 @@ export function forbidden() {
 }
 
 export function unauthorized() {
-  return NextResponse.json({ error: 'Not authorised' }, { status: 401 });
+  return NextResponse.json({ error: 'Not authorised' }, { status: 401, headers: PRIVATE });
 }
 
 export function serverError(err: unknown) {
@@ -30,12 +42,15 @@ export function serverError(err: unknown) {
     );
     return NextResponse.json(
       { error: 'The site is briefly at capacity. Please try again in a moment.' },
-      { status: 503, headers: { 'Retry-After': '30' } }
+      { status: 503, headers: { ...PRIVATE, 'Retry-After': '30' } }
     );
   }
 
   if (process.env.NODE_ENV === 'development') console.error(err);
-  return NextResponse.json({ error: 'Something went wrong on our end.' }, { status: 500 });
+  return NextResponse.json(
+    { error: 'Something went wrong on our end.' },
+    { status: 500, headers: PRIVATE }
+  );
 }
 
 /** Wraps an admin route handler with a session check. */

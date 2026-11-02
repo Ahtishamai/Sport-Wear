@@ -11,3 +11,6 @@ next-env.d.ts
 .DS_Store
 .env.backup-*
 .env.test
+
+# screenshots from the live checks
+tests/live/.shots/
