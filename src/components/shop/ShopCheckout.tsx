@@ -19,6 +19,8 @@ import { PayPalButtons } from '@/components/pay/PayPalButtons';
 type Priced = {
   lines: { title: string; size: string | null; quantity: number; unitPrice: number; lineTotal: number }[];
   subtotal: number;
+  discount?: { code: string; label: string; amount: number };
+  discountError?: string;
   shipping: number;
   total: number;
   currency: string;
@@ -46,6 +48,10 @@ export function ShopCheckout({
     notes: '',
   });
   const [priced, setPriced] = useState<Priced | null>(null);
+  // What the customer typed, and what the server made of it. The amount is
+  // never worked out here: this box only asks.
+  const [code, setCode] = useState('');
+  const [codeBusy, setCodeBusy] = useState(false);
   const [priceError, setPriceError] = useState('');
   const [error, setError] = useState('');
   const [paid, setPaid] = useState<{ reference: string } | null>(null);
@@ -60,7 +66,7 @@ export function ShopCheckout({
       const res = await fetch('/api/shop/checkout', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lines: lines.map(toServerLine) }),
+        body: JSON.stringify({ lines: lines.map(toServerLine), code }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -73,13 +79,14 @@ export function ShopCheckout({
     } catch {
       setPriceError('We could not reach the server to price this cart.');
     }
-  }, [lines]);
+  }, [lines, code]);
 
   useEffect(() => {
     void repriceNow();
     // cartKey stands in for the lines themselves: it changes only when a
-    // choice does, not on every render.
-  }, [cartKey]); // eslint-disable-line react-hooks/exhaustive-deps
+    // choice does, not on every render. Clearing the code reprices too, so
+    // Remove puts the total back without another button.
+  }, [cartKey, code === '']); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!ready) return <p className="py-16 text-center text-[15px] text-muted">Loading…</p>;
 
@@ -178,12 +185,74 @@ export function ShopCheckout({
           </p>
         )}
 
+        {/* The code box. Applying is only ever a re-price: the server says
+            what the code is worth, and says why when it is worth nothing. */}
+        <form
+          className="mt-4 border-t border-hairline pt-4"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setCodeBusy(true);
+            await repriceNow();
+            setCodeBusy(false);
+          }}
+        >
+          <label htmlFor="discount-code" className="field-label">
+            Discount code
+          </label>
+          <div className="flex gap-2">
+            <input
+              id="discount-code"
+              value={code}
+              onChange={(e) => setCode(e.target.value.toUpperCase())}
+              placeholder="SPRING25"
+              autoComplete="off"
+              aria-describedby={priced?.discountError ? 'discount-problem' : undefined}
+              className="min-w-0 flex-1 border border-field bg-white px-3 py-2.5 text-[14px] uppercase tracking-[.06em] text-ink"
+            />
+            <button type="submit" disabled={codeBusy || !code.trim()} className="btn btn-outline btn-md">
+              {codeBusy ? 'Checking…' : 'Apply'}
+            </button>
+          </div>
+          {priced?.discountError && (
+            <p id="discount-problem" role="alert" className="mt-2 text-[13px] text-[#C42027]">
+              {priced.discountError}
+            </p>
+          )}
+          {priced?.discount && (
+            <p className="mt-2 flex items-center gap-2 text-[13px] text-success">
+              <span aria-hidden="true">✓</span>
+              {priced.discount.label} applied — {money(priced.discount.amount)} off
+              <button
+                type="button"
+                onClick={() => {
+                  setCode('');
+                  // The effect below reprices as soon as the code clears.
+                }}
+                className="ml-auto text-[12px] font-semibold text-muted underline underline-offset-2 hover:text-ink"
+              >
+                Remove
+              </button>
+            </p>
+          )}
+        </form>
+
         {priced && (
           <dl className="mt-4 space-y-2 border-t border-hairline pt-4 text-[15px]">
             <div className="flex justify-between">
               <dt className="text-body">Subtotal</dt>
               <dd className="font-semibold">{money(priced.subtotal)}</dd>
             </div>
+            {priced.discount && (
+              <div className="flex justify-between">
+                <dt className="text-body">
+                  {priced.discount.label}{' '}
+                  <span className="text-[12px] uppercase tracking-[.08em] text-muted">
+                    {priced.discount.code}
+                  </span>
+                </dt>
+                <dd className="font-semibold text-success">−{money(priced.discount.amount)}</dd>
+              </div>
+            )}
             <div className="flex justify-between">
               <dt className="text-body">Shipping</dt>
               <dd className="font-semibold text-success">Free</dd>
@@ -218,7 +287,7 @@ export function ShopCheckout({
                 onError={setError}
                 createUrl="/api/shop/checkout"
                 captureUrl="/api/shop/capture"
-                buildBody={() => ({ ...form, lines: lines.map(toServerLine) })}
+                buildBody={() => ({ ...form, lines: lines.map(toServerLine), code })}
                 onPaid={(result) => {
                   clear();
                   setPaid({ reference: result.reference });

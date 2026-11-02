@@ -30,6 +30,7 @@ const NAV: {
       { label: 'Products', href: '/admin/products', icon: 'shield', area: 'catalog' },
       { label: 'Collections', href: '/admin/collections', icon: 'palette', area: 'catalog' },
       { label: 'Team packages', href: '/admin/packages', icon: 'truck', area: 'catalog' },
+      { label: 'Discount codes', href: '/admin/discounts', icon: 'tag', area: 'catalog' },
     ],
   },
   {

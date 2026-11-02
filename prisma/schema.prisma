@@ -550,6 +550,74 @@ model StoreOrderItem {
 /// store sells one club's own designs for a few weeks, while this sells the
 /// catalogue to anyone. Mixing them would mean a store id that is sometimes
 /// absent and reports that always have to say which kind they mean.
+enum DiscountKind {
+  PERCENT
+  FIXED
+}
+
+enum DiscountScope {
+  ALL
+  COLLECTIONS
+  PRODUCTS
+}
+
+/// A code a customer can type at the cart to take money off the order.
+///
+/// Everything here is checked again on the server when the order is placed —
+/// a code that expired, ran out or stopped applying between the cart and the
+/// payment must not be honoured just because the browser still remembers it.
+model Discount {
+  id    String       @id @default(cuid())
+  code  String       @unique @db.VarChar(40)
+  label String?      @db.VarChar(120)
+  kind  DiscountKind @default(PERCENT)
+  /// A percentage when kind is PERCENT, otherwise an amount off in dollars.
+  value Decimal      @db.Decimal(10, 2)
+
+  scope DiscountScope @default(ALL)
+  /// The collection or product handles it is limited to, when the scope is
+  /// not ALL. Handles rather than ids so the admin field can be typed and
+  /// read by a person, and a list rather than join rows so a handle that no
+  /// longer exists is simply skipped.
+  targets Json?
+
+  minSubtotal   Decimal? @db.Decimal(10, 2)
+  /// How many times it may be used in all, and by one email address.
+  usageLimit    Int?
+  perEmailLimit Int?
+  usedCount     Int      @default(0)
+
+  startsAt DateTime?
+  endsAt   DateTime?
+  active   Boolean   @default(true)
+  note     String?   @db.Text
+
+  uses DiscountUse[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([active])
+  @@map("discounts")
+}
+
+/// One redemption, written when an order is paid for — what the usage limits
+/// are counted from, and what the admin's usage report reads.
+model DiscountUse {
+  id         String   @id @default(cuid())
+  discountId String
+  discount   Discount @relation(fields: [discountId], references: [id], onDelete: Cascade)
+  code       String   @db.VarChar(40)
+  email      String   @db.VarChar(160)
+  reference  String   @db.VarChar(32)
+  amount     Decimal  @db.Decimal(10, 2)
+  createdAt  DateTime @default(now())
+
+  @@index([discountId, createdAt])
+  @@index([email])
+  @@map("discount_uses")
+}
+
 model ShopOrder {
   id           String           @id @default(cuid())
   reference    String           @unique @db.VarChar(32)
@@ -559,6 +627,8 @@ model ShopOrder {
   shipTo       Json?
   notes        String?          @db.Text
   subtotal     Decimal          @db.Decimal(10, 2)
+  discountCode String?          @db.VarChar(40)
+  discount     Decimal          @default(0) @db.Decimal(10, 2)
   shipping     Decimal          @default(0) @db.Decimal(10, 2)
   total        Decimal          @db.Decimal(10, 2)
   currency     String           @default("USD") @db.VarChar(8)

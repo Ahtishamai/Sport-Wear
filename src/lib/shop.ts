@@ -1,6 +1,14 @@
 import 'server-only';
 import { prisma } from './db';
 import { activeTier, tierLabel, unitPriceFor, type VolumeTier } from './utils';
+import {
+  applyDiscount,
+  discountProblem,
+  normalizeCode,
+  type AppliedDiscount,
+  type DiscountableLine,
+  type DiscountRule,
+} from './discount';
 import { DEFAULT_TIERS } from './utils';
 
 /**
@@ -55,6 +63,9 @@ export type PricedShopCart = {
   currency: string;
   lines: PricedShopLine[];
   subtotal: number;
+  /** Set when a code was accepted; `discountError` says why when it was not. */
+  discount?: AppliedDiscount;
+  discountError?: string;
   shipping: number;
   total: number;
 };
@@ -65,14 +76,67 @@ export const TEAM_MINIMUM = 10;
 const money = (n: number) => Math.round(n * 100) / 100;
 const clean = (v: unknown, max: number) => String(v ?? '').trim().slice(0, max);
 
-export async function priceShopCart(lines: ShopLineInput[], currency = 'USD'): Promise<PricedShopCart> {
+/**
+ * Reads a code and judges it against this cart.
+ *
+ * Called from pricing, so the cart page and the order both go through the
+ * same gate. `email` is only known at checkout; without it the per-customer
+ * limit is left for that second pass rather than guessed at.
+ */
+export async function resolveDiscount(
+  rawCode: unknown,
+  cart: { subtotal: number; lines: DiscountableLine[] },
+  email?: string
+): Promise<{ applied?: AppliedDiscount; error?: string; rule?: DiscountRule }> {
+  const code = normalizeCode(rawCode);
+  if (!code) return {};
+
+  const row = await prisma.discount.findUnique({ where: { code } });
+  const rule: DiscountRule | null = row
+    ? {
+        id: row.id,
+        code: row.code,
+        label: row.label,
+        kind: row.kind as DiscountRule['kind'],
+        value: Number(row.value),
+        scope: row.scope as DiscountRule['scope'],
+        targets: Array.isArray(row.targets) ? (row.targets as string[]) : [],
+        minSubtotal: row.minSubtotal === null ? null : Number(row.minSubtotal),
+        usageLimit: row.usageLimit,
+        perEmailLimit: row.perEmailLimit,
+        usedCount: row.usedCount,
+        startsAt: row.startsAt,
+        endsAt: row.endsAt,
+        active: row.active,
+      }
+    : null;
+
+  const usesByEmail =
+    rule && email && rule.perEmailLimit !== null
+      ? await prisma.discountUse.count({ where: { discountId: rule.id, email: email.toLowerCase() } })
+      : undefined;
+
+  const problem = discountProblem(rule, { ...cart, usesByEmail });
+  if (problem || !rule) return { error: problem ?? 'That code is not one of ours.' };
+
+  return { applied: applyDiscount(rule, cart.lines), rule };
+}
+
+export async function priceShopCart(
+  lines: ShopLineInput[],
+  currency = 'USD',
+  opts: { code?: unknown; email?: string } = {}
+): Promise<PricedShopCart> {
   if (!Array.isArray(lines) || lines.length === 0) throw new ShopError('Your cart is empty.');
   if (lines.length > 50) throw new ShopError('That is too many different items for one order.');
 
   const ids = [...new Set(lines.map((l) => clean(l.productId, 191)).filter(Boolean))];
   const products = await prisma.product.findMany({
     where: { id: { in: ids }, status: 'PUBLISHED' },
-    include: { images: { orderBy: { position: 'asc' }, take: 1 } },
+    include: {
+      images: { orderBy: { position: 'asc' }, take: 1 },
+      collections: { select: { collection: { select: { handle: true } } } },
+    },
   });
   const byId = new Map(products.map((p) => [p.id, p]));
 
@@ -145,7 +209,26 @@ export async function priceShopCart(lines: ShopLineInput[], currency = 'USD'): P
   const subtotal = money(priced.reduce((sum, l) => sum + l.lineTotal, 0));
   // Shipping is included — the banner on every page promises it.
   const shipping = 0;
-  return { currency, lines: priced, subtotal, shipping, total: money(subtotal + shipping) };
+
+  // Which collections each line belongs to, so a code limited to one of them
+  // can tell what it covers.
+  const forDiscount: DiscountableLine[] = priced.map((l) => ({
+    productHandle: l.handle,
+    lineTotal: l.lineTotal,
+    collectionHandles: (byId.get(l.productId)?.collections ?? []).map((c) => c.collection.handle),
+  }));
+  const { applied, error } = await resolveDiscount(opts.code, { subtotal, lines: forDiscount }, opts.email);
+
+  const off = applied?.amount ?? 0;
+  return {
+    currency,
+    lines: priced,
+    subtotal,
+    discount: applied,
+    discountError: error,
+    shipping,
+    total: money(Math.max(0, subtotal - off) + shipping),
+  };
 }
 
 /** Which tier a quantity falls in, for showing the saving on the cart page. */

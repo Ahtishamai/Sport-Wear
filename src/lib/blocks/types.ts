@@ -18,6 +18,8 @@ export type FieldType =
   | 'textarea'
   | 'number'
   | 'boolean'
+  /** A moment, entered as a local date and time. */
+  | 'datetime'
   | 'select'
   | 'color'
   | 'image'

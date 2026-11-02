@@ -70,6 +70,38 @@ export async function POST(req: Request) {
       },
     });
 
+    // A code counts as used when it is paid for, not when it is typed: an
+    // abandoned checkout must not eat one of a limited run. Recorded inside
+    // a transaction with the counter, and never allowed to fail the order —
+    // the money is already taken.
+    if (order.discountCode && Number(order.discount) > 0) {
+      try {
+        const rule = await prisma.discount.findUnique({
+          where: { code: order.discountCode },
+          select: { id: true },
+        });
+        if (rule) {
+          await prisma.$transaction([
+            prisma.discountUse.create({
+              data: {
+                discountId: rule.id,
+                code: order.discountCode,
+                email: (order.email || capture.payerEmail || '').toLowerCase().slice(0, 160),
+                reference: order.reference,
+                amount: order.discount,
+              },
+            }),
+            prisma.discount.update({
+              where: { id: rule.id },
+              data: { usedCount: { increment: 1 } },
+            }),
+          ]);
+        }
+      } catch (e) {
+        console.error('[shop/capture] discount use not recorded:', e);
+      }
+    }
+
     // The money is taken and the order is paid; a mail server that is down is
     // something to fix later, not a failed checkout for someone just charged.
     await sendShopOrderEmailQuietly(order.id);

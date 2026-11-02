@@ -49,7 +49,14 @@ export async function POST(req: Request) {
       return json({ error: 'Online payment is not available right now. Ask us for a quote instead.' }, 503);
     }
 
-    const cart = await priceShopCart((body?.lines ?? []) as ShopLineInput[], cfg.currency);
+    // The code is judged again here, with the email this time, so a code
+    // that expired, ran out or hit its per-customer limit between the cart
+    // and this moment is not honoured because the browser still had it.
+    const cart = await priceShopCart((body?.lines ?? []) as ShopLineInput[], cfg.currency, {
+      code: body?.code,
+      email,
+    });
+    if (cart.discountError) return badRequest(cart.discountError);
     const reference = await nextShopReference();
 
     const paypalOrderId = await createPayPalOrder({
@@ -68,6 +75,8 @@ export async function POST(req: Request) {
         shipTo,
         notes: notes || null,
         subtotal: cart.subtotal,
+        discountCode: cart.discount?.code ?? null,
+        discount: cart.discount?.amount ?? 0,
         shipping: cart.shipping,
         total: cart.total,
         currency: cart.currency,
@@ -121,7 +130,9 @@ export async function PUT(req: Request) {
     return badRequest('Invalid request.');
   }
   try {
-    const cart = await priceShopCart((body?.lines ?? []) as ShopLineInput[]);
+    const cart = await priceShopCart((body?.lines ?? []) as ShopLineInput[], 'USD', {
+      code: body?.code,
+    });
     return json({ ok: true, ...cart });
   } catch (err) {
     if (err instanceof ShopError) return json({ error: err.message }, err.status);

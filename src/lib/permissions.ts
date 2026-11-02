@@ -40,9 +40,9 @@ export const AREAS: Area[] = [
   {
     key: 'catalog',
     label: 'Catalogue',
-    description: 'Products, collections and team packages.',
-    resources: ['products', 'collections', 'packages'],
-    paths: ['/admin/products', '/admin/collections', '/admin/packages'],
+    description: 'Products, collections, team packages and discount codes.',
+    resources: ['products', 'collections', 'packages', 'discounts'],
+    paths: ['/admin/products', '/admin/collections', '/admin/packages', '/admin/discounts'],
   },
   {
     key: 'content',

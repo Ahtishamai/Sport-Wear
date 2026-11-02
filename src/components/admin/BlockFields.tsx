@@ -224,6 +224,22 @@ function FieldControl({
         />
       );
 
+    case 'datetime':
+      return (
+        <div>
+          {label}
+          <Input
+            id={id}
+            type="datetime-local"
+            // The value is stored as an ISO instant; the input wants a local
+            // wall clock, so the seconds and the zone are trimmed off.
+            value={typeof value === 'string' && value ? value.slice(0, 16) : ''}
+            onChange={(e) => onChange(e.target.value || null)}
+          />
+          {help}
+        </div>
+      );
+
     case 'link':
       return (
         <div>

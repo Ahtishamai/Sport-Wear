@@ -76,6 +76,47 @@ async function checkCollectionParents(parentIds: string[], selfId?: string) {
 }
 
 /**
+ * Tidies and checks a discount before it is saved.
+ *
+ * The code itself is forced to upper case with the spaces taken out, so
+ * "spring 25" and "SPRING25" are the same code and a customer cannot miss
+ * by a space. Returns a message when the row makes no sense.
+ */
+function checkDiscount(data: Record<string, any>): string | null {
+  if ('code' in data) {
+    const code = String(data.code ?? '')
+      .trim()
+      .toUpperCase()
+      .replace(/\s+/g, '')
+      .slice(0, 40);
+    if (!code) return 'A discount needs a code for the customer to type.';
+    if (!/^[A-Z0-9][A-Z0-9_-]*$/.test(code)) {
+      return 'A code can use letters, numbers, dashes and underscores.';
+    }
+    data.code = code;
+  }
+
+  if ('value' in data) {
+    const value = Number(data.value);
+    if (!Number.isFinite(value) || value <= 0) return 'How much it takes off must be above zero.';
+    if (data.kind === 'PERCENT' && value > 100) return 'A percentage cannot be more than 100.';
+  }
+
+  if (data.scope && data.scope !== 'ALL') {
+    const targets = Array.isArray(data.targets) ? data.targets.filter(Boolean) : [];
+    if (targets.length === 0) {
+      return 'Name at least one collection or product, or set it to apply to the whole order.';
+    }
+    data.targets = targets.map((t: unknown) => String(t).trim().toLowerCase());
+  }
+
+  if (data.startsAt && data.endsAt && new Date(data.startsAt) > new Date(data.endsAt)) {
+    return 'The end of the run cannot be before the start.';
+  }
+  return null;
+}
+
+/**
  * Sets which products are in a collection, from a list the editor sends.
  *
  * It is done here, against the collection, rather than by patching every
@@ -340,6 +381,11 @@ export async function POST(req: Request, ctx: Ctx) {
     if (resource === 'pages' && data.blocks === undefined) data.blocks = [];
     if (resource === 'products' && data.description === undefined) data.description = '';
 
+    if (resource === 'discounts') {
+      const wrong = checkDiscount(data);
+      if (wrong) return badRequest(wrong);
+    }
+
     const newParents = resource === 'collections' ? wantedParents(body) : undefined;
     if (newParents) {
       const wrong = await checkCollectionParents(newParents);
@@ -415,6 +461,11 @@ export async function PATCH(req: Request, ctx: Ctx) {
     }
 
     const data = coerce(cfg, body ?? {});
+
+    if (resource === 'discounts') {
+      const wrong = checkDiscount(data);
+      if (wrong) return badRequest(wrong);
+    }
 
     const nextParents = resource === 'collections' ? wantedParents(body) : undefined;
     if (nextParents) {
