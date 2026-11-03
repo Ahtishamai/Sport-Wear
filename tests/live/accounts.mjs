@@ -11,7 +11,7 @@ import { mkdtempSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
-import { findBrowser, shotsDir } from './shots.mjs';
+import { closeBrowser, findBrowser, shotsDir } from './shots.mjs';
 import { createHash } from 'node:crypto';
 
 const req = createRequire(process.cwd() + '/package.json');
@@ -513,7 +513,9 @@ try {
   console.log('  ERROR ' + e.stack);
 } finally {
   try { ws?.close(); } catch {}
-  try { edge?.kill(); } catch {}
+  // The browser is a tree of processes; closing the one we started would
+  // leave the rest holding memory. See shots.mjs.
+  try { closeBrowser(edge); } catch {}
   try { server?.kill(); } catch {}
   try {
     if (madeOrders.length) await db.shopOrder.deleteMany({ where: { id: { in: madeOrders } } });

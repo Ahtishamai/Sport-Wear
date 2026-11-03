@@ -5,6 +5,7 @@
  * and where that browser lives differs from one computer to the next — so it
  * is looked for here, in one place, instead of being typed into every script.
  */
+import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 
@@ -41,4 +42,30 @@ export function findBrowser() {
   throw new Error(
     'No Edge or Chrome found for the screenshot checks. Set LIVE_TEST_BROWSER to one.'
   );
+}
+
+/**
+ * Closes a browser and everything it started.
+ *
+ * A browser is a tree of processes — one per tab, per renderer, per GPU — and
+ * killing the one we spawned leaves the rest of them running, holding a
+ * couple of hundred megabytes each. Enough runs of the checks and the machine
+ * is out of memory, which is how this was found.
+ */
+export function closeBrowser(child) {
+  if (!child?.pid) return;
+  if (process.platform === 'win32') {
+    spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' });
+  } else {
+    try {
+      process.kill(-child.pid, 'SIGKILL');
+    } catch {
+      /* no process group; the plain kill below is the best we can do */
+    }
+  }
+  try {
+    child.kill();
+  } catch {
+    /* already gone */
+  }
 }

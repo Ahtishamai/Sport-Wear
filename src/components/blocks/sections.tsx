@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { HeroSlider, type HeroSlide } from './HeroSlider';
 import { RandomPick } from './RandomPick';
 import { cn } from '@/lib/utils';
+import { illustrationFor, isVector } from '@/lib/illustrations';
 import { Icon } from '@/components/site/Icon';
 import { QuoteButton } from '@/components/site/QuoteButton';
 import {
@@ -661,12 +662,18 @@ export function CollectionListBlock({
 // -------------------------------------------------------------------- conversion
 
 /**
- * The mark beside a step or a feature: an uploaded illustration when one is
- * picked, otherwise the line icon it has always used.
+ * The mark above a step or a feature.
  *
- * An illustration is shown whole and on nothing — no yellow chip, no frame —
- * because a drawing arrives with its own colours and shape, and boxing it in
- * a brand-coloured square fights both.
+ * Three ways of drawing it, in this order: a picture somebody uploaded for
+ * this item, the illustration that belongs to the icon name, and failing both
+ * the line glyph it has always used. The middle one is why every card on the
+ * site has a drawing without a word of content being re-typed — see
+ * lib/illustrations.ts.
+ *
+ * A drawing is shown whole and on nothing — no yellow chip, no frame — because
+ * it arrives with its own colours and its own circle, and boxing it in a
+ * brand-coloured square fights both. It is sized in CSS rather than pixels so
+ * that it comes down a size on a phone.
  */
 function BlockMark({
   icon,
@@ -679,21 +686,40 @@ function BlockMark({
   alt?: string;
   size: 'step' | 'feature' | 'large';
 }) {
-  const box = size === 'large' ? 72 : size === 'feature' ? 60 : 56;
+  const drawing = image || illustrationFor(icon);
+  const box =
+    size === 'large'
+      ? 'h-[68px] w-[68px] md:h-[80px] md:w-[80px]'
+      : size === 'feature'
+        ? 'h-[60px] w-[60px] md:h-[68px] md:w-[68px]'
+        : 'h-[56px] w-[56px] md:h-[64px] md:w-[64px]';
+  const described = alt ? `${alt} illustration` : '';
 
-  if (image) {
+  if (drawing) {
     return (
-      <span
-        className={cn('flex items-center justify-center', size === 'step' ? '' : 'mb-4')}
-        style={{ width: box, height: box }}
-      >
-        <Image
-          src={image}
-          alt={alt ? `${alt} illustration` : ''}
-          width={box * 2}
-          height={box * 2}
-          className="h-full w-full object-contain"
-        />
+      <span className={cn('flex items-center justify-center', box)}>
+        {isVector(drawing) ? (
+          // A drawing is the right shape at every size already, and the image
+          // optimiser will not serve SVG in any case.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={drawing}
+            alt={described}
+            width={96}
+            height={96}
+            loading="lazy"
+            decoding="async"
+            className="h-full w-full object-contain"
+          />
+        ) : (
+          <Image
+            src={drawing}
+            alt={described}
+            width={160}
+            height={160}
+            className="h-full w-full object-contain"
+          />
+        )}
       </span>
     );
   }
@@ -728,15 +754,21 @@ export function StepsBlock({ p, bid }: BlockComponentProps) {
         style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))' }}
       >
         {steps.map((s, i) => (
-          <div key={i}>
-            <div className="mb-5 flex items-center gap-3.5">
-              <span className="flex h-[34px] w-[34px] items-center justify-center bg-brand font-display text-[15px] font-black">
+          <div
+            key={i}
+            className="rounded-[20px] bg-brand-tint px-6 py-7 text-center md:px-7 md:py-8"
+          >
+            {/* The drawing leads, with the step number as a badge on it, so a
+                reader takes the order from the numbers and the meaning from
+                the picture. */}
+            <div className="relative mx-auto w-fit">
+              <BlockMark icon={s.icon} image={s.image} alt={s.title} size="step" />
+              <span className="absolute -right-2 -top-1 flex h-[26px] w-[26px] items-center justify-center rounded-full bg-ink font-display text-[13px] font-black text-white">
                 {i + 1}
               </span>
-              <BlockMark icon={s.icon} image={s.image} alt={s.title} size="step" />
             </div>
             <h3
-              className="font-display text-[19px] font-extrabold uppercase leading-tight"
+              className="mt-4 font-display text-[18px] font-extrabold uppercase leading-tight md:text-[19px]"
               {...edText(bid, `steps.${i}.title`)}
             >
               {s.title}
@@ -784,21 +816,26 @@ export function IconFeaturesBlock({ p, bid }: BlockComponentProps) {
           <div
             key={i}
             className={cn(
-              'border',
-              onDark ? 'border-white/12 bg-white/[.04]' : 'border-hairline bg-surface',
-              large ? 'px-8 py-9' : standard ? 'px-7 py-8' : 'px-6 py-7'
+              // A soft tint of the brand rather than a hairline box: the
+              // drawings carry their own white circle, and a card tinted
+              // behind them is what makes that circle read.
+              'rounded-[20px] text-center',
+              onDark ? 'border border-white/12 bg-white/[.04]' : 'bg-brand-tint',
+              large ? 'px-7 py-9 md:px-8' : standard ? 'px-6 py-8 md:px-7' : 'px-5 py-7 md:px-6'
             )}
           >
-            <BlockMark
-              icon={f.icon}
-              image={f.image}
-              alt={f.title}
-              size={large ? 'large' : 'feature'}
-            />
+            <div className="mx-auto w-fit">
+              <BlockMark
+                icon={f.icon}
+                image={f.image}
+                alt={f.title}
+                size={large ? 'large' : 'feature'}
+              />
+            </div>
             <h3
               className={cn(
-                'font-display font-extrabold uppercase leading-tight',
-                large ? 'text-[20px]' : standard ? 'text-[18px]' : 'text-[16px]',
+                'mt-4 font-display font-extrabold uppercase leading-tight',
+                large ? 'text-[19px] md:text-[20px]' : standard ? 'text-[17px] md:text-[18px]' : 'text-[16px]',
                 onDark && 'text-white'
               )}
               {...edText(bid, `items.${i}.title`)}
