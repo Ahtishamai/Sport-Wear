@@ -10,6 +10,17 @@ import { ProductDetail } from '@/components/site/ProductDetail';
 import { BlockRenderer } from '@/components/blocks/Renderer';
 import { ProductPlateCard, Section, SectionHeading } from '@/components/blocks/primitives';
 import { tierPrice } from '@/lib/utils';
+import {
+  SITE_URL,
+  echoesTitle,
+  pageDescription,
+  pageTitle,
+  plainText,
+  productDescription,
+} from '@/lib/seo';
+
+/** The product as the page reads it; `ProductDetail` here is the component. */
+type ProductRow = NonNullable<Awaited<ReturnType<typeof getProductByHandle>>>;
 
 export const revalidate = 300;
 
@@ -42,19 +53,68 @@ export async function generateMetadata({
   params: Promise<{ handle: string }>;
 }): Promise<Metadata> {
   const { handle } = await params;
-  const p = await getProductByHandle(handle);
+  const [p, s] = await Promise.all([getProductByHandle(handle), getSettings()]);
   if (!p) return {};
+
+  const title = pageTitle(p.seoTitle || p.title, s.siteName);
+  const description = productMeta(p, s.siteName, s.showPrices !== false);
+  const image = p.images[0]?.url;
+  const absolute = image && !/^https?:/i.test(image) ? `${SITE_URL}${image}` : image;
+
   return {
-    title: p.seoTitle || p.title,
-    description: p.seoDescription || p.description.slice(0, 160),
+    // The root layout appends the shop's name to every title; pageTitle has
+    // already decided whether it fits, so this one is final.
+    title: { absolute: title },
+    description,
     alternates: { canonical: `/products/${handle}` },
     openGraph: {
       type: 'website',
-      title: p.seoTitle || p.title,
-      description: p.seoDescription || p.description.slice(0, 160),
-      images: p.images[0] ? [p.images[0].url] : undefined,
+      title,
+      description,
+      url: `/products/${handle}`,
+      images: absolute ? [absolute] : undefined,
+    },
+    twitter: {
+      card: absolute ? 'summary_large_image' : 'summary',
+      title,
+      description,
+      images: absolute ? [absolute] : undefined,
     },
   };
+}
+
+/**
+ * The sentence under this product in a search result.
+ *
+ * What the shop typed wins. Then the product's own description, but only when
+ * there is enough of it to be a sentence — most of these are a repeat of the
+ * title, and a few name a different product altogether, which is how they were
+ * found. Failing both, one is built from what is true of this product.
+ */
+function productMeta(
+  p: ProductRow,
+  siteName: string,
+  pricesShown: boolean
+): string | undefined {
+  const priced = pricesShown && p.showPrice !== false;
+  const ladder = (p.volumeTiers ?? []).map((t) => tierPrice(p.basePrice, t)).filter((n) => n > 0);
+  const from = priced ? Math.min(...(ladder.length ? ladder : [p.basePrice])) : null;
+
+  // The typed description is only used when it is a sentence about this
+  // product rather than its name repeated — see echoesTitle.
+  const typed = plainText(p.description);
+  const worthShowing = typed.length >= 80 && !echoesTitle(typed, p.title);
+
+  return pageDescription(
+    p.seoDescription,
+    worthShowing ? typed : '',
+    productDescription({
+      title: p.title,
+      subtitle: p.subtitle,
+      sports: p.sports,
+      from,
+    })
+  );
 }
 
 export default async function ProductPage({ params }: { params: Promise<{ handle: string }> }) {
@@ -154,7 +214,9 @@ export default async function ProductPage({ params }: { params: Promise<{ handle
             '@context': 'https://schema.org',
             '@type': 'Product',
             name: product.title,
-            description: product.description,
+            // The same sentence the search result shows, so the rich result
+            // and the snippet under it do not describe different things.
+            description: productMeta(product, settings.siteName, settings.showPrices !== false),
             image: product.images.map((i) => (base ? `${base}${i.url}` : i.url)),
             brand: { '@type': 'Brand', name: settings.siteName },
             // A hidden price must stay hidden here too. Left in, the figure

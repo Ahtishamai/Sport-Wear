@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { breadcrumbLd, pageDescription, pageTitle } from '@/lib/seo';
+import {
+  breadcrumbLd,
+  echoesTitle,
+  pageDescription,
+  pageTitle,
+  plainText,
+  productDescription,
+} from '@/lib/seo';
 
 const SITE = 'Design Sportswear';
 
@@ -58,6 +65,112 @@ describe('a description', () => {
   it('gives nothing rather than a description too thin to help', () => {
     expect(pageDescription('short')).toBeUndefined();
     expect(pageDescription()).toBeUndefined();
+  });
+});
+
+describe('text taken out of markup', () => {
+  it('keeps the words and loses the tags', () => {
+    expect(plainText('<p>Crew neck <b>jersey</b></p>')).toBe('Crew neck jersey');
+  });
+
+  it('puts long whitespace back to one space', () => {
+    expect(plainText('  Crew \n\n  neck   jersey  ')).toBe('Crew neck jersey');
+  });
+
+  it('reads nothing as nothing', () => {
+    expect(plainText(null)).toBe('');
+    expect(plainText(undefined)).toBe('');
+  });
+});
+
+describe('a description built for a product', () => {
+  const jersey = {
+    title: 'Crew Neck Jerseys Fully customizable Design #10',
+    subtitle: null,
+    sports: ['Baseball', 'Softball', 'Other'],
+    from: 20,
+  };
+
+  it('leads with the product, so no two are the same', () => {
+    const one = productDescription(jersey);
+    const two = productDescription({ ...jersey, title: 'Backpack Design #5' });
+    expect(one).toContain('Crew Neck Jerseys Fully customizable Design #10');
+    expect(two).toContain('Backpack Design #5');
+    expect(one).not.toBe(two);
+  });
+
+  it('names the sports it is sold for', () => {
+    expect(productDescription(jersey)).toContain('baseball and softball');
+  });
+
+  it('does not print "other", which is what nobody chose', () => {
+    // Every product defaults to Baseball, Softball and Other, and "custom
+    // baseball, softball and other kit" reads like a half-filled form.
+    expect(productDescription(jersey)).not.toMatch(/\bother\b/i);
+    expect(productDescription({ ...jersey, sports: ['Other'] })).toContain('custom team kit');
+  });
+
+  it('quotes the bottom of the price ladder', () => {
+    expect(productDescription(jersey)).toContain('From $20 each.');
+  });
+
+  it('says nothing about price when the product shows none', () => {
+    const quiet = productDescription({ ...jersey, from: null });
+    expect(quiet).not.toMatch(/\$/);
+    expect(quiet).toMatch(/names and numbers/i);
+  });
+
+  it('gets the whole pitch in when the name leaves room', () => {
+    const short = productDescription({ ...jersey, title: 'Pinstripe jersey' });
+    expect(short).toMatch(/names and numbers/i);
+    expect(short).toContain('From $20 each.');
+    expect(short).toMatch(/mockup/i);
+    expect(short.length).toBeLessThanOrEqual(158);
+  });
+
+  it('fits in a search result, and ends on a full stop', () => {
+    const long = productDescription({
+      ...jersey,
+      title: 'Sublimated Two-Button Baseball Jersey With Piping And Contrast Sleeves, Design #14',
+    });
+    expect(long.length).toBeLessThanOrEqual(158);
+    expect(long.endsWith('.')).toBe(true);
+    // Trimmed by dropping whole promises, never by cutting one in half.
+    expect(long).not.toMatch(/…$/);
+  });
+
+  it('is long enough to be worth showing', () => {
+    expect(productDescription(jersey).length).toBeGreaterThan(110);
+  });
+
+  it('keeps a short subtitle, which is the one line written about it', () => {
+    const withSub = productDescription({ ...jersey, subtitle: 'Two-button placket, piped sleeves' });
+    expect(withSub).toContain('Two-button placket, piped sleeves.');
+  });
+});
+
+describe('a description that is only the name again', () => {
+  it('is recognised, however it was punctuated', () => {
+    expect(echoesTitle('Backpacks Design #1 - Fully Customizable', 'Backpacks Design #1  - Fully Customizable')).toBe(true);
+    expect(echoesTitle('backpacks design 1 fully customizable', 'Backpacks Design #1 - Fully Customizable')).toBe(true);
+  });
+
+  it('is recognised when it is the name plus a word or two', () => {
+    expect(echoesTitle('Crew Neck Jerseys', 'Crew Neck Jerseys Fully customizable Design #10')).toBe(true);
+  });
+
+  it('leaves a real sentence alone', () => {
+    expect(
+      echoesTitle(
+        'A two-button placket and piped sleeves, cut for a full season of play.',
+        'Crew Neck Jerseys Design #10'
+      )
+    ).toBe(false);
+  });
+
+  it('says nothing about an empty one either way', () => {
+    expect(echoesTitle('', 'Anything')).toBe(false);
+    expect(echoesTitle('Anything', '')).toBe(false);
   });
 });
 

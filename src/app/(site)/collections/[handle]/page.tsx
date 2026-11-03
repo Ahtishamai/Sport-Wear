@@ -2,12 +2,12 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { redirectAwayIfMoved } from '@/lib/not-found';
 import { prisma } from '@/lib/db';
-import { getCollectionByHandle } from '@/lib/queries';
+import { getCatalogFacets, getCollectionByHandle } from '@/lib/queries';
 import { CatalogView, type CatalogSearchParams } from '@/components/site/CatalogView';
 import { BlockRenderer } from '@/components/blocks/Renderer';
 import { PageHeaderBlock } from '@/components/blocks/sections';
 import { JsonLd } from '@/components/site/JsonLd';
-import { breadcrumbLd, pageDescription, pageTitle } from '@/lib/seo';
+import { SITE_URL, breadcrumbLd, pageDescription, pageTitle } from '@/lib/seo';
 import { getSettings } from '@/lib/settings';
 
 export const revalidate = 120;
@@ -28,8 +28,14 @@ export async function generateMetadata({
   params: Promise<{ handle: string }>;
 }): Promise<Metadata> {
   const { handle } = await params;
-  const [c, s] = await Promise.all([getCollectionByHandle(handle), getSettings()]);
+  const [c, s, facets] = await Promise.all([
+    getCollectionByHandle(handle),
+    getSettings(),
+    // Already read once for every page and held; see lib/cache.ts.
+    getCatalogFacets(),
+  ]);
   if (!c) return {};
+  const stocked = facets.collections.find((f) => f.handle === handle)?.count ?? 0;
   const title = pageTitle(c.seoTitle || c.title, s.siteName);
   // A collection with nothing written about it still needs a sentence, or
   // Google writes one out of whatever text the page happens to start with.
@@ -39,11 +45,36 @@ export async function generateMetadata({
     c.subtitle,
     `Custom ${c.title.trim().toLowerCase()} from ${s.siteName} — sublimated in-house, names and numbers included, free digital mockup in 24 hours.`
   );
+  const banner = c.bannerUrl && !/^https?:/i.test(c.bannerUrl) ? `${SITE_URL}${c.bannerUrl}` : c.bannerUrl;
+
   return {
     title: { absolute: title },
     description,
     alternates: { canonical: `/collections/${handle}` },
-    openGraph: { title, description, images: c.bannerUrl ? [c.bannerUrl] : undefined },
+    openGraph: {
+      type: 'website',
+      title,
+      description,
+      url: `/collections/${handle}`,
+      images: banner ? [banner] : undefined,
+    },
+    twitter: {
+      card: banner ? 'summary_large_image' : 'summary',
+      title,
+      description,
+      images: banner ? [banner] : undefined,
+    },
+    /*
+     * A shelf with nothing on it is asked not to be indexed.
+     *
+     * Three collections are set up ahead of the products that will fill them.
+     * Indexed empty, they are the thin page a search engine counts against
+     * the whole site — and a visitor who lands on one sees nothing for sale.
+     * Links are still followed, and the moment a product is filed here the
+     * page indexes itself again, because this is read from the live count
+     * rather than a flag somebody has to remember to turn off.
+     */
+    robots: stocked === 0 ? { index: false, follow: true } : undefined,
   };
 }
 
