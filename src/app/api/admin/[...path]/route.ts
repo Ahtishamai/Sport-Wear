@@ -1,4 +1,5 @@
 import { revalidatePath } from 'next/cache';
+import { bustResource } from '@/lib/cache';
 import { prisma, plain } from '@/lib/db';
 import { badRequest, forbidden, json, serverError, unauthorized } from '@/lib/api';
 import { getAccessor, hashPassword } from '@/lib/auth';
@@ -219,7 +220,14 @@ async function syncCollectionParents(id: string, parentIds: string[]) {
   ]);
 }
 
-function bump(cfg: ResourceConfig, row: Record<string, any>) {
+/**
+ * Puts a write through to what the public sees: the rendered pages that show
+ * this record, and the shared answers those pages are drawn from. Clearing
+ * one without the other leaves a page to be drawn again from the same stale
+ * reads — see lib/cache.ts.
+ */
+function bump(resource: string, cfg: ResourceConfig, row: Record<string, any>) {
+  bustResource(resource);
   for (const p of cfg.revalidate(row)) {
     try {
       revalidatePath(p);
@@ -362,7 +370,7 @@ export async function POST(req: Request, ctx: Ctx) {
           })
         )
       );
-      bump(cfg, order[0] ?? {});
+      bump(resource, cfg, order[0] ?? {});
       return json({ ok: true });
     }
 
@@ -385,6 +393,7 @@ export async function POST(req: Request, ctx: Ctx) {
             })),
         }),
       ]);
+      bustResource('nav');
       revalidatePath('/', 'layout');
       return json({ ok: true });
     }
@@ -430,7 +439,7 @@ export async function POST(req: Request, ctx: Ctx) {
     if (resource === 'products') await syncProductRelations(row.id, body);
     if (resource === 'pages') await snapshot(row.id, row.blocks, user.id, 'Created');
 
-    bump(cfg, row);
+    bump(resource, cfg, row);
     return json({ item: plain(row) }, 201);
   } catch (err) {
     return handleWriteError(err);
@@ -536,8 +545,8 @@ export async function PATCH(req: Request, ctx: Ctx) {
       await snapshot(id, row.blocks, user.id, body?.revisionLabel);
     }
 
-    bump(cfg, row);
-    if (resource === 'pages' && existing.slug !== row.slug) bump(cfg, existing);
+    bump(resource, cfg, row);
+    if (resource === 'pages' && existing.slug !== row.slug) bump(resource, cfg, existing);
 
     return json({ item: plain(row) });
   } catch (err) {
@@ -603,7 +612,7 @@ export async function DELETE(_req: Request, ctx: Ctx) {
     // to it. A media file's bytes stay until it is deleted forever from Trash.
     const moved = await moveToTrash(resource, id, { id: user.id, name: user.name || user.email });
 
-    bump(cfg, full);
+    bump(resource, cfg, full);
     return json({ ok: true, trashed: { id: moved.trashId, label: moved.label, detail: moved.detail } });
   } catch (err) {
     if (err instanceof TrashError) return json({ error: err.message }, err.status);

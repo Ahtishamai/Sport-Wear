@@ -2,6 +2,7 @@ import 'server-only';
 import { permanentRedirect, redirect } from 'next/navigation';
 import { prisma } from './db';
 import { matchRedirect, normalizePath, type RedirectKind } from './redirects';
+import { shared } from './cache';
 
 /**
  * What to do about an address the site could not answer.
@@ -22,26 +23,36 @@ import { matchRedirect, normalizePath, type RedirectKind } from './redirects';
 
 export type MissingPath = { to: string; permanent: boolean };
 
+type Rule = { from: string; to: string; kind: RedirectKind };
+
+/**
+ * Every rule there is, read once rather than once per lost visitor.
+ *
+ * A crawler that has found a hundred bad links asks a hundred times in a row,
+ * and the answer is the same every time until somebody saves a rule — which
+ * clears this. There are only ever a handful of rules, so the whole list is
+ * cheaper to hold than a query per address. A database that cannot be reached
+ * leaves the visitor a 404 to read rather than a crash on top of the page
+ * they could not have.
+ */
+const activeRules = shared(
+  'redirects',
+  ['redirects'],
+  async (): Promise<Rule[]> =>
+    prisma.redirect.findMany({
+      where: { active: true },
+      select: { from: true, to: true, kind: true },
+    }),
+  []
+);
+
 /** The rule that answers this address, if there is one. */
 export async function redirectFor(path: string): Promise<MissingPath | null> {
   const here = normalizePath(path);
   if (here === '/' || here.length > 500) return null;
 
-  try {
-    // One round trip: the address itself, plus every wildcard rule, which the
-    // matcher then narrows. There are only ever a handful of wildcards.
-    const rules = await prisma.redirect.findMany({
-      where: { active: true, OR: [{ from: here }, { from: { endsWith: '/*' } }] },
-      select: { from: true, to: true, kind: true },
-    });
-    const hit = matchRedirect(here, rules as { from: string; to: string; kind: RedirectKind }[]);
-    return hit ? { to: hit.to, permanent: hit.rule.kind === 'PERMANENT' } : null;
-  } catch (err) {
-    // A database that is briefly unreachable must still leave the visitor a
-    // 404 to read, rather than a crash on top of the page they could not have.
-    console.error('[redirects]', err);
-    return null;
-  }
+  const hit = matchRedirect(here, await activeRules());
+  return hit ? { to: hit.to, permanent: hit.rule.kind === 'PERMANENT' } : null;
 }
 
 /**

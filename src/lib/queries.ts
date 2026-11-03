@@ -1,6 +1,7 @@
 import 'server-only';
 import { cache } from 'react';
 import { prisma } from './db';
+import { shared } from './cache';
 import type { CardPackage, CardProduct } from '@/components/blocks/primitives';
 import type { CollectionCard, ReviewItem } from '@/components/blocks/sections';
 import type { FaqItem } from '@/components/blocks/FaqBlock';
@@ -212,7 +213,18 @@ type NavNode = CollectionNode & { showInNav: boolean };
  * is filed in both the parent and a child, so the number beside the link is
  * the number of products the page actually lists.
  */
-const publishedCollections = cache(async (): Promise<NavNode[]> => {
+const publishedCollections = cache(
+  shared(
+    'collections',
+    // The counts come from the products as much as the collections, so a
+    // product being published or filed elsewhere has to clear this too.
+    ['collections', 'products'],
+    readPublishedCollections,
+    []
+  )
+);
+
+async function readPublishedCollections(): Promise<NavNode[]> {
   const [rows, links] = await Promise.all([
     prisma.collection.findMany({
       where: PUBLISHED,
@@ -253,7 +265,7 @@ const publishedCollections = cache(async (): Promise<NavNode[]> => {
       showInNav: c.showInNav,
     };
   });
-});
+}
 
 /**
  * Collections for the mobile menu, parents first with their children's ids.
@@ -419,7 +431,16 @@ export const getFaqs = cache(async (group = 'home'): Promise<FaqItem[]> => {
 
 // ------------------------------------------------------------------ navigation & pages
 
-export const getNav = cache(async () => {
+/**
+ * The menus, read once for every page rather than once per page. Empty menus
+ * are the fallback: a header with no links still draws, where a failure here
+ * would take down every page on the site at once.
+ */
+export const getNav = cache(
+  shared('nav', ['nav'], readNav, { header: [], footerShop: [], footerCompany: [] })
+);
+
+async function readNav() {
   const rows = await prisma.navItem.findMany({ orderBy: { position: 'asc' } });
   const pick = (menu: string): NavLink[] =>
     rows
@@ -430,7 +451,7 @@ export const getNav = cache(async () => {
     footerShop: pick('footer_shop'),
     footerCompany: pick('footer_company'),
   };
-});
+}
 
 export const getPage = cache(async (slug: string) => {
   const page = await prisma.page.findUnique({ where: { slug } });

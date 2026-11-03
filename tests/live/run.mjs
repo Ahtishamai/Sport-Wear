@@ -16,7 +16,7 @@
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 
-const ALL = ['redirects', 'discounts', 'accounts', 'keep-order'];
+const ALL = ['redirects', 'discounts', 'accounts', 'keep-order', 'capacity', 'freshness'];
 
 const asked = process.argv.slice(2).filter((a) => !a.startsWith('-'));
 const unknown = asked.filter((a) => !ALL.includes(a));

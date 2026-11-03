@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useShopCart, type NewShopLine } from '@/components/shop/CartProvider';
+import { useAddOnce, type NewShopLine } from '@/components/shop/CartProvider';
 import { Notice, SubmitButton, TextField, accountPost } from './AccountUi';
 
 /** Signing out, from anywhere. */
@@ -209,7 +209,7 @@ export function ReorderButton({
   missing: string[];
   className?: string;
 }) {
-  const { add } = useShopCart();
+  const addOnce = useAddOnce();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
 
@@ -229,8 +229,9 @@ export function ReorderButton({
         disabled={busy}
         className={className ?? 'btn btn-yellow btn-md'}
         onClick={() => {
+          // A second tap within the moment is the same tap; see useAddOnce.
+          if (!addOnce(lines)) return;
           setBusy(true);
-          add(lines);
           router.push('/cart');
         }}
       >

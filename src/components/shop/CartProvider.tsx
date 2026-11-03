@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 /**
  * The catalogue cart.
@@ -49,6 +49,36 @@ export function useShopCart() {
   const ctx = useContext(CartCtx);
   if (!ctx) throw new Error('useShopCart must be used inside ShopCartProvider');
   return ctx;
+}
+
+/**
+ * One press, one add.
+ *
+ * A button that disables itself while it works is not enough on its own: the
+ * attribute only lands after React has rendered again, and a thumb on a phone
+ * delivers its second tap before that. Without this, a double tap puts a
+ * team's whole size run in the cart twice — the cart does show it, but the
+ * person it is shown to has to notice, and the number they are quoted is
+ * wrong until they do.
+ *
+ * Returns false when the press was ignored, so the button can leave its "in
+ * the cart" flash alone rather than confirm something it did not do.
+ */
+export function useAddOnce() {
+  const { add } = useShopCart();
+  const last = useRef(0);
+  return useCallback(
+    (lines: NewShopLine[]) => {
+      const now = Date.now();
+      // Long enough to swallow a double tap, short enough that a second,
+      // deliberate add — which needs the form changing first — gets through.
+      if (now - last.current < 800) return false;
+      last.current = now;
+      add(lines);
+      return true;
+    },
+    [add]
+  );
 }
 
 /** Two of the same thing, chosen the same way, are one line with a bigger count. */

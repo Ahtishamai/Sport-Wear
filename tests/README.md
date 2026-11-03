@@ -42,6 +42,14 @@ looks. Screenshots land in `tests/live/.shots`, which git ignores.
 | `discounts` | Codes through the admin API and real cart pricing |
 | `accounts` | Sign-up, sign-in, verification, reset, order history |
 | `keep-order` | Claiming an order after checkout, the five ways of trying to claim someone else's, and the ratings in the page markup |
+| `capacity` | Fifty dead ends at once, thirty live pages at once, and a dead end in the middle of a full sweep of the catalogue — none of which may fail or wait on the database pool |
+| `freshness` | That a setting, a menu link and a redirect rule saved in the admin show on the site on the very next request, which is the price of holding those reads between pages |
+
+`capacity` is the only one that writes nothing at all, so it is the safe one
+to run at any time. It is also the one to run after anything that changes how
+a page reads from the database: the pool is two connections wide on purpose
+(`npm run db:limits` explains why), and the measurement that matters is how
+many questions a page asks, not how fast any one of them is.
 
 **Nothing here ever POSTs to a checkout.** `/api/shop/checkout` and
 `/api/store/checkout` take real money through PayPal; cart pricing is quoted

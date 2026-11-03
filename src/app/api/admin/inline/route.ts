@@ -1,4 +1,5 @@
 import { revalidatePath } from 'next/cache';
+import { bustResource } from '@/lib/cache';
 import { prisma } from '@/lib/db';
 import { badRequest, forbidden, json, serverError, unauthorized } from '@/lib/api';
 import { canUseArea, canUseResource } from '@/lib/permissions';
@@ -175,6 +176,7 @@ export async function POST(req: Request) {
           },
         });
 
+        bustResource('pages');
         revalidatePath(page.slug === 'home' ? '/' : `/${page.slug}`);
         if (page.slug === 'product-extras') revalidatePath('/products/[handle]', 'page');
         touched.push(page.slug);
@@ -211,6 +213,7 @@ export async function POST(req: Request) {
           );
         }
 
+        bustResource('collections');
         revalidatePath(`/collections/${col.handle}`);
         touched.push(`collections/${col.handle}`);
       }

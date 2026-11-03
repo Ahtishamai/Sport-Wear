@@ -1,6 +1,7 @@
 import 'server-only';
 import { cache } from 'react';
 import { prisma, plain } from './db';
+import { bustResource, shared } from './cache';
 
 export type SiteSettings = {
   siteName: string;
@@ -142,23 +143,27 @@ export const DEFAULT_SETTINGS: SiteSettings = {
 
 const SETTINGS_KEY = 'site';
 
-export const getSettings = cache(async (): Promise<SiteSettings> => {
-  try {
-    const row = await prisma.setting.findUnique({ where: { key: SETTINGS_KEY } });
-    if (!row) return DEFAULT_SETTINGS;
-    return { ...DEFAULT_SETTINGS, ...(plain(row.value) as Partial<SiteSettings>) };
-  } catch (err) {
-    // DB not reachable yet (first boot / no migration) — fall back to defaults.
-    // Log it: falling back silently makes a broken DATABASE_URL look like a
-    // content problem, because the whole site then renders with placeholder
-    // settings and nothing appears in the server log to say why.
-    console.error(
-      '[settings] could not read site settings, using defaults:',
-      err instanceof Error ? err.message : err
-    );
-    return DEFAULT_SETTINGS;
-  }
-});
+/**
+ * The site's own name, numbers and words, read once for every page.
+ *
+ * It is the same for every visitor and changes when somebody saves the
+ * settings screen, so it is held between requests and cleared by that save
+ * rather than fetched again by each page. A database that cannot be reached
+ * falls back to the last good answer, and to the defaults below if there has
+ * never been one — see lib/fallback.ts for why that is said out loud.
+ */
+export const getSettings = cache(
+  shared(
+    'settings',
+    ['settings'],
+    async (): Promise<SiteSettings> => {
+      const row = await prisma.setting.findUnique({ where: { key: SETTINGS_KEY } });
+      if (!row) return DEFAULT_SETTINGS;
+      return { ...DEFAULT_SETTINGS, ...(plain(row.value) as Partial<SiteSettings>) };
+    },
+    DEFAULT_SETTINGS
+  )
+);
 
 export async function saveSettings(patch: Partial<SiteSettings>) {
   const current = await getSettings();
@@ -168,5 +173,7 @@ export async function saveSettings(patch: Partial<SiteSettings>) {
     create: { key: SETTINGS_KEY, value },
     update: { value },
   });
+  // Every page is drawn from these, so the held answer goes with the save.
+  bustResource('settings');
   return value;
 }

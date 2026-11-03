@@ -14,7 +14,7 @@ import {
   unitPriceFor,
 } from '@/lib/utils';
 import { useQuote } from './QuoteProvider';
-import { useShopCart } from '@/components/shop/CartProvider';
+import { useAddOnce } from '@/components/shop/CartProvider';
 import { ImagePlaceholder } from '@/components/blocks/primitives';
 
 /** Team orders are made as a run, so they start at ten. */
@@ -92,7 +92,7 @@ export function ProductDetail({
   // A bag comes in one size, so a team buying them is asked how many, not
   // how many of each. A quote starts at one; a team order at ten.
   const [teamQty, setTeamQty] = useState(product.sellOnline ? TEAM_MINIMUM : 1);
-  const { add: addLines } = useShopCart();
+  const addLines = useAddOnce();
   const [added, setAdded] = useState(false);
 
   const hasSizes = product.sizes.length > 0;
@@ -188,11 +188,11 @@ export function ProductDetail({
       orderType: mode,
       unitPrice,
     };
-    addLines(
-      Object.entries(sizeRun)
-        .filter(([size, n]) => size && Number(n) > 0)
-        .map(([size, n]) => ({ ...common, size, quantity: Number(n) }))
-    );
+    const lines = Object.entries(sizeRun)
+      .filter(([size, n]) => size && Number(n) > 0)
+      .map(([size, n]) => ({ ...common, size, quantity: Number(n) }));
+    // A second tap within the moment is the same tap; see useAddOnce.
+    if (!addLines(lines)) return;
     setAdded(true);
     window.setTimeout(() => setAdded(false), 4000);
   };

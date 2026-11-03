@@ -441,6 +441,15 @@ try {
   check('  and the total', /\$100/.test(orderText ?? ''), 'no total');
   await shot('account-order.png');
 
+  // Start from a cart that is definitely empty, so what is counted below is
+  // this press and nothing that was in the cart already.
+  await ev(`localStorage.removeItem('ds-shop-cart')`);
+  await send('Page.navigate', { url: BASE + '/account/orders/' + linked.reference });
+  await waitFor(`/Order this again/i.test(document.body.textContent)`, 20000);
+  await sleep(900);
+  check('the cart is empty before ordering it again',
+    (await ev(`localStorage.getItem('ds-shop-cart') || '[]'`)) === '[]',
+    String(await ev(`localStorage.getItem('ds-shop-cart')`)));
   await ev(`[...document.querySelectorAll('button')].find(b => /Order this again/i.test(b.textContent))?.click()`);
   await waitFor(`/cart/i.test(location.pathname)`, 15000);
   await sleep(1500);

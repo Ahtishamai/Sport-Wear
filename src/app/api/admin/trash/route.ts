@@ -1,4 +1,5 @@
 import { revalidatePath } from 'next/cache';
+import { bustResource } from '@/lib/cache';
 import { getAccessor } from '@/lib/auth';
 import { prisma, plain } from '@/lib/db';
 import { badRequest, forbidden, json, serverError, unauthorized } from '@/lib/api';
@@ -77,6 +78,7 @@ async function refresh(resource: string, id: string) {
   const cfg = RESOURCES[resource];
   if (!cfg) return;
   const row = await (prisma[cfg.model] as any).findUnique({ where: { id }, include: cfg.include }).catch(() => null);
+  bustResource(resource);
   const paths = row ? cfg.revalidate(row) : [];
   if (resource === 'nav') paths.push('/');
   for (const p of [...paths, '/sitemap.xml']) {
