@@ -142,6 +142,15 @@ export default async function CollectionPage({
           ]}
         />
         <BlockRenderer blocks={blocks} />
+        {/* The catalogue view emits its own trail; this branch is not one. */}
+        <JsonLd
+          data={breadcrumbLd([
+            { name: 'Home', path: '/' },
+            { name: 'Collections', path: '/collections' },
+            ...(parent ? [{ name: parent.title, path: `/collections/${parent.handle}` }] : []),
+            { name: collection.title.trim(), path: `/collections/${handle}` },
+          ])}
+        />
       </>
     );
   }

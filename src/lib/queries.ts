@@ -132,6 +132,9 @@ export const getProductByHandle = cache(async (handle: string) => {
     basePrice: Number(p.basePrice),
     badge: p.badge,
     categoryLabel: p.categoryLabel,
+    // Empty on every product today; emitted in the product markup when a
+    // shop owner fills it in. See the dashboard's search-appearance card.
+    sku: p.sku,
     showPrice: p.showPrice,
     askTeamName: p.askTeamName,
     askNumber: p.askNumber,
@@ -418,6 +421,8 @@ export const getReviews = cache(async (limit = 12): Promise<ReviewItem[]> => {
     role: r.role,
     initials: r.initials,
     rating: r.rating,
+    // Just the day, for the review markup; the page itself prints no date.
+    date: r.createdAt.toISOString().slice(0, 10),
   }));
 });
 

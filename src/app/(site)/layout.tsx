@@ -6,6 +6,8 @@ import { AnnouncementBar, Header } from '@/components/site/Header';
 import { Footer } from '@/components/site/Footer';
 import { ScrollProgress, SiteEffects } from '@/components/site/SiteEffects';
 import { EditBar } from '@/components/site/EditBar';
+import { JsonLd } from '@/components/site/JsonLd';
+import { businessLd, websiteLd } from '@/lib/schema';
 
 export default async function SiteLayout({ children }: { children: React.ReactNode }) {
   const [settings, nav, collections] = await Promise.all([
@@ -46,30 +48,9 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
       <Footer settings={settings} shop={nav.footerShop} company={nav.footerCompany} />
       <EditBar />
 
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'LocalBusiness',
-            name: settings.siteName,
-            description: settings.defaultSeoDescription,
-            telephone: settings.phone,
-            email: settings.email,
-            address: { '@type': 'PostalAddress', streetAddress: settings.address },
-            url: process.env.NEXT_PUBLIC_SITE_URL,
-            /*
-             * No aggregateRating here.
-             *
-             * This runs on every page, including the cart and the checkout,
-             * where no review is shown at all. A rating has to match reviews
-             * the visitor can actually read on the page carrying it — so the
-             * real one is emitted by the reviews section itself, from the
-             * reviews it has just printed. See ReviewsBlock.
-             */
-          }),
-        }}
-      />
+      {/* One business and one site, declared once; see lib/schema.ts. */}
+      <JsonLd data={businessLd(settings)} />
+      <JsonLd data={websiteLd(settings.siteName)} />
     </QuoteProvider>
     </ShopCartProvider>
   );

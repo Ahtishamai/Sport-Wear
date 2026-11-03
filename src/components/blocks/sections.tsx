@@ -6,6 +6,8 @@ import { cn } from '@/lib/utils';
 import { illustrationFor, isVector } from '@/lib/illustrations';
 import { Icon } from '@/components/site/Icon';
 import { QuoteButton } from '@/components/site/QuoteButton';
+import { JsonLd } from '@/components/site/JsonLd';
+import { reviewedBusinessLd } from '@/lib/schema';
 import {
   BG_CLASS,
   edImage,
@@ -330,6 +332,8 @@ export type ReviewItem = {
   role: string;
   initials: string;
   rating: number;
+  /** The day it was left, as YYYY-MM-DD, for the review markup below. */
+  date?: string;
 };
 
 export function ReviewsBlock({
@@ -348,24 +352,20 @@ export function ReviewsBlock({
    * it renders — so it cannot drift from what a visitor reads, and deleting
    * a review in the admin changes both at once. Marking up a number that
    * nothing on the page supports is what earns a manual penalty.
+   *
+   * It is attached to the business, which is what these reviews are about:
+   * a rating on its own belongs to nothing, and a search engine can do
+   * nothing with it. The @id is the one the site layout declares, so the
+   * shop's name, address and rating are read as one business. The reviews
+   * themselves go with it, because the page prints them too.
    */
-  const scores = reviews.map((r) => Number(r.rating) || 5);
-  const average = Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10;
-
   return (
     <section data-reveal-root className="overflow-hidden bg-white py-[76px] md:py-[88px]">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'AggregateRating',
-            itemReviewed: { '@type': 'Organization', name: siteName },
-            ratingValue: average,
-            bestRating: 5,
-            reviewCount: reviews.length,
-          }),
-        }}
+      <JsonLd
+        data={reviewedBusinessLd(
+          siteName,
+          reviews.map((r) => ({ text: r.text, name: r.name, rating: r.rating, date: r.date }))
+        )}
       />
       <div className="gutter mb-10 text-center">
         <Eyebrow bid={bid} path="eyebrow">

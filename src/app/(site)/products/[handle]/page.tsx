@@ -10,8 +10,11 @@ import { ProductDetail } from '@/components/site/ProductDetail';
 import { BlockRenderer } from '@/components/blocks/Renderer';
 import { ProductPlateCard, Section, SectionHeading } from '@/components/blocks/primitives';
 import { tierPrice } from '@/lib/utils';
+import { JsonLd } from '@/components/site/JsonLd';
+import { productLd } from '@/lib/schema';
 import {
   SITE_URL,
+  breadcrumbLd,
   echoesTitle,
   pageDescription,
   pageTitle,
@@ -132,8 +135,6 @@ export default async function ProductPage({ params }: { params: Promise<{ handle
     getPage('product-extras'),
   ]);
 
-  const base = process.env.NEXT_PUBLIC_SITE_URL || '';
-
   // The site-wide setting and the product's own switch; either hides the price.
   const priced = settings.showPrices !== false && product.showPrice !== false;
 
@@ -207,72 +208,34 @@ export default async function ProductPage({ params }: { params: Promise<{ handle
         </Section>
       )}
 
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'Product',
-            name: product.title,
-            // The same sentence the search result shows, so the rich result
-            // and the snippet under it do not describe different things.
-            description: productMeta(product, settings.siteName, settings.showPrices !== false),
-            image: product.images.map((i) => (base ? `${base}${i.url}` : i.url)),
-            brand: { '@type': 'Brand', name: settings.siteName },
-            // A hidden price must stay hidden here too. Left in, the figure
-            // would still surface in Google's result for a product whose page
-            // says "Request a quote", which is worse than showing no price.
-            category: product.categoryLabel || undefined,
-            itemCondition: 'https://schema.org/NewCondition',
-            ...(priced
-              ? {
-                  offers: {
-                    '@type': 'AggregateOffer',
-                    priceCurrency: 'USD',
-                    // The ladder, not the headline figure: one shirt costs the
-                    // most and a big order the least, so the range a result
-                    // shows is "from $20 to $50" rather than "from $50".
-                    lowPrice: priceRange.low,
-                    highPrice: priceRange.high,
-                    offerCount: priceRange.count,
-                    availability: 'https://schema.org/InStock',
-                    url: `${base}/products/${product.handle}`,
-                  },
-                }
-              : {}),
-            /*
-             * No aggregateRating.
-             *
-             * Reviews on this site are about the shop, not about one jersey,
-             * so there is no honest figure to put here — and a number that
-             * cannot be traced to reviews on the page is the thing search
-             * engines take manual action over. The price ladder above is the
-             * rich result this page has earned.
-             */
-          }),
-        }}
+      <JsonLd
+        data={productLd({
+          handle: product.handle,
+          title: product.title,
+          // The same sentence the search result shows, so the rich result and
+          // the snippet under it do not describe different things.
+          description: productMeta(product, settings.siteName, settings.showPrices !== false),
+          images: product.images.map((i) => i.url),
+          sku: product.sku,
+          categoryLabel: product.categoryLabel,
+          sports: product.sports,
+          sizes: product.sizes,
+          colorways: product.colorways,
+          siteName: settings.siteName,
+          // A hidden price stays hidden here too: left in, the figure would
+          // surface in Google's result for a page that says "Request a quote".
+          price: priced ? priceRange : null,
+        })}
       />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'BreadcrumbList',
-            itemListElement: [
-              { name: 'Home', path: '/' },
-              { name: 'Collections', path: '/collections' },
-              // The collection it belongs to, when it has one: the trail a
-              // shopper walked, rather than a jump from the index.
-              ...(home ? [{ name: home.title.trim(), path: `/collections/${home.handle}` }] : []),
-              { name: product.title.trim(), path: `/products/${product.handle}` },
-            ].map((step, i) => ({
-              '@type': 'ListItem',
-              position: i + 1,
-              name: step.name,
-              item: `${base}${step.path}`,
-            })),
-          }),
-        }}
+      <JsonLd
+        data={breadcrumbLd([
+          { name: 'Home', path: '/' },
+          { name: 'Collections', path: '/collections' },
+          // The collection it belongs to, when it has one: the trail a
+          // shopper walked, rather than a jump from the index.
+          ...(home ? [{ name: home.title.trim(), path: `/collections/${home.handle}` }] : []),
+          { name: product.title.trim(), path: `/products/${product.handle}` },
+        ])}
       />
     </>
   );

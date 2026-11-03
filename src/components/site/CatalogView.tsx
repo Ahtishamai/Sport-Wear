@@ -6,6 +6,8 @@ import { getSettings } from '@/lib/settings';
 import { ProductCatalogCard } from '@/components/blocks/primitives';
 import { CatalogSidebar, CatalogToolbar } from './CatalogSidebar';
 import { QuoteButton } from './QuoteButton';
+import { JsonLd } from './JsonLd';
+import { collectionLd } from '@/lib/schema';
 
 export type CatalogSearchParams = {
   max?: string;
@@ -96,6 +98,20 @@ export async function CatalogView({
 
   return (
     <>
+      {/*
+        What is on this shelf, in the order it is shown.
+        Built from the list just rendered, so the markup and the page can
+        never disagree about which products are here or what they cost.
+      */}
+      <JsonLd
+        data={collectionLd({
+          path: handle === 'all' ? '/collections' : `/collections/${handle}`,
+          name: title,
+          description: intro,
+          products,
+          pricesShown: showPrice,
+        })}
+      />
       <section data-reveal-root className="gutter border-b border-hairline bg-surface pb-11 pt-9">
         <nav aria-label="Breadcrumb" className="mb-4">
           <ol className="flex flex-wrap items-center gap-1.5 text-[13px] font-medium text-muted">
