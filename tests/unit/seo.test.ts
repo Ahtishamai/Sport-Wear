@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   breadcrumbLd,
   echoesTitle,
@@ -186,5 +186,43 @@ describe('the trail above a page', () => {
     expect(ld.itemListElement[2].item).toBe(
       'https://design-sportswear.com/collections/baseball-uniform'
     );
+  });
+});
+
+describe('the site address used to build every other address', () => {
+  // SITE_URL is read once when the module loads, so each case needs a fresh
+  // import rather than just a changed variable.
+  const load = async (value?: string) => {
+    vi.resetModules();
+    if (value === undefined) delete process.env.NEXT_PUBLIC_SITE_URL;
+    else process.env.NEXT_PUBLIC_SITE_URL = value;
+    return (await import('@/lib/seo')).siteBase();
+  };
+
+  const original = process.env.NEXT_PUBLIC_SITE_URL;
+  afterEach(() => {
+    if (original === undefined) delete process.env.NEXT_PUBLIC_SITE_URL;
+    else process.env.NEXT_PUBLIC_SITE_URL = original;
+  });
+
+  it('drops a trailing slash, so nothing ends up with two', async () => {
+    expect(await load('https://design-sportswear.com/')).toBe('https://design-sportswear.com');
+  });
+
+  it('drops several, because a variable set by hand can carry more than one', async () => {
+    expect(await load('https://design-sportswear.com///')).toBe('https://design-sportswear.com');
+  });
+
+  it('leaves an address that was already clean alone', async () => {
+    expect(await load('https://design-sportswear.com')).toBe('https://design-sportswear.com');
+  });
+
+  it('still gives something usable when the variable is unset', async () => {
+    expect(await load(undefined)).toBe('http://localhost:3000');
+  });
+
+  it('builds a sitemap address with one slash in it', async () => {
+    const base = await load('https://design-sportswear.com/');
+    expect(`${base}/sitemap.xml`).toBe('https://design-sportswear.com/sitemap.xml');
   });
 });

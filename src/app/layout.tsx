@@ -3,6 +3,7 @@ import { Saira, Poppins } from 'next/font/google';
 import Script from 'next/script';
 import './globals.css';
 import { getSettings } from '@/lib/settings';
+import { siteBase } from '@/lib/seo';
 
 const saira = Saira({
   subsets: ['latin'],
@@ -20,7 +21,7 @@ const poppins = Poppins({
 
 export async function generateMetadata(): Promise<Metadata> {
   const s = await getSettings();
-  const base = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+  const base = siteBase();
   const chosen = s.favicon?.trim();
   const custom = chosen && chosen !== '/favicon.ico' ? chosen : null;
   return {

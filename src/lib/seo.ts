@@ -10,7 +10,20 @@ import 'server-only';
  * have chosen.
  */
 
-export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? '').replace(/\/$/, '');
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? '').replace(/\/+$/, '');
+
+/**
+ * The site's address with no trailing slash, and something usable when the
+ * variable is unset.
+ *
+ * Everywhere that builds an address writes `${base}/something`, so a variable
+ * set to "https://example.com/" quietly produces "https://example.com//about".
+ * Browsers and Google forgive that; a sitemap listing ninety of them, and a
+ * robots file pointing at one, are harder to forgive. The strip belongs here
+ * rather than at each call site, because the call sites that forgot it are
+ * exactly how this got into production.
+ */
+export const siteBase = (): string => SITE_URL || 'http://localhost:3000';
 
 /**
  * A page title that reads well in a result: the page's own words, with the

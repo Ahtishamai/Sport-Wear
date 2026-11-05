@@ -1,10 +1,11 @@
 import type { MetadataRoute } from 'next';
 import { prisma } from '@/lib/db';
+import { siteBase } from '@/lib/seo';
 
 export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+  const base = siteBase();
 
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: `${base}/`, changeFrequency: 'weekly', priority: 1 },

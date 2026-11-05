@@ -1,7 +1,8 @@
 import type { MetadataRoute } from 'next';
+import { siteBase } from '@/lib/seo';
 
 export default function robots(): MetadataRoute.Robots {
-  const base = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+  const base = siteBase();
   return {
     rules: [{ userAgent: '*', allow: '/', disallow: ['/admin', '/api'] }],
     sitemap: `${base}/sitemap.xml`,
