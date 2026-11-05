@@ -8,6 +8,7 @@ import { CatalogSidebar, CatalogToolbar } from './CatalogSidebar';
 import { QuoteButton } from './QuoteButton';
 import { JsonLd } from './JsonLd';
 import { collectionLd } from '@/lib/schema';
+import { faqPairs, leadHeading, parseRichText, type Span } from '@/lib/richtext';
 
 export type CatalogSearchParams = {
   max?: string;
@@ -19,16 +20,42 @@ export type CatalogSearchParams = {
 /**
  * The collection's own writing, printed after the products.
  *
- * Plain paragraphs, split on blank lines: the field is a textarea in the
- * admin, not an editor, so a shop owner can type into it without learning
- * anything, and nothing a shopper sees depends on them getting markup right.
+ * The field is still a plain textarea in the admin, so a shop owner can type
+ * into it without learning anything. It now understands a few marks as well
+ * (## heading, - list, a table, **bold**, a link), because a page meant to
+ * rank needs headings a search engine can read rather than one long run of
+ * paragraphs under a heading nobody chose. Nothing typed here can produce
+ * markup: see lib/richtext.ts.
  */
+function Spans({ spans }: { spans: Span[] }) {
+  return (
+    <>
+      {spans.map((s, i) =>
+        s.href ? (
+          <Link key={i} href={s.href} className="underline underline-offset-2 hover:text-ink">
+            {s.text}
+          </Link>
+        ) : s.bold ? (
+          <strong key={i} className="font-semibold text-ink">
+            {s.text}
+          </strong>
+        ) : (
+          <span key={i}>{s.text}</span>
+        )
+      )}
+    </>
+  );
+}
+
 function CollectionCopy({ text }: { text: string }) {
-  const paragraphs = text
-    .split(/\n{2,}/)
-    .map((p) => p.trim())
-    .filter(Boolean);
-  if (paragraphs.length === 0) return null;
+  const nodes = parseRichText(text);
+  if (nodes.length === 0) return null;
+
+  // The shop's own first heading titles the section. Only when it has not
+  // written one does the page fall back to a heading of its own.
+  const lead = leadHeading(nodes);
+  const body = lead && nodes[0]?.kind === 'h2' ? nodes.slice(1) : nodes;
+  const faqs = faqPairs(nodes);
 
   return (
     <section
@@ -37,13 +64,99 @@ function CollectionCopy({ text }: { text: string }) {
       data-reveal-root
     >
       <h2 id="collection-copy" className="h-display text-[22px] md:text-[26px]">
-        About this collection
+        {lead ?? 'About this collection'}
       </h2>
-      <div className="mt-4 max-w-[760px] space-y-4 text-[15px] leading-relaxed text-body md:text-[16px]">
-        {paragraphs.map((p, i) => (
-          <p key={i}>{p}</p>
-        ))}
+      <div className="mt-5 max-w-[800px] space-y-4 text-[15px] leading-relaxed text-body md:text-[16px]">
+        {body.map((node, i) => {
+          switch (node.kind) {
+            case 'h2':
+              return (
+                <h2 key={i} className="h-display !mt-9 text-[20px] md:text-[23px]">
+                  {node.text}
+                </h2>
+              );
+            case 'h3':
+              return (
+                <h3 key={i} className="!mt-7 font-display text-[16px] font-extrabold text-ink md:text-[17px]">
+                  {node.text}
+                </h3>
+              );
+            case 'list':
+              return node.ordered ? (
+                <ol key={i} className="list-decimal space-y-1.5 pl-5 marker:font-semibold marker:text-ink">
+                  {node.items.map((item, j) => (
+                    <li key={j}>
+                      <Spans spans={item} />
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <ul key={i} className="list-disc space-y-1.5 pl-5 marker:text-brand-text">
+                  {node.items.map((item, j) => (
+                    <li key={j}>
+                      <Spans spans={item} />
+                    </li>
+                  ))}
+                </ul>
+              );
+            case 'table':
+              return (
+                <div key={i} className="overflow-x-auto">
+                  <table className="w-full border-collapse text-left text-[14px]">
+                    <thead>
+                      <tr>
+                        {node.head.map((h, j) => (
+                          <th
+                            key={j}
+                            className="border-b-2 border-ink px-3 py-2 font-display text-[12px] font-extrabold uppercase tracking-[.08em] text-ink"
+                          >
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {node.rows.map((row, j) => (
+                        <tr key={j}>
+                          {row.map((cell, k) => (
+                            <td key={k} className="border-b border-hairline px-3 py-2 align-top">
+                              {cell}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            default:
+              return (
+                <p key={i}>
+                  <Spans spans={node.spans} />
+                </p>
+              );
+          }
+        })}
       </div>
+
+      {/*
+        The questions this page answers, marked up as questions. Built from
+        the headings above rather than typed twice, so the markup cannot
+        describe an answer the page does not print.
+      */}
+      {faqs.length >= 2 && (
+        <JsonLd
+          data={{
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: faqs.map((f) => ({
+              '@type': 'Question',
+              name: f.q,
+              acceptedAnswer: { '@type': 'Answer', text: f.a },
+            })),
+          }}
+        />
+      )}
     </section>
   );
 }
