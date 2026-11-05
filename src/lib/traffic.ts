@@ -318,6 +318,17 @@ export const CHANNEL_LABEL: Record<Channel, string> = {
   direct: 'Direct',
 };
 
+/** A tint per channel, so the same colour means the same thing everywhere. */
+export const CHANNEL_COLOR: Record<Channel, string> = {
+  organic: '#1F7A4D',
+  ai: '#7A3FD4',
+  ads: '#C2410C',
+  social: '#1D5FD1',
+  referral: '#8A7300',
+  search: '#0E7490',
+  direct: '#6B6D74',
+};
+
 /** The order they are listed in, loosely most valuable first. */
 export const CHANNEL_ORDER: Channel[] = [
   'organic',

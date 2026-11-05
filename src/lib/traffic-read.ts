@@ -1,6 +1,7 @@
 import 'server-only';
 import { prisma } from '@/lib/db';
 import { report, type Grain, type Period, type Report } from '@/lib/traffic-report';
+import { CHANNEL_ORDER, type Channel } from '@/lib/traffic';
 
 /**
  * Reading the traffic figures back out.
@@ -156,13 +157,80 @@ export async function readTraffic(now = new Date()): Promise<TrafficData> {
   };
 }
 
+/**
+ * Who is here now, and where today's visitors came from.
+ *
+ * Two queries, for the dashboard and for the number that keeps refreshing.
+ * The full report is six; this is the cheap version that can be asked for
+ * every half minute without spending the connection allowance.
+ */
+export type LiveSnapshot = {
+  visitors: number;
+  views: number;
+  today: { visitors: number; sessions: number; views: number };
+  channels: { channel: Channel; sessions: number; views: number }[];
+  /** False when the visits table has not been created yet. */
+  available: boolean;
+};
+
+const NOTHING: LiveSnapshot = {
+  visitors: 0,
+  views: 0,
+  today: { visitors: 0, sessions: 0, views: 0 },
+  channels: [],
+  available: false,
+};
+
+export async function readLiveSnapshot(now = new Date()): Promise<LiveSnapshot> {
+  const live0 = new Date(now.getTime() - 5 * 60_000);
+  const today0 = midnight(now, 0);
+
+  try {
+    const [counts, byChannel] = await Promise.all([
+      // Live and today in one pass, because both read the same rows.
+      prisma.$queryRaw<Record<string, bigint>[]>`
+        SELECT
+          COUNT(DISTINCT CASE WHEN at >= ${live0} THEN visitor END) AS live_visitors,
+          SUM(CASE WHEN at >= ${live0} THEN 1 ELSE 0 END) AS live_views,
+          COUNT(DISTINCT visitor) AS today_visitors,
+          COUNT(DISTINCT session) AS today_sessions,
+          COUNT(*) AS today_views
+        FROM visits
+        WHERE bot = 0 AND at >= ${today0}
+      `,
+      prisma.$queryRaw<{ channel: string; sessions: bigint; views: bigint }[]>`
+        SELECT channel, COUNT(DISTINCT session) AS sessions, COUNT(*) AS views
+        FROM visits
+        WHERE bot = 0 AND at >= ${today0}
+        GROUP BY channel
+      `,
+    ]);
+
+    const c = counts[0] ?? {};
+    const known = new Set<string>(CHANNEL_ORDER);
+    return {
+      visitors: n(c.live_visitors),
+      views: n(c.live_views),
+      today: {
+        visitors: n(c.today_visitors),
+        sessions: n(c.today_sessions),
+        views: n(c.today_views),
+      },
+      channels: CHANNEL_ORDER.map((channel) => {
+        const row = byChannel.find((r) => r.channel === channel);
+        return { channel, sessions: n(row?.sessions), views: n(row?.views) };
+      }).filter((r) => r.views > 0 || known.has(r.channel)),
+      available: true,
+    };
+  } catch {
+    // The table does not exist yet, or the database is refusing. Either way
+    // the dashboard carries on without a traffic panel.
+    return NOTHING;
+  }
+}
+
 /** Just the live number, for the dashboard tile. */
 export async function readLive(): Promise<{ visitors: number; views: number }> {
-  const live0 = new Date(Date.now() - 5 * 60_000);
-  const rows = await prisma.$queryRaw<{ visitors: bigint; views: bigint }[]>`
-    SELECT COUNT(DISTINCT visitor) AS visitors, COUNT(*) AS views
-    FROM visits
-    WHERE bot = 0 AND at >= ${live0}
-  `;
-  return { visitors: n(rows[0]?.visitors), views: n(rows[0]?.views) };
+  const snap = await readLiveSnapshot();
+  return { visitors: snap.visitors, views: snap.views };
 }

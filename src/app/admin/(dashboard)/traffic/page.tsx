@@ -1,24 +1,14 @@
 import Link from 'next/link';
 import { AdminPage, Card, Table, Td, Th } from '@/components/admin/ui';
 import { LiveVisitors } from '@/components/admin/LiveVisitors';
+import { CreateVisitsTable } from '@/components/admin/CreateVisitsTable';
 import { readTraffic } from '@/lib/traffic-read';
-import { CHANNEL_LABEL, type Channel } from '@/lib/traffic';
+import { CHANNEL_COLOR, CHANNEL_LABEL, type Channel } from '@/lib/traffic';
 import { PERIOD_LABEL, type Period, type Report } from '@/lib/traffic-report';
 
 export const dynamic = 'force-dynamic';
 
 const PERIODS: Period[] = ['today', 'yesterday', 'last7', 'last30'];
-
-/** A tint per channel, so the same colour means the same thing everywhere. */
-const CHANNEL_COLOR: Record<Channel, string> = {
-  organic: '#1F7A4D',
-  ai: '#7A3FD4',
-  ads: '#C2410C',
-  social: '#1D5FD1',
-  referral: '#8A7300',
-  search: '#0E7490',
-  direct: '#6B6D74',
-};
 
 export default async function TrafficPage({
   searchParams,
@@ -34,13 +24,15 @@ export default async function TrafficPage({
   } catch (err) {
     return (
       <AdminPage title="Traffic" description="Where visitors come from, counted by the shop itself.">
-        <Card title="Not reading yet">
-          <p className="text-[14px] text-[#6B6D74]">
-            The visits table could not be read. If the site has just been updated, the table may
-            not exist yet: run <code className="bg-[#F4F4F1] px-1.5 py-0.5">npm run db:push</code>{' '}
-            on the server once and this screen will fill itself in.
+        <Card title="One table still to make">
+          <p className="max-w-[640px] text-[14px] text-[#6B6D74]">
+            Counting needs a table called <code className="bg-[#F4F4F1] px-1.5 py-0.5">visits</code>,
+            and the database does not have one yet. Make it here, or run{' '}
+            <code className="bg-[#F4F4F1] px-1.5 py-0.5">npm run db:push</code> on the server if you
+            would rather do it yourself.
           </p>
-          <p className="mt-3 text-[12px] text-[#8A8C93]">{String(err).slice(0, 200)}</p>
+          <CreateVisitsTable />
+          <p className="mt-4 text-[12px] text-[#8A8C93]">{String(err).slice(0, 220)}</p>
         </Card>
       </AdminPage>
     );

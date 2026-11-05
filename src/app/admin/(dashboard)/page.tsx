@@ -3,7 +3,8 @@ import { prisma, plain } from '@/lib/db';
 import { AdminPage, Badge, Card, LinkButton, Table, Td, Th } from '@/components/admin/ui';
 import { money } from '@/lib/utils';
 import { getSettings } from '@/lib/settings';
-import { readLive } from '@/lib/traffic-read';
+import { readLiveSnapshot } from '@/lib/traffic-read';
+import { LiveTraffic } from '@/components/admin/LiveTraffic';
 import {
   bars,
   createdBetween,
@@ -194,7 +195,7 @@ export default async function Dashboard() {
     // Tolerated rather than awaited into the batch: on a server where the
     // visits table has not been created yet this is the one read that
     // fails, and it must not take the whole dashboard down with it.
-    readLive().catch(() => null),
+    readLiveSnapshot().catch(() => null),
   ]);
 
   // ---------------------------------------------------------------- money
@@ -407,7 +408,7 @@ export default async function Dashboard() {
     },
   ];
 
-  const trafficTile: Tile | null = live
+  const trafficTile: Tile | null = live?.available
     ? {
         label: 'On the site now',
         value: live.visitors,
@@ -415,7 +416,7 @@ export default async function Dashboard() {
         note:
           live.visitors > 0
             ? `${live.views} ${live.views === 1 ? 'page' : 'pages'} in the last 5 minutes`
-            : 'nobody in the last 5 minutes',
+            : `${live.today.visitors} ${live.today.visitors === 1 ? 'visitor' : 'visitors'} so far today`,
       }
     : null;
 
@@ -463,6 +464,31 @@ export default async function Dashboard() {
     >
       <Stats tiles={trafficTile ? [trafficTile, ...leadTiles] : leadTiles} />
       <Stats tiles={moneyTiles} />
+
+      {live?.available ? (
+        <Card
+          title="Traffic right now"
+          description="Live visitors, and what sent everybody who has arrived today."
+          className="mb-5"
+          actions={
+            <Link href="/admin/traffic" className="text-[12px] font-semibold hover:text-brand-text">
+              Full report →
+            </Link>
+          }
+        >
+          <LiveTraffic initial={live} />
+        </Card>
+      ) : (
+        <Card title="Traffic is not being counted yet" className="mb-5">
+          <p className="max-w-[640px] text-[14px] text-[#6B6D74]">
+            Visitor counting needs one table that the database does not have yet. Open{' '}
+            <Link href="/admin/traffic" className="font-semibold underline">
+              Traffic
+            </Link>{' '}
+            and press the button there, and this panel starts filling in straight away.
+          </p>
+        </Card>
+      )}
 
       <Card
         title={`The last ${WINDOW} days`}
