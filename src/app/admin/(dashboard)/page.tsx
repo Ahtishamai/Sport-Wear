@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { prisma, plain } from '@/lib/db';
 import { AdminPage, Badge, Card, LinkButton, Table, Td, Th } from '@/components/admin/ui';
-import { formatDateTime, money } from '@/lib/utils';
+import { money } from '@/lib/utils';
 import { getSettings } from '@/lib/settings';
 import {
   bars,
@@ -369,6 +369,9 @@ export default async function Dashboard() {
     }))
     .sort((a, b) => b.takings.total - a.takings.total);
 
+  /** Every quote so far has been logged without one; no point in a column of dashes. */
+  const showEstimates = recent.some((q) => q.estTotal != null && Number(q.estTotal) > 0);
+
   const leadTiles = [
     {
       label: 'Quotes to answer',
@@ -428,6 +431,7 @@ export default async function Dashboard() {
 
   return (
     <AdminPage
+      width="wide"
       title="Dashboard"
       description="Leads and money first. Everything waiting on you is in one list, and everything else is one click away."
       actions={
@@ -466,7 +470,7 @@ export default async function Dashboard() {
         inside set the column's width and the whole admin overflows instead
         of the table scrolling within its own card.
       */}
-      <div className="grid gap-5 lg:grid-cols-[1.6fr_1fr]">
+      <div className="grid gap-5 lg:grid-cols-[1.6fr_1fr] 2xl:grid-cols-[2fr_1fr]">
         <div className="min-w-0 space-y-5">
           <Card
             title="Latest quote requests"
@@ -485,7 +489,7 @@ export default async function Dashboard() {
                   <tr>
                     <Th>Team</Th>
                     <Th>Subject</Th>
-                    <Th>Estimate</Th>
+                    {showEstimates && <Th>Estimate</Th>}
                     <Th>Status</Th>
                     <Th>Received</Th>
                   </tr>
@@ -493,23 +497,25 @@ export default async function Dashboard() {
                 <tbody>
                   {plain(recent).map((q) => (
                     <tr key={q.id}>
-                      <Td>
+                      <Td className="min-w-[200px]">
                         <Link href={`/admin/quotes/${q.id}`} className="font-semibold hover:underline">
                           {q.team}
                         </Link>
                         <span className="block text-[12px] text-[#8A8C93]">{q.name}</span>
                       </Td>
-                      <Td className="max-w-[220px] truncate text-[13px]">{q.subject}</Td>
-                      <Td className="whitespace-nowrap text-[13px]">
-                        {q.estTotal ? money(Number(q.estTotal)) : '—'}
-                      </Td>
+                      <Td className="max-w-[320px] truncate text-[13px]">{q.subject}</Td>
+                      {showEstimates && (
+                        <Td className="whitespace-nowrap text-[13px]">
+                          {q.estTotal ? money(Number(q.estTotal)) : '—'}
+                        </Td>
+                      )}
                       <Td>
                         <Badge tone={STATUS_TONE[q.status as keyof typeof STATUS_TONE] ?? 'neutral'}>
                           {q.status.replace('_', ' ')}
                         </Badge>
                       </Td>
                       <Td className="whitespace-nowrap text-[12px] text-[#8A8C93]">
-                        {formatDateTime(q.createdAt)}
+                        {when(q.createdAt, now)}
                       </Td>
                     </tr>
                   ))}
@@ -555,7 +561,7 @@ export default async function Dashboard() {
                         </Link>
                         <span className="block text-[12px] text-[#8A8C93]">{o.who}</span>
                       </Td>
-                      <Td className="max-w-[180px] truncate text-[13px]">{o.where}</Td>
+                      <Td className="max-w-[220px] truncate text-[13px]">{o.where}</Td>
                       <Td className="whitespace-nowrap text-[13px] font-semibold">
                         {money(o.total)}
                       </Td>
@@ -565,7 +571,7 @@ export default async function Dashboard() {
                         </Badge>
                       </Td>
                       <Td className="whitespace-nowrap text-[12px] text-[#8A8C93]">
-                        {formatDateTime(o.at)}
+                        {when(o.at, now)}
                       </Td>
                     </tr>
                   ))}
@@ -784,23 +790,20 @@ function TodoList({ items }: { items: Todo[] }) {
  */
 function Chart({ series }: { series: Bar[] }) {
   const peak = Math.max(1, ...series.map((b) => Math.max(b.leads, b.orders)));
+  /** A day with one of something still has to be visible. */
+  const height = (n: number) => (n === 0 ? '0' : `max(5px, ${(n / peak) * 100}%)`);
+
   return (
     <div>
-      <div className="flex h-[128px] items-end gap-[2px]">
+      <div className="flex h-[132px] items-end gap-[3px] border-b border-[#E3E3DF]">
         {series.map((b) => (
           <div
             key={b.day}
-            className="flex h-full flex-1 items-end justify-center gap-[2px]"
+            className="group flex h-full flex-1 items-end justify-center gap-[2px]"
             title={`${b.label} — ${b.leads} ${b.leads === 1 ? 'request' : 'requests'}, ${b.orders} paid${b.taken ? ` (${money(b.taken)})` : ''}`}
           >
-            <span
-              className="w-full bg-ink"
-              style={{ height: `${Math.max(1, (b.leads / peak) * 100)}%` }}
-            />
-            <span
-              className="w-full bg-brand"
-              style={{ height: `${Math.max(1, (b.orders / peak) * 100)}%` }}
-            />
+            <span className="w-full bg-ink" style={{ height: height(b.leads) }} />
+            <span className="w-full bg-brand" style={{ height: height(b.orders) }} />
           </div>
         ))}
       </div>
@@ -813,7 +816,29 @@ function Chart({ series }: { series: Bar[] }) {
   );
 }
 
+
 // ------------------------------------------------------------------ helpers
+
+/**
+ * "Nov 5, 12:52 AM" — with the year only when it is not this one.
+ *
+ * The long form ran to "Nov 5, 2026, 12:52 AM", which on a laptop pushed the
+ * last column of every table off the edge of its card. Nobody reading a
+ * dashboard needs telling which year this week is in.
+ */
+function when(value: Date | string, now: Date): string {
+  // plain() is typed as returning what it was given, but it round-trips
+  // through JSON — so a field the type calls a Date arrives here as a
+  // string. Both have to work.
+  const d = value instanceof Date ? value : new Date(value);
+  return d.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    ...(d.getFullYear() === now.getFullYear() ? {} : { year: 'numeric' as const }),
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
 
 /**
  * "up 40% on 15 before" — or just the figure, when there is nothing to

@@ -13,15 +13,32 @@ export function AdminPage({
   actions,
   children,
   back,
+  width = 'normal',
 }: {
   title: string;
   description?: string;
   actions?: React.ReactNode;
   children: React.ReactNode;
   back?: { href: string; label: string };
+  /**
+   * How much of the screen to use.
+   *
+   * Most screens are a form or a list, and a line of text past about twelve
+   * hundred pixels is harder to read, not easier — so they stay narrow and
+   * centred. A screen that is mostly tables and figures side by side, like
+   * the dashboard, is given the whole window instead: on a wide monitor the
+   * cap left three hundred pixels of grey down each edge while the tables
+   * squeezed names onto five lines.
+   */
+  width?: 'normal' | 'wide';
 }) {
   return (
-    <div className="mx-auto w-full max-w-[1240px] px-5 py-8 md:px-8">
+    <div
+      className={cn(
+        'mx-auto w-full px-5 py-8 md:px-8',
+        width === 'wide' ? 'max-w-[2000px]' : 'max-w-[1240px]'
+      )}
+    >
       {back && (
         <Link
           href={back.href}
@@ -35,7 +52,7 @@ export function AdminPage({
           <h1 className="font-display text-[26px] font-black uppercase tracking-[-.01em]">
             {title}
           </h1>
-          {description && <p className="mt-1.5 max-w-[620px] text-[14px] text-[#6B6D74]">{description}</p>}
+          {description && <p className="mt-1.5 max-w-[760px] text-[14px] text-[#6B6D74]">{description}</p>}
         </div>
         {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
       </div>

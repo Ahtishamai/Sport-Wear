@@ -99,12 +99,12 @@ export function AdminShell({
     <div className="flex min-h-screen bg-[#F4F4F2]">
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 flex w-[248px] shrink-0 flex-col bg-ink text-white transition-transform lg:static lg:translate-x-0',
+          'fixed inset-y-0 left-0 z-50 flex w-[272px] shrink-0 flex-col bg-ink text-white transition-transform lg:static lg:translate-x-0',
           open ? 'translate-x-0' : '-translate-x-full'
         )}
       >
-        <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
-          <Link href="/admin" className="font-display text-[15px] font-black uppercase tracking-[.08em]">
+        <div className="flex items-center justify-between border-b border-white/10 px-5 py-[18px]">
+          <Link href="/admin" className="font-display text-[17px] font-black uppercase tracking-[.08em]">
             Design<span className="text-brand">SW</span>
           </Link>
           <button
@@ -120,7 +120,7 @@ export function AdminShell({
         <nav className="flex-1 overflow-y-auto px-3 py-5">
           {visibleNav.map((g) => (
             <div key={g.group} className="mb-6">
-              <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-[.16em] text-white/35">
+              <div className="px-3 pb-2 text-[11px] font-bold uppercase tracking-[.16em] text-white/40">
                 {g.group}
               </div>
               <ul className="space-y-0.5">
@@ -130,13 +130,13 @@ export function AdminShell({
                       href={it.href}
                       onClick={() => setOpen(false)}
                       className={cn(
-                        'flex items-center gap-2.5 rounded px-3 py-2 text-[13.5px] font-medium transition-colors',
+                        'flex items-center gap-2.5 rounded px-3 py-[9px] text-[15px] font-medium transition-colors',
                         isActive(it.href)
                           ? 'bg-brand text-ink'
                           : 'text-white/70 hover:bg-white/10 hover:text-white'
                       )}
                     >
-                      <Icon name={it.icon} size={16} />
+                      <Icon name={it.icon} size={18} />
                       {it.label}
                     </Link>
                   </li>
@@ -150,18 +150,18 @@ export function AdminShell({
           <Link
             href="/"
             target="_blank"
-            className="mb-3 flex items-center gap-2 text-[12.5px] font-medium text-white/70 hover:text-brand"
+            className="mb-3 flex items-center gap-2 text-[14px] font-medium text-white/70 hover:text-brand"
           >
-            <Icon name="arrowRight" size={14} />
+            <Icon name="arrowRight" size={16} />
             View the site
           </Link>
           <div className="flex items-center gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand text-[11px] font-bold text-ink">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-[12px] font-bold text-ink">
               {user.name.slice(0, 2).toUpperCase()}
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-[13px] font-semibold">{user.name}</span>
-              <span className="block truncate text-[11px] text-white/50">{user.role}</span>
+              <span className="block truncate text-[14px] font-semibold">{user.name}</span>
+              <span className="block truncate text-[12px] text-white/55">{user.role}</span>
             </span>
             <button
               type="button"
@@ -190,7 +190,7 @@ export function AdminShell({
           <button type="button" onClick={() => setOpen(true)} aria-label="Open menu" className="p-1">
             <Icon name="menu" size={22} />
           </button>
-          <span className="font-display text-[14px] font-black uppercase">Admin</span>
+          <span className="font-display text-[15px] font-black uppercase">Admin</span>
         </div>
         <div className="min-w-0 flex-1">
           <ToastProvider>
