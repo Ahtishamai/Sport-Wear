@@ -15,7 +15,10 @@ const NAV: {
 }[] = [
   {
     group: 'Overview',
-    items: [{ label: 'Dashboard', href: '/admin', icon: 'star' }],
+    items: [
+      { label: 'Dashboard', href: '/admin', icon: 'star' },
+      { label: 'Traffic', href: '/admin/traffic', icon: 'chart' },
+    ],
   },
   {
     group: 'Leads',

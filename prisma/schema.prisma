@@ -796,6 +796,44 @@ model NotFoundHit {
   @@map("not_found_hits")
 }
 
+/// One page view, as the shop counts them itself.
+///
+/// Kept first party because the question the shop actually asks is "how
+/// many people did ChatGPT send me", and Google Analytics answers that as
+/// "referral: chatgpt.com", filed next to every forum on the internet.
+///
+/// Nothing here identifies anybody. `visitor` is a hash of the address and
+/// browser with a salt that changes at midnight, so the same person is one
+/// visitor for one day and a different one tomorrow, and the hash cannot be
+/// turned back into an address. No cookie is set, and the admin's own
+/// browsing is never recorded.
+model Visit {
+  id       String  @id @default(cuid())
+  visitor  String  @db.VarChar(44)
+  /// Made in the tab and forgotten when it closes.
+  session  String  @db.VarChar(44)
+  path     String  @db.VarChar(512)
+  channel  String  @db.VarChar(16)
+  source   String  @db.VarChar(96)
+  medium   String? @db.VarChar(48)
+  campaign String? @db.VarChar(120)
+  referrer String? @db.VarChar(512)
+  device   String  @db.VarChar(8)
+  /// True for a robot, which is never counted as a visitor. `crawler` names
+  /// the assistant when the robot is one of theirs, because an AI reading
+  /// the shop is worth knowing about on its own.
+  bot      Boolean @default(false)
+  crawler  String? @db.VarChar(24)
+
+  at DateTime @default(now())
+
+  @@index([at])
+  @@index([bot, at])
+  @@index([channel, at])
+  @@index([session])
+  @@map("visits")
+}
+
 /// Someone who buys from the shop.
 ///
 /// Deliberately a different table from `User`, which is the admin. The two

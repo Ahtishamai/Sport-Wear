@@ -114,6 +114,10 @@ export function canUsePath(user: Accessor, pathname: string): boolean {
   if (pathname === '/admin' || pathname === '/admin/') return true;
   // Everyone gets Trash; it only lists what their own areas deleted.
   if (pathname === '/admin/trash') return true;
+  // Traffic is the dashboard's figures in more detail, and the dashboard is
+  // open to everyone who can sign in. Gating one and not the other would
+  // only mean a link in the menu that bounces whoever clicks it.
+  if (pathname === '/admin/traffic') return true;
   const areas = allowedAreas(user);
   for (const a of AREAS) {
     if (a.paths.some((p) => pathname === p || pathname.startsWith(p + '/'))) {

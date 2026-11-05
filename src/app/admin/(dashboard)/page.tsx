@@ -3,6 +3,7 @@ import { prisma, plain } from '@/lib/db';
 import { AdminPage, Badge, Card, LinkButton, Table, Td, Th } from '@/components/admin/ui';
 import { money } from '@/lib/utils';
 import { getSettings } from '@/lib/settings';
+import { readLive } from '@/lib/traffic-read';
 import {
   bars,
   createdBetween,
@@ -66,6 +67,7 @@ export default async function Dashboard() {
     deadEnds,
     bestSellers,
     settings,
+    live,
   ] = await Promise.all([
     // Leads over both windows, so this month can be put next to last month.
     prisma.quoteRequest.findMany({
@@ -189,6 +191,10 @@ export default async function Dashboard() {
       take: 6,
     }),
     getSettings(),
+    // Tolerated rather than awaited into the batch: on a server where the
+    // visits table has not been created yet this is the one read that
+    // fails, and it must not take the whole dashboard down with it.
+    readLive().catch(() => null),
   ]);
 
   // ---------------------------------------------------------------- money
@@ -401,6 +407,18 @@ export default async function Dashboard() {
     },
   ];
 
+  const trafficTile: Tile | null = live
+    ? {
+        label: 'On the site now',
+        value: live.visitors,
+        href: '/admin/traffic',
+        note:
+          live.visitors > 0
+            ? `${live.views} ${live.views === 1 ? 'page' : 'pages'} in the last 5 minutes`
+            : 'nobody in the last 5 minutes',
+      }
+    : null;
+
   const moneyTiles = [
     {
       label: `Taken — last ${WINDOW} days`,
@@ -443,7 +461,7 @@ export default async function Dashboard() {
         </>
       }
     >
-      <Stats tiles={leadTiles} />
+      <Stats tiles={trafficTile ? [trafficTile, ...leadTiles] : leadTiles} />
       <Stats tiles={moneyTiles} />
 
       <Card
@@ -723,7 +741,12 @@ type Tile = {
 
 function Stats({ tiles }: { tiles: Tile[] }) {
   return (
-    <div className="mb-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    // Auto-fitting rather than a fixed four, because one row holds five
+    // tiles when the site is being tracked and four when it is not.
+    <div
+      className="mb-3 grid gap-3"
+      style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))' }}
+    >
       {tiles.map((s) => (
         <Link
           key={s.label}

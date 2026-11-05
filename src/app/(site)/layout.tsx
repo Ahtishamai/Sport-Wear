@@ -6,6 +6,7 @@ import { AnnouncementBar, Header } from '@/components/site/Header';
 import { Footer } from '@/components/site/Footer';
 import { ScrollProgress, SiteEffects } from '@/components/site/SiteEffects';
 import { EditBar } from '@/components/site/EditBar';
+import { Beacon } from '@/components/site/Beacon';
 import { JsonLd } from '@/components/site/JsonLd';
 import { businessLd, websiteLd } from '@/lib/schema';
 
@@ -47,6 +48,8 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
       <main id="main">{children}</main>
       <Footer settings={settings} shop={nav.footerShop} company={nav.footerCompany} />
       <EditBar />
+      {/* Counts the view. Never runs in the admin, which is a layout of its own. */}
+      <Beacon />
 
       {/* One business and one site, declared once; see lib/schema.ts. */}
       <JsonLd data={businessLd(settings)} />
