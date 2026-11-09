@@ -63,100 +63,112 @@ function CollectionCopy({ text }: { text: string }) {
       className="gutter border-t border-hairline bg-surface py-12 md:py-16"
       data-reveal-root
     >
-      <h2 id="collection-copy" className="h-display text-[22px] md:text-[26px]">
-        {lead ?? 'About this collection'}
-      </h2>
-      <div className="mt-5 max-w-[800px] space-y-4 text-[15px] leading-relaxed text-body md:text-[16px]">
-        {body.map((node, i) => {
-          switch (node.kind) {
-            case 'h2':
-              return (
-                <h2 key={i} className="h-display !mt-9 text-[20px] md:text-[23px]">
-                  {node.text}
-                </h2>
-              );
-            case 'h3':
-              return (
-                <h3 key={i} className="!mt-7 font-display text-[16px] font-extrabold text-ink md:text-[17px]">
-                  {node.text}
-                </h3>
-              );
-            case 'list':
-              return node.ordered ? (
-                <ol key={i} className="list-decimal space-y-1.5 pl-5 marker:font-semibold marker:text-ink">
-                  {node.items.map((item, j) => (
-                    <li key={j}>
-                      <Spans spans={item} />
-                    </li>
-                  ))}
-                </ol>
-              ) : (
-                <ul key={i} className="list-disc space-y-1.5 pl-5 marker:text-brand-text">
-                  {node.items.map((item, j) => (
-                    <li key={j}>
-                      <Spans spans={item} />
-                    </li>
-                  ))}
-                </ul>
-              );
-            case 'table':
-              return (
-                <div key={i} className="overflow-x-auto">
-                  <table className="w-full border-collapse text-left text-[14px]">
-                    <thead>
-                      <tr>
-                        {node.head.map((h, j) => (
-                          <th
-                            key={j}
-                            className="border-b-2 border-ink px-3 py-2 font-display text-[12px] font-extrabold uppercase tracking-[.08em] text-ink"
-                          >
-                            {h}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {node.rows.map((row, j) => (
-                        <tr key={j}>
-                          {row.map((cell, k) => (
-                            <td key={k} className="border-b border-hairline px-3 py-2 align-top">
-                              {cell}
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              );
-            default:
-              return (
-                <p key={i}>
-                  <Spans spans={node.spans} />
-                </p>
-              );
-          }
-        })}
-      </div>
-
       {/*
-        The questions this page answers, marked up as questions. Built from
-        the headings above rather than typed twice, so the markup cannot
-        describe an answer the page does not print.
+        The same two columns the catalogue above uses, with the first left
+        empty on purpose. The writing then starts where the products start
+        rather than under the filters — it is a continuation of the grid, not
+        of the sidebar, and starting it at the page edge made it read as a
+        separate thing that happened to be below.
       */}
-      {faqs.length >= 2 && (
-        <JsonLd
-          data={{
-            '@context': 'https://schema.org',
-            '@type': 'FAQPage',
-            mainEntity: faqs.map((f) => ({
-              '@type': 'Question',
-              name: f.q,
-              acceptedAnswer: { '@type': 'Answer', text: f.a },
-            })),
-          }}
-        />
-      )}
+      <div className="grid gap-10 lg:grid-cols-[260px_1fr] xl:grid-cols-[340px_1fr]">
+        <div aria-hidden="true" className="hidden lg:block" />
+        <div className="min-w-0 max-w-[760px]">
+          <h2 id="collection-copy" className="h-display text-[24px] md:text-[30px]">
+            {lead ?? 'About this collection'}
+          </h2>
+          <div className="mt-6 space-y-4 text-[15px] leading-relaxed text-body md:text-[16px]">
+            {body.map((node, i) => {
+              switch (node.kind) {
+                case 'h2':
+                  return (
+                    <h2 key={i} className="h-display !mt-9 text-[20px] md:text-[23px]">
+                      {node.text}
+                    </h2>
+                  );
+                case 'h3':
+                  return (
+                    <h3 key={i} className="!mt-7 font-display text-[16px] font-extrabold text-ink md:text-[17px]">
+                      {node.text}
+                    </h3>
+                  );
+                case 'list':
+                  return node.ordered ? (
+                    <ol key={i} className="list-decimal space-y-1.5 pl-5 marker:font-semibold marker:text-ink">
+                      {node.items.map((item, j) => (
+                        <li key={j}>
+                          <Spans spans={item} />
+                        </li>
+                      ))}
+                    </ol>
+                  ) : (
+                    <ul key={i} className="list-disc space-y-1.5 pl-5 marker:text-brand-text">
+                      {node.items.map((item, j) => (
+                        <li key={j}>
+                          <Spans spans={item} />
+                        </li>
+                      ))}
+                    </ul>
+                  );
+                case 'table':
+                  return (
+                    <div key={i} className="overflow-x-auto">
+                      <table className="w-full border-collapse text-left text-[14px]">
+                        <thead>
+                          <tr>
+                            {node.head.map((h, j) => (
+                              <th
+                                key={j}
+                                className="border-b-2 border-ink px-3 py-2 font-display text-[12px] font-extrabold uppercase tracking-[.08em] text-ink"
+                              >
+                                {h}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {node.rows.map((row, j) => (
+                            <tr key={j}>
+                              {row.map((cell, k) => (
+                                <td key={k} className="border-b border-hairline px-3 py-2 align-top">
+                                  {cell}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  );
+                default:
+                  return (
+                    <p key={i}>
+                      <Spans spans={node.spans} />
+                    </p>
+                  );
+              }
+            })}
+          </div>
+
+          {/*
+            The questions this page answers, marked up as questions. Built from
+            the headings above rather than typed twice, so the markup cannot
+            describe an answer the page does not print.
+          */}
+          {faqs.length >= 2 && (
+            <JsonLd
+              data={{
+                '@context': 'https://schema.org',
+                '@type': 'FAQPage',
+                mainEntity: faqs.map((f) => ({
+                  '@type': 'Question',
+                  name: f.q,
+                  acceptedAnswer: { '@type': 'Answer', text: f.a },
+                })),
+              }}
+            />
+          )}
+        </div>
+      </div>
     </section>
   );
 }
