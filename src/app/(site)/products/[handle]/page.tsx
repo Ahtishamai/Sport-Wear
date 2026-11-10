@@ -11,7 +11,7 @@ import { BlockRenderer } from '@/components/blocks/Renderer';
 import { ProductPlateCard, Section, SectionHeading } from '@/components/blocks/primitives';
 import { tierPrice } from '@/lib/utils';
 import { JsonLd } from '@/components/site/JsonLd';
-import { productLd } from '@/lib/schema';
+import { freshnessMeta, productLd } from '@/lib/schema';
 import {
   SITE_URL,
   breadcrumbLd,
@@ -83,6 +83,8 @@ export async function generateMetadata({
       description,
       images: absolute ? [absolute] : undefined,
     },
+    // The same two dates the product's structured data and the sitemap give.
+    other: freshnessMeta(p),
   };
 }
 
@@ -225,6 +227,8 @@ export default async function ProductPage({ params }: { params: Promise<{ handle
           // A hidden price stays hidden here too: left in, the figure would
           // surface in Google's result for a page that says "Request a quote".
           price: priced ? priceRange : null,
+          createdAt: product.createdAt,
+          updatedAt: product.updatedAt,
         })}
       />
       <JsonLd

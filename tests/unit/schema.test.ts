@@ -5,9 +5,13 @@ import {
   absolute,
   businessLd,
   collectionLd,
+  freshness,
+  freshnessMeta,
+  isoDate,
   postalAddress,
   productLd,
   reviewedBusinessLd,
+  webPageLd,
   websiteLd,
 } from '@/lib/schema';
 
@@ -308,5 +312,78 @@ describe('a collection, and what is on the shelf', () => {
 
   it('says what site it belongs to', () => {
     expect(collectionLd(shelf).isPartOf).toEqual({ '@id': WEBSITE_ID });
+  });
+});
+
+describe('the dates a page gives about itself', () => {
+  const made = new Date('2026-08-25T09:12:00.289Z');
+  const changed = new Date('2026-11-09T05:23:33.322Z');
+
+  it('takes a Date straight from the database', () => {
+    expect(isoDate(made)).toBe('2026-08-25T09:12:00.289Z');
+  });
+
+  it('takes the same field after it has been through JSON', () => {
+    // A field typed as a Date arrives at a client component as a string.
+    expect(isoDate('2026-08-25T09:12:00.289Z')).toBe('2026-08-25T09:12:00.289Z');
+  });
+
+  it('says nothing rather than guessing when there is no date', () => {
+    expect(isoDate(null)).toBeUndefined();
+    expect(isoDate(undefined)).toBeUndefined();
+    expect(isoDate('')).toBeUndefined();
+    expect(isoDate('not a date')).toBeUndefined();
+  });
+
+  it('reports when a page was made and when it last changed', () => {
+    expect(freshness({ createdAt: made, updatedAt: changed })).toEqual({
+      datePublished: '2026-08-25T09:12:00.289Z',
+      dateModified: '2026-11-09T05:23:33.322Z',
+    });
+  });
+
+  it('gives the making date as the change date when it was never edited', () => {
+    const f = freshness({ createdAt: made, updatedAt: made });
+    expect(f.datePublished).toBe(f.dateModified);
+  });
+
+  it('never invents a date it was not given', () => {
+    expect(freshness({})).toEqual({ datePublished: undefined, dateModified: undefined });
+    expect(freshnessMeta({})).toEqual({});
+  });
+
+  it('prints the same two values as meta tags', () => {
+    const row = { createdAt: made, updatedAt: changed };
+    const f = freshness(row);
+    expect(freshnessMeta(row)).toEqual({
+      'article:published_time': f.datePublished,
+      'article:modified_time': f.dateModified,
+    });
+  });
+
+  it('gives a shelf, a product and a page the same two dates', () => {
+    const row = { createdAt: made, updatedAt: changed };
+    const f = freshness(row);
+
+    const shelf = emitted(
+      collectionLd({ path: '/collections/bags', name: 'Bags', products: [], pricesShown: true, ...row })
+    );
+    const product = emitted(
+      productLd({ handle: 'a-bag', title: 'A bag', images: [], siteName: 'S', price: null, ...row })
+    );
+    const page = emitted(webPageLd({ path: '/about', name: 'About', ...row }));
+
+    for (const node of [shelf, product, page]) {
+      expect(node.datePublished).toBe(f.datePublished);
+      expect(node.dateModified).toBe(f.dateModified);
+    }
+    // And the meta tags a crawler reads beside them agree.
+    expect(freshnessMeta(row)['article:modified_time']).toBe(shelf.dateModified);
+  });
+
+  it('leaves the dates out entirely when the row carries none', () => {
+    const node = emitted(webPageLd({ path: '/about', name: 'About' }));
+    expect(node).not.toHaveProperty('datePublished');
+    expect(node).not.toHaveProperty('dateModified');
   });
 });

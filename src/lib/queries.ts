@@ -135,6 +135,10 @@ export const getProductByHandle = cache(async (handle: string) => {
     // Empty on every product today; emitted in the product markup when a
     // shop owner fills it in. See the dashboard's search-appearance card.
     sku: p.sku,
+    // Carried so the page can date itself: the same two values its
+    // structured data, its meta tags and the sitemap all print.
+    createdAt: p.createdAt,
+    updatedAt: p.updatedAt,
     showPrice: p.showPrice,
     askTeamName: p.askTeamName,
     askNumber: p.askNumber,

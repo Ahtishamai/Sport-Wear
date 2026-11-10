@@ -8,6 +8,7 @@ import { BlockRenderer } from '@/components/blocks/Renderer';
 import { PageHeaderBlock } from '@/components/blocks/sections';
 import { JsonLd } from '@/components/site/JsonLd';
 import { SITE_URL, breadcrumbLd, pageDescription, pageTitle } from '@/lib/seo';
+import { freshnessMeta } from '@/lib/schema';
 import { getSettings } from '@/lib/settings';
 
 export const revalidate = 120;
@@ -75,6 +76,8 @@ export async function generateMetadata({
      * rather than a flag somebody has to remember to turn off.
      */
     robots: stocked === 0 ? { index: false, follow: true } : undefined,
+    // The same two dates the page's structured data and the sitemap give.
+    other: freshnessMeta(c),
   };
 }
 
@@ -163,6 +166,8 @@ export default async function CollectionPage({
         intro={collection.description || collection.subtitle}
         banner={collection.bannerUrl}
         bodyCopy={collection.bodyCopy}
+        createdAt={collection.createdAt}
+        updatedAt={collection.updatedAt}
         searchParams={sp}
       />
       {collection.blocks ? <BlockRenderer blocks={collection.blocks} /> : null}

@@ -179,6 +179,8 @@ export async function CatalogView({
   intro,
   banner,
   bodyCopy,
+  createdAt,
+  updatedAt,
   searchParams,
 }: {
   handle: string; // 'all' or a collection handle
@@ -187,6 +189,13 @@ export async function CatalogView({
   banner?: string | null;
   /** The collection's own writing, printed after the grid. */
   bodyCopy?: string | null;
+  /**
+   * When this shelf was made and last changed. Printed in the page's
+   * structured data, and the same two values the meta tags and the sitemap
+   * carry, so the page never gives a crawler two answers about its own age.
+   */
+  createdAt?: Date | string | null;
+  updatedAt?: Date | string | null;
   searchParams: CatalogSearchParams;
 }) {
   const fabric = searchParams.fabric
@@ -235,6 +244,8 @@ export async function CatalogView({
           description: intro,
           products,
           pricesShown: showPrice,
+          createdAt,
+          updatedAt,
         })}
       />
       <section data-reveal-root className="gutter border-b border-hairline bg-surface pb-11 pt-9">

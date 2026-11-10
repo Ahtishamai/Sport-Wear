@@ -39,6 +39,86 @@ export function absolute(url: string | null | undefined): string | undefined {
 }
 
 /**
+ * A date a search engine will accept, from whatever the row happened to hold.
+ *
+ * Both shapes turn up: a Date straight from the database on a page rendered
+ * on the server, and the same field as a string once it has been through
+ * JSON on its way to a client component. Taking only one of the two is how
+ * a page that works in a test throws in the browser.
+ */
+export function isoDate(value?: Date | string | null): string | undefined {
+  if (!value) return undefined;
+  const d = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
+}
+
+export type Dated = { createdAt?: Date | string | null; updatedAt?: Date | string | null };
+
+/**
+ * The two dates a page can honestly claim about itself: when it first
+ * existed, and when it last changed.
+ *
+ * Returned as one object so the JSON-LD, the Open Graph tags and the sitemap
+ * all quote the same two values rather than each working them out again. A
+ * page that gives three different answers about its own age is worse than
+ * one that stays quiet, because a crawler that catches a page contradicting
+ * itself stops believing the date it does print.
+ *
+ * These are the real row timestamps and nothing else. No date here is
+ * invented, rounded, or nudged forward to look freshly written. If a batch
+ * of pages was genuinely edited in one sitting then they genuinely share a
+ * modified date, and saying so is the honest answer.
+ */
+export function freshness(row: Dated): { datePublished?: string; dateModified?: string } {
+  const published = isoDate(row.createdAt);
+  const modified = isoDate(row.updatedAt);
+  return {
+    datePublished: published,
+    // Never edited since it was made: the two dates really are the same one.
+    dateModified: modified ?? published,
+  };
+}
+
+/**
+ * The same two dates as the meta tags an audit looks for.
+ *
+ * Worth knowing what these are and are not: Google takes a page's dates from
+ * the structured data and the page itself, not from here, and the `article:`
+ * tags belong to Open Graph's article type rather than to a shop page. They
+ * are printed because they are asked for and cost nothing, not because they
+ * are what makes a date count.
+ */
+export function freshnessMeta(row: Dated): Record<string, string> {
+  const { datePublished, dateModified } = freshness(row);
+  return {
+    ...(datePublished ? { 'article:published_time': datePublished } : {}),
+    ...(dateModified ? { 'article:modified_time': dateModified } : {}),
+  };
+}
+
+/**
+ * A plain page of the site, for the ones that are neither a product nor a
+ * shelf: the about page, the FAQs, the size chart.
+ */
+export function webPageLd(p: {
+  path: string;
+  name: string;
+  description?: string | null;
+} & Dated) {
+  const url = `${SITE_URL}${p.path}`;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    '@id': `${url}#page`,
+    url,
+    name: p.name.trim(),
+    description: p.description?.trim() || undefined,
+    isPartOf: { '@id': WEBSITE_ID },
+    ...freshness(p),
+  };
+}
+
+/**
  * The fifty states, their postal abbreviations, and DC.
  *
  * Here to tell an address apart, not to validate one: a region this
@@ -278,7 +358,7 @@ export function productLd(p: {
   siteName: string;
   /** The ladder, or null for a product sold by quote. */
   price: PriceLadder | null;
-}) {
+} & Dated) {
   const url = `${SITE_URL}/products/${p.handle}`;
   const sports = sportList(p.sports);
   const sizes = names(p.sizes);
@@ -307,6 +387,7 @@ export function productLd(p: {
     category: p.categoryLabel || undefined,
     itemCondition: 'https://schema.org/NewCondition',
     additionalProperty: properties.length ? properties : undefined,
+    ...freshness(p),
     ...(p.price
       ? {
           offers: {
@@ -354,7 +435,7 @@ export function collectionLd(c: {
   products: ListedProduct[];
   /** The site-wide price switch. */
   pricesShown: boolean;
-}) {
+} & Dated) {
   const url = `${SITE_URL}${c.path}`;
   return {
     '@context': 'https://schema.org',
@@ -364,6 +445,7 @@ export function collectionLd(c: {
     name: c.name.trim(),
     description: c.description?.trim() || undefined,
     isPartOf: { '@id': WEBSITE_ID },
+    ...freshness(c),
     mainEntity: {
       '@type': 'ItemList',
       numberOfItems: c.products.length,

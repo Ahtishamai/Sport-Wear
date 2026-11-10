@@ -9,6 +9,7 @@ import { getTeamStore, getStoreSlugs } from '@/lib/store-queries';
 import { StoreFront } from '@/components/store/StoreFront';
 import { JsonLd } from '@/components/site/JsonLd';
 import { breadcrumbLd, pageDescription, pageTitle } from '@/lib/seo';
+import { freshnessMeta, webPageLd } from '@/lib/schema';
 
 export const revalidate = 300;
 
@@ -65,6 +66,8 @@ export async function generateMetadata({
     description,
     alternates: { canonical: `/${slug}` },
     openGraph: { title, description, images: page.ogImage ? [page.ogImage] : undefined },
+    // The same two dates the page's structured data and the sitemap give.
+    other: freshnessMeta(page),
   };
 }
 
@@ -90,6 +93,15 @@ export default async function CmsPage({ params }: { params: Promise<{ slug: stri
       <BlockRenderer
         blocks={page.blocks}
         context={{ breadcrumb: [{ label: 'Home', href: '/' }, { label: page.title }] }}
+      />
+      <JsonLd
+        data={webPageLd({
+          path: `/${slug}`,
+          name: page.title,
+          description: page.seoDescription,
+          createdAt: page.createdAt,
+          updatedAt: page.updatedAt,
+        })}
       />
       <JsonLd
         data={breadcrumbLd([
