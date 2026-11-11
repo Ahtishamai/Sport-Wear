@@ -19,7 +19,7 @@ export default async function SettingsPage() {
   return (
     <>
       <SettingsEditor settings={settings} paypalSecretSet={secret.set} mail={mail} />
-      <div className="mx-auto w-full max-w-[1240px] px-5 pb-10 md:px-8">
+      <div className="mx-auto w-full max-w-[2000px] px-5 pb-10 md:px-8">
         <GoogleReviewsPanel initial={google} />
       </div>
     </>

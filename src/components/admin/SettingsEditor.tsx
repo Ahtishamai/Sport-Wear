@@ -164,6 +164,7 @@ export function SettingsEditor({
 
   return (
     <AdminPage
+      width="wide"
       title="Site settings"
       description="Global content — the header, footer, contact details, quote drawer copy and analytics."
       actions={
@@ -172,775 +173,859 @@ export function SettingsEditor({
         </Button>
       }
     >
-      <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
-        <div className="space-y-5">
-          <Card title="Brand">
-            <div className="grid gap-4">
-              <div>
-                <span className="field-label">Site name</span>
-                <Input value={s.siteName} onChange={(e) => set('siteName', e.target.value)} />
-              </div>
-              <div>
-                <span className="field-label">Tagline</span>
-                <Input value={s.tagline} onChange={(e) => set('tagline', e.target.value)} />
-              </div>
-              <div>
-                <span className="field-label">Header logo (dark)</span>
-                <ImageField value={s.logoDark} onChange={(v) => set('logoDark', v)} folder="brand" />
-              </div>
-              <div>
-                <span className="field-label">Footer logo (light)</span>
-                <ImageField value={s.logoLight} onChange={(v) => set('logoLight', v)} folder="brand" />
-              </div>
-              <div>
-                <span className="field-label">Browser tab icon</span>
-                <ImageField value={s.favicon} onChange={(v) => set('favicon', v)} folder="brand" />
-                <p className="mt-1.5 text-[12px] text-[#8A8C93]">
-                  Leave this on /favicon.ico to keep the D-S mark. A square PNG of at least 192×192
-                  works best — anything wider is squashed into the tab.
-                </p>
-              </div>
-            </div>
-          </Card>
+      <div className="grid gap-8 xl:grid-cols-[200px_minmax(0,1fr)] xl:items-start">
+        {/*
+          A rail of the sections, so thirteen cards are a page somebody can
+          navigate rather than a wall to scroll. It sticks, because the
+          reason to look at it is usually that you have scrolled away.
+        */}
+        <nav aria-label="Settings sections" className="hidden xl:block xl:sticky xl:top-6">
+          <ul className="space-y-0.5">
+            <li>
+              <a
+                href="#brand"
+                className="block border-l-2 border-transparent py-1.5 pl-3 text-[13.5px] font-semibold text-[#6B6D74] transition-colors hover:border-[#111] hover:text-ink"
+              >
+                Brand & content
+              </a>
+            </li>
+            <li>
+              <a
+                href="#leads"
+                className="block border-l-2 border-transparent py-1.5 pl-3 text-[13.5px] font-semibold text-[#6B6D74] transition-colors hover:border-[#111] hover:text-ink"
+              >
+                Enquiries
+              </a>
+            </li>
+            <li>
+              <a
+                href="#shop"
+                className="block border-l-2 border-transparent py-1.5 pl-3 text-[13.5px] font-semibold text-[#6B6D74] transition-colors hover:border-[#111] hover:text-ink"
+              >
+                Shop & orders
+              </a>
+            </li>
+            <li>
+              <a
+                href="#measure"
+                className="block border-l-2 border-transparent py-1.5 pl-3 text-[13.5px] font-semibold text-[#6B6D74] transition-colors hover:border-[#111] hover:text-ink"
+              >
+                Measurement
+              </a>
+            </li>
+          </ul>
+        </nav>
 
-          <Card title="Announcement bar">
-            <Checkbox
-              label="Show the announcement bar"
-              checked={s.announcementEnabled}
-              onChange={(e) => set('announcementEnabled', e.target.checked)}
-            />
-            <div className="mt-4">
-              <span className="field-label">Messages (separated by ✦ on the site)</span>
-              <StringList
-                values={s.announcement}
-                onChange={(v) => set('announcement', v)}
-                placeholder="FREE DIGITAL MOCKUP IN 24 HOURS"
-              />
+        <div className="min-w-0 space-y-12">
+          <section id="brand" className="scroll-mt-6">
+            <div className="mb-4 border-b border-[#EFEFEC] pb-3">
+              <h2 className="font-display text-[19px] font-black leading-none">
+                Brand & content
+              </h2>
+              <p className="mt-1.5 text-[13px] text-[#6B6D74]">The name, the logo, and the words that appear on every page.</p>
             </div>
-          </Card>
-
-          <Card title="Contact details">
-            <div className="grid gap-4">
-              <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-5 2xl:grid-cols-2 2xl:items-start">
+            <Card title="Brand">
+              <div className="grid gap-4">
                 <div>
-                  <span className="field-label">Phone (display)</span>
-                  <Input value={s.phone} onChange={(e) => set('phone', e.target.value)} />
-                </div>
-                <div>
-                  <span className="field-label">Phone (tel: link)</span>
-                  <Input value={s.phoneHref} onChange={(e) => set('phoneHref', e.target.value)} />
-                </div>
-              </div>
-              <div>
-                <span className="field-label">Email</span>
-                <Input value={s.email} onChange={(e) => set('email', e.target.value)} />
-              </div>
-              <div>
-                <span className="field-label">Address</span>
-                <Input value={s.address} onChange={(e) => set('address', e.target.value)} />
-              </div>
-            </div>
-          </Card>
-
-          <Card title="Footer">
-            <div className="grid gap-4">
-              <div>
-                <span className="field-label">Blurb</span>
-                <Textarea
-                  rows={3}
-                  value={s.footerBlurb}
-                  onChange={(e) => set('footerBlurb', e.target.value)}
-                />
-              </div>
-              <div>
-                <span className="field-label">Copyright line</span>
-                <Input value={s.copyright} onChange={(e) => set('copyright', e.target.value)} />
-              </div>
-              <div>
-                <span className="field-label">Bottom-right line</span>
-                <Input value={s.footerMeta} onChange={(e) => set('footerMeta', e.target.value)} />
-              </div>
-              <div>
-                <span className="field-label">Social links</span>
-                <div className="space-y-2">
-                  {s.social.map((soc, i) => (
-                    <div key={i} className="flex items-center gap-1.5">
-                      {/* Which brand icon this row will show on the site. */}
-                      <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center border border-[#E3E3DF] bg-ink">
-                        <SocialIcon link={soc} size={30} />
-                      </span>
-                      <Input
-                        value={soc.label}
-                        onChange={(e) =>
-                          set(
-                            'social',
-                            s.social.map((x, j) => (j === i ? { ...x, label: e.target.value } : x))
-                          )
-                        }
-                        placeholder="Instagram"
-                        className="!py-1.5 text-[12px]"
-                      />
-                      <Input
-                        value={soc.short}
-                        onChange={(e) =>
-                          set(
-                            'social',
-                            s.social.map((x, j) => (j === i ? { ...x, short: e.target.value } : x))
-                          )
-                        }
-                        placeholder="ig"
-                        className="!w-[70px] !py-1.5 text-[12px]"
-                      />
-                      <Input
-                        value={soc.href}
-                        onChange={(e) =>
-                          set(
-                            'social',
-                            s.social.map((x, j) => (j === i ? { ...x, href: e.target.value } : x))
-                          )
-                        }
-                        placeholder="https://…"
-                        className="!py-1.5 text-[12px]"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => set('social', s.social.filter((_, j) => j !== i))}
-                        aria-label="Remove social link"
-                        className="px-1 text-[#8A8C93] hover:text-[#C42027]"
-                      >
-                        <Icon name="close" size={13} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="mt-2"
-                  onClick={() => set('social', [...s.social, { label: '', short: '', href: '' }])}
-                >
-                  + Add social link
-                </Button>
-                <p className="mt-1.5 text-[12px] text-[#8A8C93]">
-                  The icon comes from the link — paste a Facebook, Instagram, TikTok, YouTube,
-                  X, LinkedIn, Pinterest or WhatsApp address and its own logo appears. Anything
-                  else falls back to the short text.
-                </p>
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        <div className="space-y-5">
-          <Card
-            title="Quote drawer"
-            description="The global request-a-quote panel that every CTA opens."
-          >
-            <div className="grid gap-4">
-              <div>
-                <span className="field-label">Eyebrow</span>
-                <Input value={s.quoteEyebrow} onChange={(e) => set('quoteEyebrow', e.target.value)} />
-              </div>
-              <div>
-                <span className="field-label">Heading</span>
-                <Input value={s.quoteHeadline} onChange={(e) => set('quoteHeadline', e.target.value)} />
-              </div>
-              <div>
-                <span className="field-label">Reassurance line under the button</span>
-                <Textarea
-                  rows={2}
-                  value={s.quoteReassurance}
-                  onChange={(e) => set('quoteReassurance', e.target.value)}
-                />
-              </div>
-              <div>
-                <span className="field-label">Success heading</span>
-                <Input
-                  value={s.quoteSuccessTitle}
-                  onChange={(e) => set('quoteSuccessTitle', e.target.value)}
-                />
-              </div>
-              <div>
-                <span className="field-label">Success body</span>
-                <Textarea
-                  rows={3}
-                  value={s.quoteSuccessBody}
-                  onChange={(e) => set('quoteSuccessBody', e.target.value)}
-                />
-              </div>
-              <div>
-                <span className="field-label">Timing options</span>
-                <StringList
-                  values={s.deadlineOptions}
-                  onChange={(v) => set('deadlineOptions', v)}
-                  placeholder="2-week rush"
-                />
-              </div>
-              <div>
-                <span className="field-label">Sport options</span>
-                <StringList
-                  values={s.sportOptions}
-                  onChange={(v) => set('sportOptions', v)}
-                  placeholder="Baseball"
-                />
-              </div>
-            </div>
-          </Card>
-
-          <Card title="Default SEO" description="Used when a page has no SEO fields of its own.">
-            <div className="grid gap-4">
-              <div>
-                <span className="field-label">Default title</span>
-                <Input
-                  value={s.defaultSeoTitle}
-                  onChange={(e) => set('defaultSeoTitle', e.target.value)}
-                />
-              </div>
-              <div>
-                <span className="field-label">Default description</span>
-                <Textarea
-                  rows={3}
-                  value={s.defaultSeoDescription}
-                  onChange={(e) => set('defaultSeoDescription', e.target.value)}
-                />
-                <p className="mt-1.5 text-[12px] text-[#8A8C93]">
-                  {s.defaultSeoDescription.length} characters
-                </p>
-              </div>
-            </div>
-          </Card>
-
-          <Card
-            title="Pricing"
-            description="Turn every price off across the site at once."
-          >
-            <Checkbox
-              label="Show prices on the site"
-              checked={s.showPrices !== false}
-              onChange={(e) => set('showPrices', e.target.checked)}
-            />
-            <p className="mt-2 text-[12px] text-[#8A8C93]">
-              When this is off, prices disappear from product pages, collection pages, the home
-              page and the team packages — visitors are asked for a quote instead. Team store
-              checkout is unaffected, since people are paying there.
-            </p>
-          </Card>
-
-          <Card
-            title="Payments"
-            description="Card and PayPal checkout for team stores. Quote requests are unaffected."
-          >
-            <div className="grid gap-4">
-              <Checkbox
-                label="Accept payments in team stores"
-                checked={s.paypalEnabled}
-                onChange={(e) => set('paypalEnabled', e.target.checked)}
-              />
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <span className="field-label">Environment</span>
-                  <Select
-                    value={s.paypalMode}
-                    onChange={(e) => set('paypalMode', e.target.value === 'live' ? 'live' : 'sandbox')}
-                  >
-                    <option value="sandbox">Sandbox — test money only</option>
-                    <option value="live">Live — real money</option>
-                  </Select>
+                  <span className="field-label">Site name</span>
+                  <Input value={s.siteName} onChange={(e) => set('siteName', e.target.value)} />
                 </div>
                 <div>
-                  <span className="field-label">Currency</span>
-                  <Input
-                    value={s.storeCurrency}
-                    onChange={(e) => set('storeCurrency', e.target.value.toUpperCase())}
-                    placeholder="USD"
-                    maxLength={8}
-                  />
+                  <span className="field-label">Tagline</span>
+                  <Input value={s.tagline} onChange={(e) => set('tagline', e.target.value)} />
                 </div>
-              </div>
-
-              <div>
-                <span className="field-label">PayPal client ID</span>
-                <Input
-                  value={s.paypalClientId}
-                  onChange={(e) => set('paypalClientId', e.target.value.trim())}
-                  placeholder="AY…"
-                />
-                <p className="mt-1.5 text-[12px] text-[#8A8C93]">
-                  From developer.paypal.com → Apps &amp; Credentials. Make sure it comes from the
-                  same environment selected above.
-                </p>
-              </div>
-
-              <div>
-                <span className="field-label">PayPal secret</span>
-                <Input
-                  type="password"
-                  autoComplete="new-password"
-                  value={secret}
-                  onChange={(e) => setSecret(e.target.value)}
-                  placeholder={secretSet ? 'Saved — type to replace' : 'EL…'}
-                />
-                <p className="mt-1.5 text-[12px] text-[#8A8C93]">
-                  {secretSet
-                    ? 'A secret is saved. It is never shown again — leave this blank to keep it.'
-                    : 'Stored separately from the rest of the settings and never sent back to the browser.'}
-                </p>
-                {secretLooksStale && (
-                  <p className="mt-2 border border-[#F0DCA8] bg-[#FDF6E3] px-3 py-2 text-[12px] text-[#8A6D1B]">
-                    You changed the client ID but not the secret. Paste the secret from the
-                    <b> same PayPal app</b> — the saved one belongs to the previous client ID and
-                    will be rejected.
+                <div>
+                  <span className="field-label">Header logo (dark)</span>
+                  <ImageField value={s.logoDark} onChange={(v) => set('logoDark', v)} folder="brand" />
+                </div>
+                <div>
+                  <span className="field-label">Footer logo (light)</span>
+                  <ImageField value={s.logoLight} onChange={(v) => set('logoLight', v)} folder="brand" />
+                </div>
+                <div>
+                  <span className="field-label">Browser tab icon</span>
+                  <ImageField value={s.favicon} onChange={(v) => set('favicon', v)} folder="brand" />
+                  <p className="mt-1.5 text-[12px] text-[#8A8C93]">
+                    Leave this on /favicon.ico to keep the D-S mark. A square PNG of at least 192×192
+                    works best — anything wider is squashed into the tab.
                   </p>
-                )}
-              </div>
-
-              <Button variant="ghost" size="sm" onClick={testPayments} disabled={testing}>
-                {testing ? 'Checking…' : 'Test connection'}
-              </Button>
-
-              {payResult && (
-                <div
-                  className={
-                    'border px-4 py-3 text-[13px] ' +
-                    (payResult.ok
-                      ? 'border-[#BFE3CC] bg-[#E4F4EA] text-[#1F8A4C]'
-                      : 'border-[#F3C6C8] bg-[#FBE7E8] text-[#C42027]')
-                  }
-                >
-                  <p className="font-semibold">{payResult.message}</p>
-                  {payResult.detail && <p className="mt-1">{payResult.detail}</p>}
-                </div>
-              )}
-            </div>
-          </Card>
-
-          <Card
-            title="Email"
-            description="The mailbox your site sends from, and what an order confirmation says."
-          >
-            <div className="grid gap-4">
-              <div className="grid gap-3 sm:grid-cols-[2fr_1fr]">
-                <div>
-                  <span className="field-label">Mail server (SMTP)</span>
-                  <Input
-                    value={smtp.host}
-                    onChange={(e) => setSmtp('host', e.target.value.trim())}
-                    placeholder="smtp.hostinger.com"
-                  />
-                </div>
-                <div>
-                  <span className="field-label">Port</span>
-                  <Input
-                    type="number"
-                    value={String(smtp.port)}
-                    onChange={(e) => setSmtp('port', Number(e.target.value) || 587)}
-                    placeholder="465"
-                  />
                 </div>
               </div>
-
+            </Card>
+            <Card title="Announcement bar">
               <Checkbox
-                label="Use SSL (tick for port 465, leave clear for 587)"
-                checked={smtp.secure}
-                onChange={(e) => setSmtp('secure', e.target.checked)}
+                label="Show the announcement bar"
+                checked={s.announcementEnabled}
+                onChange={(e) => set('announcementEnabled', e.target.checked)}
               />
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <span className="field-label">Mailbox username</span>
-                  <Input
-                    value={smtp.user}
-                    onChange={(e) => setSmtp('user', e.target.value.trim())}
-                    placeholder="orders@design-sportswear.com"
-                    autoComplete="off"
-                  />
-                </div>
-                <div>
-                  <span className="field-label">Mailbox password</span>
-                  <Input
-                    type="password"
-                    autoComplete="new-password"
-                    value={smtpPass}
-                    onChange={(e) => setSmtpPass(e.target.value)}
-                    placeholder={smtpPassSet ? 'Saved — type to replace' : 'The mailbox password'}
-                  />
-                </div>
-              </div>
-              <p className="-mt-2 text-[12px] text-[#8A8C93]">
-                {smtpPassSet
-                  ? 'A password is saved. It is never shown again — leave this blank to keep it.'
-                  : 'Stored separately from the rest of the settings and never sent back to the browser.'}
-              </p>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <span className="field-label">Sends as (name)</span>
-                  <Input
-                    value={smtp.fromName}
-                    onChange={(e) => setSmtp('fromName', e.target.value)}
-                    placeholder={s.siteName}
-                  />
-                </div>
-                <div>
-                  <span className="field-label">Sends from (address)</span>
-                  <Input
-                    value={smtp.fromEmail}
-                    onChange={(e) => setSmtp('fromEmail', e.target.value.trim())}
-                    placeholder="orders@design-sportswear.com"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <span className="field-label">Replies go to</span>
-                <Input
-                  value={smtp.replyTo}
-                  onChange={(e) => setSmtp('replyTo', e.target.value.trim())}
-                  placeholder={s.email}
+              <div className="mt-4">
+                <span className="field-label">Messages (separated by ✦ on the site)</span>
+                <StringList
+                  values={s.announcement}
+                  onChange={(v) => set('announcement', v)}
+                  placeholder="FREE DIGITAL MOCKUP IN 24 HOURS"
                 />
-                <p className="mt-1.5 text-[12px] text-[#8A8C93]">
-                  Leave blank and replies go to the sending address above.
-                </p>
               </div>
-
-              <div className="border-t border-[#E7E7E9] pt-4">
-                <span className="field-label">Send a test to</span>
-                <div className="flex items-start gap-2">
-                  <div className="min-w-0 flex-1">
-                    <Input
-                      value={smtpTestTo}
-                      onChange={(e) => setSmtpTestTo(e.target.value.trim())}
-                      placeholder="your own address"
-                    />
+            </Card>
+            <Card title="Footer">
+              <div className="grid gap-4">
+                <div>
+                  <span className="field-label">Blurb</span>
+                  <Textarea
+                    rows={3}
+                    value={s.footerBlurb}
+                    onChange={(e) => set('footerBlurb', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <span className="field-label">Copyright line</span>
+                  <Input value={s.copyright} onChange={(e) => set('copyright', e.target.value)} />
+                </div>
+                <div>
+                  <span className="field-label">Bottom-right line</span>
+                  <Input value={s.footerMeta} onChange={(e) => set('footerMeta', e.target.value)} />
+                </div>
+                <div>
+                  <span className="field-label">Social links</span>
+                  <div className="space-y-2">
+                    {s.social.map((soc, i) => (
+                      <div key={i} className="flex items-center gap-1.5">
+                        {/* Which brand icon this row will show on the site. */}
+                        <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center border border-[#E3E3DF] bg-ink">
+                          <SocialIcon link={soc} size={30} />
+                        </span>
+                        <Input
+                          value={soc.label}
+                          onChange={(e) =>
+                            set(
+                              'social',
+                              s.social.map((x, j) => (j === i ? { ...x, label: e.target.value } : x))
+                            )
+                          }
+                          placeholder="Instagram"
+                          className="!py-1.5 text-[12px]"
+                        />
+                        <Input
+                          value={soc.short}
+                          onChange={(e) =>
+                            set(
+                              'social',
+                              s.social.map((x, j) => (j === i ? { ...x, short: e.target.value } : x))
+                            )
+                          }
+                          placeholder="ig"
+                          className="!w-[70px] !py-1.5 text-[12px]"
+                        />
+                        <Input
+                          value={soc.href}
+                          onChange={(e) =>
+                            set(
+                              'social',
+                              s.social.map((x, j) => (j === i ? { ...x, href: e.target.value } : x))
+                            )
+                          }
+                          placeholder="https://…"
+                          className="!py-1.5 text-[12px]"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => set('social', s.social.filter((_, j) => j !== i))}
+                          aria-label="Remove social link"
+                          className="px-1 text-[#8A8C93] hover:text-[#C42027]"
+                        >
+                          <Icon name="close" size={13} />
+                        </button>
+                      </div>
+                    ))}
                   </div>
                   <Button
+                    size="sm"
                     variant="outline"
-                    onClick={testEmail}
-                    disabled={mailTesting}
-                    className="shrink-0 whitespace-nowrap"
+                    className="mt-2"
+                    onClick={() => set('social', [...s.social, { label: '', short: '', href: '' }])}
                   >
-                    {mailTesting ? 'Sending…' : smtpTestTo ? 'Send test' : 'Check connection'}
+                    + Add social link
                   </Button>
+                  <p className="mt-1.5 text-[12px] text-[#8A8C93]">
+                    The icon comes from the link — paste a Facebook, Instagram, TikTok, YouTube,
+                    X, LinkedIn, Pinterest or WhatsApp address and its own logo appears. Anything
+                    else falls back to the short text.
+                  </p>
                 </div>
-                <p className="mt-1.5 text-[12px] text-[#8A8C93]">
-                  Uses what is typed above, saved or not — so you can get it right before saving.
-                </p>
               </div>
-
-              {mailResult && (
-                <div
-                  className={
-                    'border px-4 py-3 text-[13px] ' +
-                    (mailResult.ok
-                      ? 'border-[#BFE3CC] bg-[#E4F4EA] text-[#1F8A4C]'
-                      : 'border-[#F3C6C8] bg-[#FBE7E8] text-[#C42027]')
-                  }
-                >
-                  <p className="font-semibold">{mailResult.message}</p>
-                  {mailResult.detail && <p className="mt-1">{mailResult.detail}</p>}
-                </div>
-              )}
-            </div>
-          </Card>
-
-          <Card
-            title="Order confirmation"
-            description="What a customer gets after paying in a team store."
-          >
-            <div className="grid gap-4">
-              <Checkbox
-                label="Email a confirmation when an order is paid"
-                checked={s.orderEmailsEnabled}
-                onChange={(e) => set('orderEmailsEnabled', e.target.checked)}
-              />
-
-              <div>
-                <span className="field-label">Send a copy to</span>
-                <Input
-                  value={s.orderEmailCopyTo}
-                  onChange={(e) => set('orderEmailCopyTo', e.target.value)}
-                  placeholder="orders@design-sportswear.com"
-                />
-                <p className="mt-1.5 text-[12px] text-[#8A8C93]">
-                  A blind copy of every order confirmation. Separate several addresses with commas.
-                </p>
-              </div>
-
-              <div>
-                <span className="field-label">Opening line</span>
-                <Textarea
-                  rows={3}
-                  value={s.orderEmailIntro}
-                  onChange={(e) => set('orderEmailIntro', e.target.value)}
-                />
-              </div>
-
-              <div>
-                <span className="field-label">Closing line</span>
-                <Textarea
-                  rows={2}
-                  value={s.orderEmailFooter}
-                  onChange={(e) => set('orderEmailFooter', e.target.value)}
-                />
-              </div>
-
-              <a
-                href="/api/admin/order-email/preview"
-                target="_blank"
-                rel="noopener"
-                className="text-[13px] font-semibold text-ink underline"
-              >
-                Preview the email
-              </a>
-            </div>
-          </Card>
-
-          <Card
-            title="Pay for an order"
-            description="The /pay page, where a customer settles an invoice you have already sent."
-          >
-            <div className="grid gap-4">
-              <Checkbox
-                label="Show the pay page"
-                checked={s.payEnabled}
-                onChange={(e) => set('payEnabled', e.target.checked)}
-              />
-
-              <div>
-                <span className="field-label">Heading</span>
-                <Input value={s.payHeading} onChange={(e) => set('payHeading', e.target.value)} />
-              </div>
-
-              <div>
-                <span className="field-label">Intro</span>
-                <Textarea
-                  rows={3}
-                  value={s.payIntro}
-                  onChange={(e) => set('payIntro', e.target.value)}
-                />
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2">
+            </Card>
+            <Card title="Default SEO" description="Used when a page has no SEO fields of its own.">
+              <div className="grid gap-4">
                 <div>
-                  <span className="field-label">Smallest payment</span>
+                  <span className="field-label">Default title</span>
                   <Input
-                    type="number"
-                    value={String(s.payMin)}
-                    onChange={(e) => set('payMin', Number(e.target.value) || 0)}
+                    value={s.defaultSeoTitle}
+                    onChange={(e) => set('defaultSeoTitle', e.target.value)}
                   />
                 </div>
                 <div>
-                  <span className="field-label">Largest payment</span>
-                  <Input
-                    type="number"
-                    value={String(s.payMax)}
-                    onChange={(e) => set('payMax', Number(e.target.value) || 0)}
+                  <span className="field-label">Default description</span>
+                  <Textarea
+                    rows={3}
+                    value={s.defaultSeoDescription}
+                    onChange={(e) => set('defaultSeoDescription', e.target.value)}
                   />
+                  <p className="mt-1.5 text-[12px] text-[#8A8C93]">
+                    {s.defaultSeoDescription.length} characters
+                  </p>
                 </div>
               </div>
-              <p className="-mt-2 text-[12px] text-[#8A8C93]">
-                The customer types the amount, so these are the only limit on it. Keep the ceiling
-                near your largest real invoice — an open-ended field invites card testing.
+            </Card>
+            </div>
+          </section>
+          <section id="leads" className="scroll-mt-6">
+            <div className="mb-4 border-b border-[#EFEFEC] pb-3">
+              <h2 className="font-display text-[19px] font-black leading-none">
+                Enquiries
+              </h2>
+              <p className="mt-1.5 text-[13px] text-[#6B6D74]">How a customer reaches you, and who hears about it when they do.</p>
+            </div>
+            <div className="grid gap-5 2xl:grid-cols-2 2xl:items-start">
+            <Card title="Contact details">
+              <div className="grid gap-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <span className="field-label">Phone (display)</span>
+                    <Input value={s.phone} onChange={(e) => set('phone', e.target.value)} />
+                  </div>
+                  <div>
+                    <span className="field-label">Phone (tel: link)</span>
+                    <Input value={s.phoneHref} onChange={(e) => set('phoneHref', e.target.value)} />
+                  </div>
+                </div>
+                <div>
+                  <span className="field-label">Email</span>
+                  <Input value={s.email} onChange={(e) => set('email', e.target.value)} />
+                </div>
+                <div>
+                  <span className="field-label">Address</span>
+                  <Input value={s.address} onChange={(e) => set('address', e.target.value)} />
+                </div>
+              </div>
+            </Card>
+            <Card
+              title="Who gets told about a lead"
+              description="Every quote request and contact message goes to all of these, with the customer's artwork attached."
+            >
+              <StringList
+                values={s.notifyEmails}
+                onChange={(v) => set('notifyEmails', v)}
+                placeholder="orders@design-sportswear.com"
+              />
+              <p className="mt-2 text-[12px] text-[#6B6D74]">
+                Add as many as you like — the owner, the art team, whoever covers
+                the week somebody is away. Leave it empty and everything goes to
+                the contact address above instead. Replying to one of these emails
+                answers the customer, not the website.
               </p>
-
-              <div>
-                <span className="field-label">Note under the form</span>
-                <Textarea
-                  rows={2}
-                  value={s.payHelp}
-                  onChange={(e) => set('payHelp', e.target.value)}
-                />
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2">
+            </Card>
+            <Card
+              title="Quote drawer"
+              description="The global request-a-quote panel that every CTA opens."
+            >
+              <div className="grid gap-4">
                 <div>
-                  <span className="field-label">After paying — heading</span>
-                  <Input
-                    value={s.paySuccessTitle}
-                    onChange={(e) => set('paySuccessTitle', e.target.value)}
-                  />
+                  <span className="field-label">Eyebrow</span>
+                  <Input value={s.quoteEyebrow} onChange={(e) => set('quoteEyebrow', e.target.value)} />
                 </div>
                 <div>
-                  <span className="field-label">After paying — message</span>
+                  <span className="field-label">Heading</span>
+                  <Input value={s.quoteHeadline} onChange={(e) => set('quoteHeadline', e.target.value)} />
+                </div>
+                <div>
+                  <span className="field-label">Reassurance line under the button</span>
                   <Textarea
                     rows={2}
-                    value={s.paySuccessBody}
-                    onChange={(e) => set('paySuccessBody', e.target.value)}
+                    value={s.quoteReassurance}
+                    onChange={(e) => set('quoteReassurance', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <span className="field-label">Success heading</span>
+                  <Input
+                    value={s.quoteSuccessTitle}
+                    onChange={(e) => set('quoteSuccessTitle', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <span className="field-label">Success body</span>
+                  <Textarea
+                    rows={3}
+                    value={s.quoteSuccessBody}
+                    onChange={(e) => set('quoteSuccessBody', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <span className="field-label">Timing options</span>
+                  <StringList
+                    values={s.deadlineOptions}
+                    onChange={(v) => set('deadlineOptions', v)}
+                    placeholder="2-week rush"
+                  />
+                </div>
+                <div>
+                  <span className="field-label">Sport options</span>
+                  <StringList
+                    values={s.sportOptions}
+                    onChange={(v) => set('sportOptions', v)}
+                    placeholder="Baseball"
                   />
                 </div>
               </div>
+            </Card>
+            <Card
+              title="Email"
+              description="The mailbox your site sends from, and what an order confirmation says."
+            >
+              <div className="grid gap-4">
+                <div className="grid gap-3 sm:grid-cols-[2fr_1fr]">
+                  <div>
+                    <span className="field-label">Mail server (SMTP)</span>
+                    <Input
+                      value={smtp.host}
+                      onChange={(e) => setSmtp('host', e.target.value.trim())}
+                      placeholder="smtp.hostinger.com"
+                    />
+                  </div>
+                  <div>
+                    <span className="field-label">Port</span>
+                    <Input
+                      type="number"
+                      value={String(smtp.port)}
+                      onChange={(e) => setSmtp('port', Number(e.target.value) || 587)}
+                      placeholder="465"
+                    />
+                  </div>
+                </div>
 
-              <a
-                href="/pay"
-                target="_blank"
-                rel="noopener"
-                className="text-[13px] font-semibold text-ink underline"
-              >
-                Open the pay page
-              </a>
-            </div>
-          </Card>
-
-          <Card
-            title="Order tracking"
-            description="Reads order status straight from a Google Sheet — no export step."
-          >
-            <div className="grid gap-4">
-              <Checkbox
-                label="Show order tracking on the site"
-                checked={s.trackingEnabled}
-                onChange={(e) => set('trackingEnabled', e.target.checked)}
-              />
-
-              <div>
-                <span className="field-label">Google Sheet link</span>
-                <Input
-                  value={s.trackingSheetUrl}
-                  onChange={(e) => set('trackingSheetUrl', e.target.value)}
-                  placeholder="https://docs.google.com/spreadsheets/d/…"
+                <Checkbox
+                  label="Use SSL (tick for port 465, leave clear for 587)"
+                  checked={smtp.secure}
+                  onChange={(e) => setSmtp('secure', e.target.checked)}
                 />
-                <p className="mt-1.5 text-[12px] text-[#8A8C93]">
-                  In Google Sheets: Share → General access → <b>Anyone with the link → Viewer</b>,
-                  then paste the address here.
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <span className="field-label">Mailbox username</span>
+                    <Input
+                      value={smtp.user}
+                      onChange={(e) => setSmtp('user', e.target.value.trim())}
+                      placeholder="orders@design-sportswear.com"
+                      autoComplete="off"
+                    />
+                  </div>
+                  <div>
+                    <span className="field-label">Mailbox password</span>
+                    <Input
+                      type="password"
+                      autoComplete="new-password"
+                      value={smtpPass}
+                      onChange={(e) => setSmtpPass(e.target.value)}
+                      placeholder={smtpPassSet ? 'Saved — type to replace' : 'The mailbox password'}
+                    />
+                  </div>
+                </div>
+                <p className="-mt-2 text-[12px] text-[#8A8C93]">
+                  {smtpPassSet
+                    ? 'A password is saved. It is never shown again — leave this blank to keep it.'
+                    : 'Stored separately from the rest of the settings and never sent back to the browser.'}
                 </p>
-              </div>
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <span className="field-label">Tab name</span>
-                  <Input
-                    value={s.trackingSheetTab}
-                    onChange={(e) => set('trackingSheetTab', e.target.value)}
-                    placeholder="Leave blank for the first tab"
-                  />
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <span className="field-label">Sends as (name)</span>
+                    <Input
+                      value={smtp.fromName}
+                      onChange={(e) => setSmtp('fromName', e.target.value)}
+                      placeholder={s.siteName}
+                    />
+                  </div>
+                  <div>
+                    <span className="field-label">Sends from (address)</span>
+                    <Input
+                      value={smtp.fromEmail}
+                      onChange={(e) => setSmtp('fromEmail', e.target.value.trim())}
+                      placeholder="orders@design-sportswear.com"
+                    />
+                  </div>
                 </div>
+
                 <div>
-                  <span className="field-label">Refresh every (minutes)</span>
+                  <span className="field-label">Replies go to</span>
                   <Input
-                    type="number"
-                    min={0}
-                    max={120}
-                    value={s.trackingCacheMinutes}
-                    onChange={(e) => set('trackingCacheMinutes', Number(e.target.value))}
+                    value={smtp.replyTo}
+                    onChange={(e) => setSmtp('replyTo', e.target.value.trim())}
+                    placeholder={s.email}
                   />
+                  <p className="mt-1.5 text-[12px] text-[#8A8C93]">
+                    Leave blank and replies go to the sending address above.
+                  </p>
                 </div>
-              </div>
 
-              <div>
-                <Button variant="outline" onClick={testSheet} disabled={testing}>
-                  {testing ? 'Checking the sheet…' : 'Test connection'}
-                </Button>
+                <div className="border-t border-[#E7E7E9] pt-4">
+                  <span className="field-label">Send a test to</span>
+                  <div className="flex items-start gap-2">
+                    <div className="min-w-0 flex-1">
+                      <Input
+                        value={smtpTestTo}
+                        onChange={(e) => setSmtpTestTo(e.target.value.trim())}
+                        placeholder="your own address"
+                      />
+                    </div>
+                    <Button
+                      variant="outline"
+                      onClick={testEmail}
+                      disabled={mailTesting}
+                      className="shrink-0 whitespace-nowrap"
+                    >
+                      {mailTesting ? 'Sending…' : smtpTestTo ? 'Send test' : 'Check connection'}
+                    </Button>
+                  </div>
+                  <p className="mt-1.5 text-[12px] text-[#8A8C93]">
+                    Uses what is typed above, saved or not — so you can get it right before saving.
+                  </p>
+                </div>
 
-                {test && (
+                {mailResult && (
                   <div
                     className={
-                      'mt-3 border p-4 text-[13px] ' +
-                      (test.ok
-                        ? 'border-[#BFE3CC] bg-[#E4F4EA] text-[#1F6B41]'
+                      'border px-4 py-3 text-[13px] ' +
+                      (mailResult.ok
+                        ? 'border-[#BFE3CC] bg-[#E4F4EA] text-[#1F8A4C]'
                         : 'border-[#F3C6C8] bg-[#FBE7E8] text-[#C42027]')
                     }
                   >
-                    {test.ok ? (
-                      <>
-                        <b>Connected.</b> Found {test.orders} orders.
-                        <div className="mt-1.5">
-                          Stages: {(test.stages ?? []).join(' → ') || 'none detected'}
-                        </div>
-                        {test.sample && <div className="mt-1">First order: {test.sample}</div>}
-                      </>
-                    ) : (
-                      <>
-                        <b>{test.error}</b>
-                        {test.hint && <div className="mt-1.5">{test.hint}</div>}
-                      </>
-                    )}
+                    <p className="font-semibold">{mailResult.message}</p>
+                    {mailResult.detail && <p className="mt-1">{mailResult.detail}</p>}
                   </div>
                 )}
               </div>
+            </Card>
+            </div>
+          </section>
+          <section id="shop" className="scroll-mt-6">
+            <div className="mb-4 border-b border-[#EFEFEC] pb-3">
+              <h2 className="font-display text-[19px] font-black leading-none">
+                Shop & orders
+              </h2>
+              <p className="mt-1.5 text-[13px] text-[#6B6D74]">Prices, taking payment, and what a customer is told afterwards.</p>
+            </div>
+            <div className="grid gap-5 2xl:grid-cols-2 2xl:items-start">
+            <Card
+              title="Pricing"
+              description="Turn every price off across the site at once."
+            >
+              <Checkbox
+                label="Show prices on the site"
+                checked={s.showPrices !== false}
+                onChange={(e) => set('showPrices', e.target.checked)}
+              />
+              <p className="mt-2 text-[12px] text-[#8A8C93]">
+                When this is off, prices disappear from product pages, collection pages, the home
+                page and the team packages — visitors are asked for a quote instead. Team store
+                checkout is unaffected, since people are paying there.
+              </p>
+            </Card>
+            <Card
+              title="Payments"
+              description="Card and PayPal checkout for team stores. Quote requests are unaffected."
+            >
+              <div className="grid gap-4">
+                <Checkbox
+                  label="Accept payments in team stores"
+                  checked={s.paypalEnabled}
+                  onChange={(e) => set('paypalEnabled', e.target.checked)}
+                />
 
-              <div>
-                <span className="field-label">Heading</span>
-                <Input
-                  value={s.trackingHeading}
-                  onChange={(e) => set('trackingHeading', e.target.value)}
-                />
-              </div>
-              <div>
-                <span className="field-label">Intro</span>
-                <Textarea
-                  rows={2}
-                  value={s.trackingIntro}
-                  onChange={(e) => set('trackingIntro', e.target.value)}
-                />
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <span className="field-label">Environment</span>
+                    <Select
+                      value={s.paypalMode}
+                      onChange={(e) => set('paypalMode', e.target.value === 'live' ? 'live' : 'sandbox')}
+                    >
+                      <option value="sandbox">Sandbox — test money only</option>
+                      <option value="live">Live — real money</option>
+                    </Select>
+                  </div>
+                  <div>
+                    <span className="field-label">Currency</span>
+                    <Input
+                      value={s.storeCurrency}
+                      onChange={(e) => set('storeCurrency', e.target.value.toUpperCase())}
+                      placeholder="USD"
+                      maxLength={8}
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <span className="field-label">Input placeholder</span>
+                  <span className="field-label">PayPal client ID</span>
                   <Input
-                    value={s.trackingPlaceholder}
-                    onChange={(e) => set('trackingPlaceholder', e.target.value)}
+                    value={s.paypalClientId}
+                    onChange={(e) => set('paypalClientId', e.target.value.trim())}
+                    placeholder="AY…"
+                  />
+                  <p className="mt-1.5 text-[12px] text-[#8A8C93]">
+                    From developer.paypal.com → Apps &amp; Credentials. Make sure it comes from the
+                    same environment selected above.
+                  </p>
+                </div>
+
+                <div>
+                  <span className="field-label">PayPal secret</span>
+                  <Input
+                    type="password"
+                    autoComplete="new-password"
+                    value={secret}
+                    onChange={(e) => setSecret(e.target.value)}
+                    placeholder={secretSet ? 'Saved — type to replace' : 'EL…'}
+                  />
+                  <p className="mt-1.5 text-[12px] text-[#8A8C93]">
+                    {secretSet
+                      ? 'A secret is saved. It is never shown again — leave this blank to keep it.'
+                      : 'Stored separately from the rest of the settings and never sent back to the browser.'}
+                  </p>
+                  {secretLooksStale && (
+                    <p className="mt-2 border border-[#F0DCA8] bg-[#FDF6E3] px-3 py-2 text-[12px] text-[#8A6D1B]">
+                      You changed the client ID but not the secret. Paste the secret from the
+                      <b> same PayPal app</b> — the saved one belongs to the previous client ID and
+                      will be rejected.
+                    </p>
+                  )}
+                </div>
+
+                <Button variant="ghost" size="sm" onClick={testPayments} disabled={testing}>
+                  {testing ? 'Checking…' : 'Test connection'}
+                </Button>
+
+                {payResult && (
+                  <div
+                    className={
+                      'border px-4 py-3 text-[13px] ' +
+                      (payResult.ok
+                        ? 'border-[#BFE3CC] bg-[#E4F4EA] text-[#1F8A4C]'
+                        : 'border-[#F3C6C8] bg-[#FBE7E8] text-[#C42027]')
+                    }
+                  >
+                    <p className="font-semibold">{payResult.message}</p>
+                    {payResult.detail && <p className="mt-1">{payResult.detail}</p>}
+                  </div>
+                )}
+              </div>
+            </Card>
+            <Card
+              title="Order confirmation"
+              description="What a customer gets after paying in a team store."
+            >
+              <div className="grid gap-4">
+                <Checkbox
+                  label="Email a confirmation when an order is paid"
+                  checked={s.orderEmailsEnabled}
+                  onChange={(e) => set('orderEmailsEnabled', e.target.checked)}
+                />
+
+                <div>
+                  <span className="field-label">Send a copy to</span>
+                  <Input
+                    value={s.orderEmailCopyTo}
+                    onChange={(e) => set('orderEmailCopyTo', e.target.value)}
+                    placeholder="orders@design-sportswear.com"
+                  />
+                  <p className="mt-1.5 text-[12px] text-[#8A8C93]">
+                    A blind copy of every order confirmation. Separate several addresses with commas.
+                  </p>
+                </div>
+
+                <div>
+                  <span className="field-label">Opening line</span>
+                  <Textarea
+                    rows={3}
+                    value={s.orderEmailIntro}
+                    onChange={(e) => set('orderEmailIntro', e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <span className="field-label">Closing line</span>
+                  <Textarea
+                    rows={2}
+                    value={s.orderEmailFooter}
+                    onChange={(e) => set('orderEmailFooter', e.target.value)}
+                  />
+                </div>
+
+                <a
+                  href="/api/admin/order-email/preview"
+                  target="_blank"
+                  rel="noopener"
+                  className="text-[13px] font-semibold text-ink underline"
+                >
+                  Preview the email
+                </a>
+              </div>
+            </Card>
+            <Card
+              title="Pay for an order"
+              description="The /pay page, where a customer settles an invoice you have already sent."
+            >
+              <div className="grid gap-4">
+                <Checkbox
+                  label="Show the pay page"
+                  checked={s.payEnabled}
+                  onChange={(e) => set('payEnabled', e.target.checked)}
+                />
+
+                <div>
+                  <span className="field-label">Heading</span>
+                  <Input value={s.payHeading} onChange={(e) => set('payHeading', e.target.value)} />
+                </div>
+
+                <div>
+                  <span className="field-label">Intro</span>
+                  <Textarea
+                    rows={3}
+                    value={s.payIntro}
+                    onChange={(e) => set('payIntro', e.target.value)}
+                  />
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <span className="field-label">Smallest payment</span>
+                    <Input
+                      type="number"
+                      value={String(s.payMin)}
+                      onChange={(e) => set('payMin', Number(e.target.value) || 0)}
+                    />
+                  </div>
+                  <div>
+                    <span className="field-label">Largest payment</span>
+                    <Input
+                      type="number"
+                      value={String(s.payMax)}
+                      onChange={(e) => set('payMax', Number(e.target.value) || 0)}
+                    />
+                  </div>
+                </div>
+                <p className="-mt-2 text-[12px] text-[#8A8C93]">
+                  The customer types the amount, so these are the only limit on it. Keep the ceiling
+                  near your largest real invoice — an open-ended field invites card testing.
+                </p>
+
+                <div>
+                  <span className="field-label">Note under the form</span>
+                  <Textarea
+                    rows={2}
+                    value={s.payHelp}
+                    onChange={(e) => set('payHelp', e.target.value)}
+                  />
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <span className="field-label">After paying — heading</span>
+                    <Input
+                      value={s.paySuccessTitle}
+                      onChange={(e) => set('paySuccessTitle', e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <span className="field-label">After paying — message</span>
+                    <Textarea
+                      rows={2}
+                      value={s.paySuccessBody}
+                      onChange={(e) => set('paySuccessBody', e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <a
+                  href="/pay"
+                  target="_blank"
+                  rel="noopener"
+                  className="text-[13px] font-semibold text-ink underline"
+                >
+                  Open the pay page
+                </a>
+              </div>
+            </Card>
+            <Card
+              title="Order tracking"
+              description="Reads order status straight from a Google Sheet — no export step."
+            >
+              <div className="grid gap-4">
+                <Checkbox
+                  label="Show order tracking on the site"
+                  checked={s.trackingEnabled}
+                  onChange={(e) => set('trackingEnabled', e.target.checked)}
+                />
+
+                <div>
+                  <span className="field-label">Google Sheet link</span>
+                  <Input
+                    value={s.trackingSheetUrl}
+                    onChange={(e) => set('trackingSheetUrl', e.target.value)}
+                    placeholder="https://docs.google.com/spreadsheets/d/…"
+                  />
+                  <p className="mt-1.5 text-[12px] text-[#8A8C93]">
+                    In Google Sheets: Share → General access → <b>Anyone with the link → Viewer</b>,
+                    then paste the address here.
+                  </p>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <span className="field-label">Tab name</span>
+                    <Input
+                      value={s.trackingSheetTab}
+                      onChange={(e) => set('trackingSheetTab', e.target.value)}
+                      placeholder="Leave blank for the first tab"
+                    />
+                  </div>
+                  <div>
+                    <span className="field-label">Refresh every (minutes)</span>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={120}
+                      value={s.trackingCacheMinutes}
+                      onChange={(e) => set('trackingCacheMinutes', Number(e.target.value))}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Button variant="outline" onClick={testSheet} disabled={testing}>
+                    {testing ? 'Checking the sheet…' : 'Test connection'}
+                  </Button>
+
+                  {test && (
+                    <div
+                      className={
+                        'mt-3 border p-4 text-[13px] ' +
+                        (test.ok
+                          ? 'border-[#BFE3CC] bg-[#E4F4EA] text-[#1F6B41]'
+                          : 'border-[#F3C6C8] bg-[#FBE7E8] text-[#C42027]')
+                      }
+                    >
+                      {test.ok ? (
+                        <>
+                          <b>Connected.</b> Found {test.orders} orders.
+                          <div className="mt-1.5">
+                            Stages: {(test.stages ?? []).join(' → ') || 'none detected'}
+                          </div>
+                          {test.sample && <div className="mt-1">First order: {test.sample}</div>}
+                        </>
+                      ) : (
+                        <>
+                          <b>{test.error}</b>
+                          {test.hint && <div className="mt-1.5">{test.hint}</div>}
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <span className="field-label">Heading</span>
+                  <Input
+                    value={s.trackingHeading}
+                    onChange={(e) => set('trackingHeading', e.target.value)}
                   />
                 </div>
                 <div>
-                  <span className="field-label">Help line</span>
-                  <Input
-                    value={s.trackingHelp}
-                    onChange={(e) => set('trackingHelp', e.target.value)}
+                  <span className="field-label">Intro</span>
+                  <Textarea
+                    rows={2}
+                    value={s.trackingIntro}
+                    onChange={(e) => set('trackingIntro', e.target.value)}
+                  />
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <span className="field-label">Input placeholder</span>
+                    <Input
+                      value={s.trackingPlaceholder}
+                      onChange={(e) => set('trackingPlaceholder', e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <span className="field-label">Help line</span>
+                    <Input
+                      value={s.trackingHelp}
+                      onChange={(e) => set('trackingHelp', e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <span className="field-label">Message when an order is not found</span>
+                  <Textarea
+                    rows={2}
+                    value={s.trackingNotFound}
+                    onChange={(e) => set('trackingNotFound', e.target.value)}
                   />
                 </div>
               </div>
-              <div>
-                <span className="field-label">Message when an order is not found</span>
-                <Textarea
-                  rows={2}
-                  value={s.trackingNotFound}
-                  onChange={(e) => set('trackingNotFound', e.target.value)}
-                />
-              </div>
+            </Card>
             </div>
-          </Card>
-
-          <Card
-            title="Analytics"
-            description="Quote and contact submissions push conversion events to the data layer automatically."
-          >
-            <div className="grid gap-4">
-              <div>
-                <span className="field-label">Google Tag Manager ID</span>
-                <Input
-                  value={s.gtmId}
-                  onChange={(e) => set('gtmId', e.target.value)}
-                  placeholder="GTM-XXXXXXX"
-                />
-              </div>
-              <div>
-                <span className="field-label">GA4 measurement ID</span>
-                <Input
-                  value={s.ga4Id}
-                  onChange={(e) => set('ga4Id', e.target.value)}
-                  placeholder="G-XXXXXXXXXX"
-                />
-                <p className="mt-1.5 text-[12px] text-[#8A8C93]">
-                  Only used when no GTM container is set.
-                </p>
-              </div>
-              <div>
-                <span className="field-label">Google site verification</span>
-                <Input
-                  value={s.googleSiteVerification}
-                  onChange={(e) => set('googleSiteVerification', e.target.value)}
-                  placeholder="hMoH8ndy_VjNgS96LF4tG3AjibS7QQ4Z4rYDvVnFprA"
-                />
-                <p className="mt-1.5 text-[12px] text-[#8A8C93]">
-                  The content value Search Console gives you, not the whole tag.
-                  Paste it here rather than editing the site, and leave it in
-                  place afterwards: Google rechecks it and drops a property
-                  whose tag has gone.
-                </p>
-              </div>
+          </section>
+          <section id="measure" className="scroll-mt-6">
+            <div className="mb-4 border-b border-[#EFEFEC] pb-3">
+              <h2 className="font-display text-[19px] font-black leading-none">
+                Measurement
+              </h2>
+              <p className="mt-1.5 text-[13px] text-[#6B6D74]">The tags that count what visitors do.</p>
             </div>
-          </Card>
+            <div className="grid gap-5 2xl:grid-cols-2 2xl:items-start">
+            <Card
+              title="Analytics"
+              description="Quote and contact submissions push conversion events to the data layer automatically."
+            >
+              <div className="grid gap-4">
+                <div>
+                  <span className="field-label">Google Tag Manager ID</span>
+                  <Input
+                    value={s.gtmId}
+                    onChange={(e) => set('gtmId', e.target.value)}
+                    placeholder="GTM-XXXXXXX"
+                  />
+                </div>
+                <div>
+                  <span className="field-label">GA4 measurement ID</span>
+                  <Input
+                    value={s.ga4Id}
+                    onChange={(e) => set('ga4Id', e.target.value)}
+                    placeholder="G-XXXXXXXXXX"
+                  />
+                  <p className="mt-1.5 text-[12px] text-[#8A8C93]">
+                    Only used when no GTM container is set.
+                  </p>
+                </div>
+                <div>
+                  <span className="field-label">Google site verification</span>
+                  <Input
+                    value={s.googleSiteVerification}
+                    onChange={(e) => set('googleSiteVerification', e.target.value)}
+                    placeholder="hMoH8ndy_VjNgS96LF4tG3AjibS7QQ4Z4rYDvVnFprA"
+                  />
+                  <p className="mt-1.5 text-[12px] text-[#8A8C93]">
+                    The content value Search Console gives you, not the whole tag.
+                    Paste it here rather than editing the site, and leave it in
+                    place afterwards: Google rechecks it and drops a property
+                    whose tag has gone.
+                  </p>
+                </div>
+              </div>
+            </Card>
+            </div>
+          </section>
         </div>
       </div>
     </AdminPage>
