@@ -28,6 +28,15 @@ export type SiteSettings = {
   sportOptions: string[];
   defaultSeoTitle: string;
   defaultSeoDescription: string;
+  /**
+   * Who gets told when a form is filled in.
+   *
+   * A shop is rarely one person: the owner wants the lead, the art team
+   * wants the artwork, and somebody covers the week the owner is away.
+   * Empty falls back to the contact address, so nothing is lost by leaving
+   * it alone.
+   */
+  notifyEmails: string[];
   gtmId: string;
   ga4Id: string;
   /** The token Search Console asks to find in the page head. */
@@ -106,6 +115,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   defaultSeoTitle: 'Design Sportswear — Custom Baseball & Softball Uniforms',
   defaultSeoDescription:
     'Custom sublimated baseball and softball uniforms with a free digital mockup in 24 hours, 3–4 week turnaround and no art or setup fees.',
+  notifyEmails: [],
   gtmId: '',
   ga4Id: '',
   googleSiteVerification: '',

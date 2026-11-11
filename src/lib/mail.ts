@@ -136,6 +136,12 @@ export async function sendMail(
     text: string;
     bcc?: string;
     replyTo?: string;
+    /**
+     * Files to send with the message. The bytes are passed in rather than a
+     * path, because uploads live in the database and are only cached on disk,
+     * so a file may not be on this machine at all.
+     */
+    attachments?: { filename: string; content: Buffer; contentType?: string }[];
   },
   /** Settings typed into the admin form but not saved yet, for a test send. */
   override?: MailConfig
@@ -153,6 +159,7 @@ export async function sendMail(
       subject: msg.subject,
       text: msg.text,
       html: msg.html,
+      attachments: msg.attachments?.length ? msg.attachments : undefined,
     });
     return { ok: true, messageId: info.messageId };
   } catch (err) {
