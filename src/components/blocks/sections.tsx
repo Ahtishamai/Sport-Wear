@@ -124,11 +124,25 @@ export function PageHeaderBlock({
     >
       {p.showBreadcrumb !== false && breadcrumb && breadcrumb.length > 0 && (
         <nav aria-label="Breadcrumb" className="mb-4">
-          <ol className="flex flex-wrap items-center gap-1.5 text-[13px] font-medium text-muted">
+          {/*
+            The crumbs took the light theme's grey whatever the header was
+            set to, so on a dark header they were grey on near black. Only
+            the last one, which is not a link, had been given a colour that
+            worked there.
+          */}
+          <ol
+            className={cn(
+              'flex flex-wrap items-center gap-1.5 text-[13px] font-medium',
+              dark ? 'text-ondark-3' : 'text-muted'
+            )}
+          >
             {breadcrumb.map((b, i) => (
               <li key={i} className="flex items-center gap-1.5">
                 {b.href ? (
-                  <Link href={b.href} className="transition-colors hover:text-ink">
+                  <Link
+                    href={b.href}
+                    className={cn('transition-colors', dark ? 'hover:text-white' : 'hover:text-ink')}
+                  >
                     {b.label}
                   </Link>
                 ) : (
@@ -212,7 +226,7 @@ export function StatStripBlock({ p, bid }: BlockComponentProps) {
             </div>
             <div
               className="mt-2 text-[10px] font-semibold uppercase leading-snug tracking-[.1em] md:text-[11px]"
-              style={{ color: s.highlight ? '#5C4E00' : '#8A8C93' }}
+              style={{ color: s.highlight ? '#5C4E00' : '#6B6D74' }}
               {...edText(bid, `items.${i}.label`)}
             >
               {s.label}

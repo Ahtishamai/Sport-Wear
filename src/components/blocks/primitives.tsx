@@ -412,7 +412,7 @@ export function PackageCard({ pk, showPrice = true }: { pk: CardPackage; showPri
       <div className="flex flex-1 flex-col px-8 py-[34px]">
         <div
           className="mb-3 text-[11px] font-bold uppercase tracking-[.16em]"
-          style={{ color: hl ? 'rgba(16,17,20,.6)' : '#8A7300' }}
+          style={{ color: hl ? 'rgba(16,17,20,.7)' : '#7A6600' }}
           {...edRecord('teamPackage', pk.id, 'tag')}
         >
           {pk.tag}
@@ -450,7 +450,7 @@ export function PackageCard({ pk, showPrice = true }: { pk: CardPackage; showPri
         {priced && pk.note && (
           <p
             className="mt-2 text-[13px] font-medium"
-            style={{ color: hl ? 'rgba(16,17,20,.66)' : '#8A8C93' }}
+            style={{ color: hl ? 'rgba(16,17,20,.66)' : '#6B6D74' }}
             {...edRecord('teamPackage', pk.id, 'note')}
           >
             {pk.note}

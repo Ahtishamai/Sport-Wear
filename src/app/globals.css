@@ -8,14 +8,22 @@
   --color-brand: #ffd100;
   --color-brand-tint: #fff6cc;
   --color-brand-border: #ffe066;
-  --color-brand-text: #8a7300;
+  /* 4.4 against the surface grey it is printed on, just under the 4.5 mark. */
+  --color-brand-text: #806b00;
   --color-brand-deep: #7a6600;
   --color-brand-on: #5c4e00;
   --color-gold: #ffb800;
 
   --color-body: #55575e;
-  --color-muted: #8a8c93;
-  --color-faint: #9a9ca2;
+  /*
+   * Both greys were a little too light to read at the sizes they are used
+   * at: #8a8c93 came to 3.4 against white and 3.1 against the surface grey,
+   * where 4.5 is the mark for text this size. Darkened until they pass on
+   * white, on the surface grey and on the yellow highlight. Text on a dark
+   * background has its own tokens below and is unaffected.
+   */
+  --color-muted: #6b6d74;
+  --color-faint: #70727a;
   --color-quote: #3a3c42;
 
   --color-ondark: #e3e4e6;

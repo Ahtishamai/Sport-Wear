@@ -197,19 +197,30 @@ export function HeroSlider({
 
             <span className="ml-1 flex items-center gap-2">
               {slides.map((_, i) => (
+                /*
+                  The dot stays 8px because that is what it should look like.
+                  The button around it is 24px square, which is what a finger
+                  needs: an 8px target between two other 8px targets is a
+                  coin toss on a phone, and the thing it does is jump the
+                  slider, so a miss is not harmless.
+                */
                 <button
                   key={i}
                   type="button"
                   onClick={() => go(i)}
                   aria-label={`Slide ${i + 1}`}
                   aria-current={i === index}
-                  className={cn(
-                    "h-2 rounded-full transition-all",
-                    i === index
-                      ? "w-7 bg-brand"
-                      : "w-2 bg-white/45 hover:bg-white/70",
-                  )}
-                />
+                  className="group flex h-6 min-w-6 items-center justify-center px-2"
+                >
+                  <span
+                    className={cn(
+                      "block h-2 rounded-full transition-all",
+                      i === index
+                        ? "w-7 bg-brand"
+                        : "w-2 bg-white/45 group-hover:bg-white/70",
+                    )}
+                  />
+                </button>
               ))}
             </span>
           </div>

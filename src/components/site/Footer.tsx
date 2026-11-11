@@ -55,16 +55,16 @@ export function Footer({
           <h3 className="mb-5 font-display text-[12px] font-extrabold uppercase tracking-[.16em] text-white">
             Get in touch
           </h3>
-          <ul className="space-y-2.5 text-[15px] font-medium text-ondark-3">
+          <ul className="space-y-1.5 text-[15px] font-medium text-ondark-3">
             <li>
-              <a href={settings.phoneHref} className="transition-colors hover:text-brand">
+              <a href={settings.phoneHref} className="inline-block py-0.5 transition-colors hover:text-brand">
                 <span {...edSetting('phone')}>{settings.phone}</span>
               </a>
             </li>
             <li>
               <a
                 href={`mailto:${settings.email}`}
-                className="transition-colors hover:text-brand"
+                className="inline-block py-0.5 transition-colors hover:text-brand"
               >
                 <span {...edSetting('email')}>{settings.email}</span>
               </a>
@@ -95,12 +95,12 @@ function FooterCol({ title, links }: { title: string; links: NavLink[] }) {
       <h3 className="mb-5 font-display text-[12px] font-extrabold uppercase tracking-[.16em] text-white">
         {title}
       </h3>
-      <ul className="space-y-2.5">
+      <ul className="space-y-1.5">
         {links.map((l) => (
           <li key={l.id}>
             <Link
               href={l.href}
-              className="text-[15px] font-medium text-ondark-3 transition-colors hover:text-brand"
+              className="inline-block py-0.5 text-[15px] font-medium text-ondark-3 transition-colors hover:text-brand"
             >
               {l.label}
             </Link>
