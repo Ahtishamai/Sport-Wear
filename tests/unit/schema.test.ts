@@ -387,3 +387,63 @@ describe('the dates a page gives about itself', () => {
     expect(node).not.toHaveProperty('dateModified');
   });
 });
+
+describe('the shop’s own profiles', () => {
+  const base = { siteName: SITE, logoDark: '/logo.png' };
+
+  it('names the profiles it has been given', () => {
+    const ld = emitted(
+      businessLd({
+        ...base,
+        social: [
+          { href: 'https://www.facebook.com/Designsportswear/' },
+          { href: 'https://www.instagram.com/sportsweardesign/' },
+          { href: 'https://www.tiktok.com/@designsportswear' },
+        ],
+      })
+    );
+    expect(ld.sameAs).toEqual([
+      'https://www.facebook.com/Designsportswear/',
+      'https://www.instagram.com/sportsweardesign/',
+      'https://www.tiktok.com/@designsportswear',
+    ]);
+  });
+
+  it('will not claim a bare domain as the shop’s page', () => {
+    const ld = emitted(
+      businessLd({
+        ...base,
+        social: [
+          { href: 'https://facebook.com' },
+          { href: 'https://instagram.com/' },
+          { href: 'https://tiktok.com' },
+        ],
+      })
+    );
+    expect(ld).not.toHaveProperty('sameAs');
+  });
+
+  it('keeps the real ones when only some are placeholders', () => {
+    const ld = emitted(
+      businessLd({
+        ...base,
+        social: [
+          { href: 'https://facebook.com' },
+          { href: 'https://www.instagram.com/sportsweardesign/' },
+        ],
+      })
+    );
+    expect(ld.sameAs).toEqual(['https://www.instagram.com/sportsweardesign/']);
+  });
+
+  it('ignores anything that is not a web address', () => {
+    const ld = emitted(
+      businessLd({ ...base, social: [{ href: '' }, { href: 'sportsweardesign' }, { href: null }] })
+    );
+    expect(ld).not.toHaveProperty('sameAs');
+  });
+
+  it('says nothing at all when there are no links', () => {
+    expect(emitted(businessLd(base))).not.toHaveProperty('sameAs');
+  });
+});

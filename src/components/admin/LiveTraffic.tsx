@@ -64,7 +64,12 @@ export function LiveTraffic({
   const total = active.reduce((a, c) => a + c.sessions, 0);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
+    /*
+     * The sources column is capped rather than left to fill the window.
+     * On a wide screen a 7% share was drawing a bar most of a metre long,
+     * which reads as a lot of something rather than a little.
+     */
+    <div className="grid gap-6 md:grid-cols-[minmax(200px,240px)_minmax(0,1fr)] md:gap-8">
       <div>
         <div className="flex items-baseline gap-2.5">
           <span
@@ -82,24 +87,27 @@ export function LiveTraffic({
         </p>
         <dl className="mt-4 grid grid-cols-3 gap-3 border-t border-[#EFEFEC] pt-3 text-[13px]">
           <div>
-            <dt className="text-[#8A8C93]">Visitors</dt>
+            <dt className="text-[#6B6D74]">Visitors</dt>
             <dd className="font-display text-[19px] font-black">{snap.today.visitors}</dd>
           </div>
           <div>
-            <dt className="text-[#8A8C93]">Visits</dt>
+            <dt className="text-[#6B6D74]">Visits</dt>
             <dd className="font-display text-[19px] font-black">{snap.today.sessions}</dd>
           </div>
           <div>
-            <dt className="text-[#8A8C93]">Pages</dt>
+            <dt className="text-[#6B6D74]">Pages</dt>
             <dd className="font-display text-[19px] font-black">{snap.today.views}</dd>
           </div>
         </dl>
-        <p className="mt-1 text-[12px] text-[#8A8C93]">So far today.</p>
+        <p className="mt-1 text-[12px] text-[#6B6D74]">So far today.</p>
       </div>
 
-      <div className="min-w-0">
+      <div className="min-w-0 xl:max-w-[760px]">
+        <p className="mb-3 text-[11px] font-semibold uppercase tracking-[.1em] text-[#6B6D74]">
+          What sent them, today
+        </p>
         {active.length === 0 ? (
-          <p className="text-[13px] text-[#8A8C93]">
+          <p className="text-[13px] text-[#6B6D74]">
             Nobody has arrived yet today. Sources appear here as soon as somebody does.
           </p>
         ) : (
@@ -119,7 +127,7 @@ export function LiveTraffic({
                     </span>
                     <span className="whitespace-nowrap">
                       <span className="font-semibold">{c.sessions}</span>
-                      <span className="ml-1.5 text-[#8A8C93]">
+                      <span className="ml-1.5 text-[#6B6D74]">
                         {c.sessions === 1 ? 'visit' : 'visits'} · {share}%
                       </span>
                     </span>

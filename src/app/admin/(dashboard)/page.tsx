@@ -379,14 +379,16 @@ export default async function Dashboard() {
   /** Every quote so far has been logged without one; no point in a column of dashes. */
   const showEstimates = recent.some((q) => q.estTotal != null && Number(q.estTotal) > 0);
 
+  /*
+   * Tiles measure; the list below them is what to do about it.
+   *
+   * "Quotes to answer", "Messages unread" and "Unfinished baskets" used to be
+   * tiles as well as items in Waiting on you, so the same three numbers were
+   * printed twice on one screen and a reader had to work out whether they
+   * meant the same thing. They are jobs, not measurements, so they are stated
+   * once, in the list of jobs.
+   */
   const leadTiles = [
-    {
-      label: 'Quotes to answer',
-      value: newQuotes,
-      href: '/admin/quotes',
-      accent: newQuotes > 0,
-      note: newQuotes > 0 ? 'oldest first — none have been opened' : 'all caught up',
-    },
     {
       label: `Quotes — last ${WINDOW} days`,
       value: leadsNow,
@@ -398,13 +400,6 @@ export default async function Dashboard() {
       value: money(Number(pipeline._sum.estTotal ?? 0)),
       href: '/admin/quotes',
       note: 'estimates on quotes not yet won or lost',
-    },
-    {
-      label: 'Messages unread',
-      value: newContacts,
-      href: '/admin/contacts',
-      accent: newContacts > 0,
-      note: newContacts > 0 ? 'from the contact form' : 'nothing waiting',
     },
   ];
 
@@ -439,13 +434,6 @@ export default async function Dashboard() {
       href: '/admin/store-orders',
       note: `${lifetimeOrders} paid orders`,
     },
-    {
-      label: 'Unfinished baskets',
-      value: unpaid,
-      href: '/admin/store-orders',
-      accent: unpaid > 0,
-      note: unpaid > 0 ? `${money(unpaidValue)} started and not paid` : 'none pending',
-    },
   ];
 
   return (
@@ -462,8 +450,22 @@ export default async function Dashboard() {
         </>
       }
     >
-      <Stats tiles={trafficTile ? [trafficTile, ...leadTiles] : leadTiles} />
-      <Stats tiles={moneyTiles} />
+      <Stats tiles={trafficTile ? [trafficTile, ...leadTiles, ...moneyTiles] : [...leadTiles, ...moneyTiles]} />
+
+      {/*
+        The jobs, directly under the numbers and before anything else.
+        The page says everything waiting on you is in one list, so the list
+        should not be below a chart and two tables.
+      */}
+      <Card title="Waiting on you" className="mb-5">
+        {todo.length === 0 ? (
+          <p className="text-[13px] text-[#6B6D74]">
+            Nothing waiting. Every lead answered, every order marked off.
+          </p>
+        ) : (
+          <TodoList items={todo} />
+        )}
+      </Card>
 
       {live?.available ? (
         <Card
@@ -661,16 +663,6 @@ export default async function Dashboard() {
         </div>
 
         <div className="min-w-0 space-y-5">
-          <Card title="Waiting on you">
-            {todo.length === 0 ? (
-              <p className="text-[13px] text-[#6B6D74]">
-                Nothing waiting. Every lead answered, every order marked off.
-              </p>
-            ) : (
-              <TodoList items={todo} />
-            )}
-          </Card>
-
           <Card
             title="Team stores"
             description="Where the money comes from."
@@ -767,24 +759,31 @@ type Tile = {
 
 function Stats({ tiles }: { tiles: Tile[] }) {
   return (
-    // Auto-fitting rather than a fixed four, because one row holds five
-    // tiles when the site is being tracked and four when it is not.
-    <div
-      className="mb-3 grid gap-3"
-      style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))' }}
-    >
+    /*
+     * Counted columns rather than auto-fitting.
+     *
+     * Auto-fit packs as many as will go and leaves the remainder on a short
+     * second row, so six tiles came out five and one, or four and two, as the
+     * window changed. Two, three and six all divide six, so every row is full
+     * at every width, and the tiles stay the same size as each other.
+     */
+    <div className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
       {tiles.map((s) => (
         <Link
           key={s.label}
           href={s.href}
-          className="border border-[#E3E3DF] bg-white p-5 transition-colors hover:border-ink"
+          className="flex min-w-0 flex-col border border-[#E3E3DF] bg-white p-4 transition-colors hover:border-ink xl:p-5"
           style={s.accent ? { background: '#FFF6CC', borderColor: '#FFE066' } : undefined}
         >
-          <div className="font-display text-[30px] font-black leading-none">{s.value}</div>
-          <div className="mt-2 text-[12px] font-semibold uppercase tracking-[.1em] text-[#8A8C93]">
+          <div className="font-display text-[26px] font-black leading-none xl:text-[30px]">
+            {s.value}
+          </div>
+          <div className="mt-2 text-[11px] font-semibold uppercase leading-snug tracking-[.09em] text-[#6B6D74] xl:text-[12px]">
             {s.label}
           </div>
-          {s.note && <div className="mt-1.5 text-[12px] text-[#6B6D74]">{s.note}</div>}
+          {s.note && (
+            <div className="mt-1.5 text-[12px] leading-snug text-[#6B6D74]">{s.note}</div>
+          )}
         </Link>
       ))}
     </div>

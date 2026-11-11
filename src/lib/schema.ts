@@ -210,9 +210,10 @@ export function postalAddress(raw: string | null | undefined): PostalAddress | u
  * reviews section itself, against this same @id, so the two merge into one
  * business without either claiming something its page does not show.
  *
- * No sameAs either. The social links in settings are still the placeholders
- * the site shipped with — facebook.com rather than the shop's page — and
- * naming those as the business's profiles would be a plain untruth.
+ * sameAs lists the shop's own profiles, and only those. A link that is just
+ * facebook.com with nothing after it is the placeholder the site shipped
+ * with, and naming that as the business's profile would be a plain untruth,
+ * so anything without a path of its own is left out rather than published.
  */
 export function businessLd(s: {
   siteName: string;
@@ -221,8 +222,20 @@ export function businessLd(s: {
   email?: string;
   address?: string;
   logoDark?: string;
+  social?: { href?: string | null }[];
 }) {
   const logo = absolute(s.logoDark);
+  const profiles = (s.social ?? [])
+    .map((l) => String(l?.href ?? '').trim())
+    .filter((href) => {
+      if (!/^https?:\/\//i.test(href)) return false;
+      try {
+        // A profile has a path. A bare domain is the placeholder.
+        return new URL(href).pathname.replace(/\/+$/, '').length > 1;
+      } catch {
+        return false;
+      }
+    });
   return {
     '@context': 'https://schema.org',
     '@type': 'LocalBusiness',
@@ -235,6 +248,7 @@ export function businessLd(s: {
     url: SITE_URL || undefined,
     logo,
     image: logo,
+    sameAs: profiles.length ? [...new Set(profiles)] : undefined,
   };
 }
 
