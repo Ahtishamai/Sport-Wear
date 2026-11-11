@@ -925,6 +925,20 @@ export function SettingsEditor({
                   Only used when no GTM container is set.
                 </p>
               </div>
+              <div>
+                <span className="field-label">Google site verification</span>
+                <Input
+                  value={s.googleSiteVerification}
+                  onChange={(e) => set('googleSiteVerification', e.target.value)}
+                  placeholder="hMoH8ndy_VjNgS96LF4tG3AjibS7QQ4Z4rYDvVnFprA"
+                />
+                <p className="mt-1.5 text-[12px] text-[#8A8C93]">
+                  The content value Search Console gives you, not the whole tag.
+                  Paste it here rather than editing the site, and leave it in
+                  place afterwards: Google rechecks it and drops a property
+                  whose tag has gone.
+                </p>
+              </div>
             </div>
           </Card>
         </div>

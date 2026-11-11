@@ -37,6 +37,17 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     twitter: { card: 'summary_large_image' },
     robots: { index: true, follow: true },
+    /*
+     * The tag Search Console looks for, on every page of the site.
+     *
+     * It is a setting rather than a line of code because the token belongs to
+     * whoever holds the Search Console property, and that can change without
+     * the site changing. It stays in the head for good: Google rechecks it
+     * and drops a property whose tag has disappeared.
+     */
+    verification: s.googleSiteVerification?.trim()
+      ? { google: s.googleSiteVerification.trim() }
+      : undefined,
     // The D-S mark, built from the logo by scripts/make-icons.mjs. A favicon
     // set in site settings replaces it, so it can be changed without a deploy.
     icons: custom

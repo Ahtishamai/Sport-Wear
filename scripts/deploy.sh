@@ -33,6 +33,16 @@ git pull --ff-only
 echo "→ installing packages (including the ones the build needs)"
 npm ci --no-audit --no-fund || npm install --no-audit --no-fund
 
+# Next keeps the answers to database reads under .next/cache, and keeps them
+# across builds. Pages that are rendered once at build time then get baked
+# with whatever was cached rather than what the database says now, so a change
+# made in site settings — a logo, a verification tag, the default SEO wording —
+# can go live everywhere except the handful of pages that are prerendered.
+# Throwing the cache away costs a slower first request and removes the whole
+# class of problem.
+echo "→ clearing the build cache so settings are read fresh"
+rm -rf .next/cache
+
 echo "→ building (this is the step Hostinger's auto-deploy leaves out)"
 # The build also regenerates the database client, so new tables and columns
 # are known to the running app.
@@ -48,4 +58,4 @@ else
 fi
 
 echo
-echo "Done. A shirt product page should now offer Individual / Team and Add to cart."
+echo "Done."

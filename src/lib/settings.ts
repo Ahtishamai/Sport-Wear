@@ -30,6 +30,8 @@ export type SiteSettings = {
   defaultSeoDescription: string;
   gtmId: string;
   ga4Id: string;
+  /** The token Search Console asks to find in the page head. */
+  googleSiteVerification: string;
   // ---- order tracking (Google Sheet) ----
   trackingEnabled: boolean;
   trackingSheetUrl: string;
@@ -106,6 +108,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     'Custom sublimated baseball and softball uniforms with a free digital mockup in 24 hours, 3–4 week turnaround and no art or setup fees.',
   gtmId: '',
   ga4Id: '',
+  googleSiteVerification: '',
   trackingEnabled: false,
   trackingSheetUrl: '',
   trackingSheetTab: '',
