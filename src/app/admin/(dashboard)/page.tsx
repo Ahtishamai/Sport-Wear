@@ -516,7 +516,13 @@ export default async function Dashboard() {
         inside set the column's width and the whole admin overflows instead
         of the table scrolling within its own card.
       */}
-      <div className="grid gap-5 lg:grid-cols-[1.6fr_1fr] 2xl:grid-cols-[2fr_1fr]">
+      {/*
+        One column until there is room for two.
+        At 1024 the left column came to about 440px and held a table that
+        will not go below 560, so the tables scrolled sideways inside their
+        own cards for the whole range between a laptop and a monitor.
+      */}
+      <div className="grid gap-5 xl:grid-cols-[1.5fr_1fr] 2xl:grid-cols-[2fr_1fr]">
         <div className="min-w-0 space-y-5">
           <Card
             title="Latest quote requests"
@@ -528,7 +534,7 @@ export default async function Dashboard() {
             className="!p-0"
           >
             {recent.length === 0 ? (
-              <p className="py-8 text-center text-[13px] text-[#8A8C93]">No requests yet.</p>
+              <p className="py-8 text-center text-[13px] text-[#6B6D74]">No requests yet.</p>
             ) : (
               <Table>
                 <thead>
@@ -543,13 +549,15 @@ export default async function Dashboard() {
                 <tbody>
                   {plain(recent).map((q) => (
                     <tr key={q.id}>
-                      <Td className="min-w-[200px]">
+                      <Td className="min-w-[150px]">
                         <Link href={`/admin/quotes/${q.id}`} className="font-semibold hover:underline">
                           {q.team}
                         </Link>
-                        <span className="block text-[12px] text-[#8A8C93]">{q.name}</span>
+                        <span className="block text-[12px] text-[#6B6D74]">{q.name}</span>
                       </Td>
-                      <Td className="max-w-[320px] truncate text-[13px]">{q.subject}</Td>
+                      <Td className="text-[13px]">
+                        <span className="block max-w-[180px] truncate 2xl:max-w-[320px]">{q.subject}</span>
+                      </Td>
                       {showEstimates && (
                         <Td className="whitespace-nowrap text-[13px]">
                           {q.estTotal ? money(Number(q.estTotal)) : '—'}
@@ -560,7 +568,7 @@ export default async function Dashboard() {
                           {q.status.replace('_', ' ')}
                         </Badge>
                       </Td>
-                      <Td className="whitespace-nowrap text-[12px] text-[#8A8C93]">
+                      <Td className="whitespace-nowrap text-[12px] text-[#6B6D74]">
                         {when(q.createdAt, now)}
                       </Td>
                     </tr>
@@ -584,7 +592,7 @@ export default async function Dashboard() {
             className="!p-0"
           >
             {latestOrders.length === 0 ? (
-              <p className="py-8 text-center text-[13px] text-[#8A8C93]">
+              <p className="py-8 text-center text-[13px] text-[#6B6D74]">
                 No orders in the last {WINDOW * 2} days.
               </p>
             ) : (
@@ -605,9 +613,11 @@ export default async function Dashboard() {
                         <Link href={o.href} className="font-semibold hover:underline">
                           {o.reference}
                         </Link>
-                        <span className="block text-[12px] text-[#8A8C93]">{o.who}</span>
+                        <span className="block text-[12px] text-[#6B6D74]">{o.who}</span>
                       </Td>
-                      <Td className="max-w-[220px] truncate text-[13px]">{o.where}</Td>
+                      <Td className="text-[13px]">
+                        <span className="block max-w-[150px] truncate 2xl:max-w-[220px]">{o.where}</span>
+                      </Td>
                       <Td className="whitespace-nowrap text-[13px] font-semibold">
                         {money(o.total)}
                       </Td>
@@ -616,7 +626,7 @@ export default async function Dashboard() {
                           {o.status}
                         </Badge>
                       </Td>
-                      <Td className="whitespace-nowrap text-[12px] text-[#8A8C93]">
+                      <Td className="whitespace-nowrap text-[12px] text-[#6B6D74]">
                         {when(o.at, now)}
                       </Td>
                     </tr>
@@ -632,7 +642,7 @@ export default async function Dashboard() {
             className="!p-0"
           >
             {bestSellers.length === 0 ? (
-              <p className="py-8 text-center text-[13px] text-[#8A8C93]">Nothing sold yet.</p>
+              <p className="py-8 text-center text-[13px] text-[#6B6D74]">Nothing sold yet.</p>
             ) : (
               <Table>
                 <thead>
@@ -646,8 +656,8 @@ export default async function Dashboard() {
                 <tbody>
                   {bestSellers.map((b) => (
                     <tr key={b.itemName}>
-                      <Td className="max-w-[320px] truncate text-[13px] font-semibold">
-                        {b.itemName}
+                      <Td className="text-[13px] font-semibold">
+                        <span className="block max-w-[200px] truncate 2xl:max-w-[320px]">{b.itemName}</span>
                       </Td>
                       <Td className="text-[13px]">{b._sum.quantity ?? 0}</Td>
                       <Td className="text-[13px]">{b._count._all}</Td>
@@ -673,7 +683,7 @@ export default async function Dashboard() {
             }
           >
             {storeRows.length === 0 ? (
-              <p className="text-[13px] text-[#8A8C93]">No stores yet.</p>
+              <p className="text-[13px] text-[#6B6D74]">No stores yet.</p>
             ) : (
               <ul className="space-y-2.5">
                 {storeRows.slice(0, 8).map((s) => (
@@ -683,14 +693,14 @@ export default async function Dashboard() {
                       className="min-w-0 flex-1 truncate text-[14px] font-semibold hover:underline"
                     >
                       {s.name.trim() || s.slug}
-                      <span className="ml-2 text-[12px] font-medium text-[#8A8C93]">
+                      <span className="ml-2 text-[12px] font-medium text-[#6B6D74]">
                         {s.status === 'OPEN' ? 'open' : s.status.toLowerCase()} ·{' '}
                         {s._count.items} {s._count.items === 1 ? 'item' : 'items'}
                       </span>
                     </Link>
                     <span className="whitespace-nowrap text-[13px] font-semibold">
                       {money(s.takings.total)}
-                      <span className="ml-1.5 text-[12px] font-medium text-[#8A8C93]">
+                      <span className="ml-1.5 text-[12px] font-medium text-[#6B6D74]">
                         {s.takings.orders}
                       </span>
                     </span>
@@ -725,14 +735,14 @@ export default async function Dashboard() {
 
           <Card title="Recent messages">
             {recentContacts.length === 0 ? (
-              <p className="text-[13px] text-[#8A8C93]">Nothing yet.</p>
+              <p className="text-[13px] text-[#6B6D74]">Nothing yet.</p>
             ) : (
               <ul className="space-y-3">
                 {plain(recentContacts).map((c) => (
                   <li key={c.id} className="border-b border-[#EFEFEC] pb-3 last:border-0 last:pb-0">
                     <Link href="/admin/contacts" className="block">
                       <span className="block text-[13px] font-semibold">{c.name}</span>
-                      <span className="block truncate text-[12px] text-[#8A8C93]">
+                      <span className="block truncate text-[12px] text-[#6B6D74]">
                         {c.subject || c.message}
                       </span>
                     </Link>
@@ -809,7 +819,7 @@ function TodoList({ items }: { items: Todo[] }) {
           <Link href={i.href} className="flex items-baseline justify-between gap-3">
             <span className="min-w-0 flex-1">
               <span className="block text-[13px] font-semibold hover:underline">{i.label}</span>
-              <span className="block text-[12px] text-[#8A8C93]">{i.hint}</span>
+              <span className="block text-[12px] text-[#6B6D74]">{i.hint}</span>
             </span>
             <span
               className="shrink-0 px-2 py-0.5 font-display text-[14px] font-black"
@@ -855,7 +865,7 @@ function Chart({ series }: { series: Bar[] }) {
           </div>
         ))}
       </div>
-      <div className="mt-2 flex justify-between text-[11px] font-medium text-[#8A8C93]">
+      <div className="mt-2 flex justify-between text-[11px] font-medium text-[#6B6D74]">
         <span>{series[0]?.label}</span>
         <span>busiest day: {peak}</span>
         <span>{series[series.length - 1]?.label}</span>

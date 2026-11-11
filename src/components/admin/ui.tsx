@@ -240,7 +240,12 @@ export function Field({
 export function Table({ children }: { children: React.ReactNode }) {
   return (
     <div className="overflow-x-auto border border-[#E3E3DF] bg-white">
-      <table className="w-full min-w-[640px] border-collapse text-left text-[14px]">{children}</table>
+      {/*
+        560 rather than 640. The old floor was wider than the column these
+        sit in between a laptop and a large monitor, so a table that fitted
+        on paper scrolled sideways inside its own card on a real screen.
+      */}
+      <table className="w-full min-w-[560px] border-collapse text-left text-[14px]">{children}</table>
     </div>
   );
 }
@@ -249,7 +254,7 @@ export function Th({ children, className }: { children?: React.ReactNode; classN
   return (
     <th
       className={cn(
-        'border-b border-[#E3E3DF] px-4 py-3 text-[11px] font-bold uppercase tracking-[.12em] text-[#8A8C93]',
+        'border-b border-[#E3E3DF] px-4 py-3 text-[11px] font-bold uppercase tracking-[.12em] text-[#6B6D74]',
         className
       )}
     >

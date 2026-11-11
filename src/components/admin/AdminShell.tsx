@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { SessionUser } from '@/lib/auth';
 import { Icon } from '@/components/site/Icon';
 import type { AreaKey } from '@/lib/permissions';
@@ -92,6 +92,33 @@ export function AdminShell({
   const isActive = (href: string) =>
     href === '/admin' ? pathname === '/admin' : pathname.startsWith(href);
 
+  /*
+   * The page being looked at, for the bar on a phone.
+   *
+   * The longest matching address wins, so /admin/quotes/abc is the quote
+   * requests page rather than the dashboard, which /admin would also match.
+   */
+  const here = visibleNav
+    .flatMap((g) => g.items.map((it) => ({ ...it, group: g.group })))
+    .filter((it) => isActive(it.href))
+    .sort((a, b) => b.href.length - a.href.length)[0];
+
+  // A drawer that is open should close on Escape, and the page behind it
+  // should not scroll away underneath it.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = previous;
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
   async function logout() {
     await fetch('/api/auth/logout', { method: 'POST' });
     router.push('/admin/login');
@@ -120,10 +147,21 @@ export function AdminShell({
           </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-3 py-5">
-          {visibleNav.map((g) => (
-            <div key={g.group} className="mb-6">
-              <div className="px-3 pb-2 text-[11px] font-bold uppercase tracking-[.16em] text-white/40">
+        <nav className="flex-1 overflow-y-auto px-3 py-4">
+          {visibleNav.map((g, i) => (
+            /*
+              A rule between the groups. Six headings in the same colour at
+              the same size down one column read as one long list with words
+              in it; a line is what makes them separate things.
+            */
+            <div
+              key={g.group}
+              className={cn(
+                'pb-4',
+                i > 0 && 'mt-4 border-t border-white/10 pt-4'
+              )}
+            >
+              <div className="px-3 pb-2 text-[11px] font-bold uppercase tracking-[.16em] text-white/45">
                 {g.group}
               </div>
               <ul className="space-y-0.5">
@@ -159,23 +197,26 @@ export function AdminShell({
             View the site
           </Link>
           <div className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-[12px] font-bold text-ink">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand text-[12px] font-bold text-ink">
               {user.name.slice(0, 2).toUpperCase()}
             </span>
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[14px] font-semibold">{user.name}</span>
-              <span className="block truncate text-[12px] text-white/55">{user.role}</span>
+              <span className="block truncate text-[12px] text-white/60">{user.role}</span>
             </span>
-            <button
-              type="button"
-              onClick={logout}
-              title="Log out"
-              aria-label="Log out"
-              className="rounded p-1.5 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
-            >
-              <Icon name="close" size={15} />
-            </button>
           </div>
+          {/*
+            Logging out used to be a small × beside the name, which is the
+            same mark that closes the menu two inches above it and reads as
+            "remove this person" rather than "sign out". It says what it does.
+          */}
+          <button
+            type="button"
+            onClick={logout}
+            className="mt-3 w-full rounded border border-white/15 px-3 py-2 text-[13px] font-semibold text-white/75 transition-colors hover:border-white/35 hover:bg-white/10 hover:text-white"
+          >
+            Log out
+          </button>
         </div>
       </aside>
 
@@ -189,11 +230,45 @@ export function AdminShell({
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex items-center gap-3 border-b border-[#E3E3DF] bg-white px-4 py-3 lg:hidden">
-          <button type="button" onClick={() => setOpen(true)} aria-label="Open menu" className="p-1">
+        {/*
+          The bar on a phone said "Admin", which is the one thing somebody
+          looking at it already knows. It says where they are instead, with
+          the section above the page so the answer is not just "Products"
+          with no idea what that sits under.
+        */}
+        <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-[#E3E3DF] bg-white px-4 py-2.5 lg:hidden">
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            aria-label="Open menu"
+            aria-expanded={open}
+            className="-ml-1 flex h-10 w-10 shrink-0 items-center justify-center rounded hover:bg-[#F4F4F2]"
+          >
             <Icon name="menu" size={22} />
           </button>
-          <span className="font-display text-[15px] font-black uppercase">Admin</span>
+          <span className="min-w-0 flex-1 leading-tight">
+            {here ? (
+              <>
+                <span className="block truncate text-[11px] font-semibold uppercase tracking-[.12em] text-[#6B6D74]">
+                  {here.group}
+                </span>
+                <span className="block truncate font-display text-[16px] font-black">
+                  {here.label}
+                </span>
+              </>
+            ) : (
+              <span className="block font-display text-[16px] font-black uppercase">Admin</span>
+            )}
+          </span>
+          <Link
+            href="/"
+            target="_blank"
+            aria-label="View the site"
+            title="View the site"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded text-[#6B6D74] hover:bg-[#F4F4F2] hover:text-ink"
+          >
+            <Icon name="arrowRight" size={18} />
+          </Link>
         </div>
         <div className="min-w-0 flex-1">
           <ToastProvider>
