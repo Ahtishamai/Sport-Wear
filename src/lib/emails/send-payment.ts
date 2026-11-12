@@ -1,7 +1,8 @@
 import 'server-only';
 import { prisma } from '../db';
 import { getSettings } from '../settings';
-import { addressList, sendMail, type MailResult } from '../mail';
+import { sendMail, type MailResult } from '../mail';
+import { shopRecipients } from '../utils';
 import { checkAddresses } from '../utils';
 import { esc } from './order';
 
@@ -138,7 +139,7 @@ export async function sendPaymentReceipt(
   // Anyone named on the message must not also get the blind copy, or the
   // shop's own mailbox receives two of every receipt it is listed on.
   const named = new Set(to.map((a) => a.toLowerCase()));
-  const bcc = addressList(s.orderEmailCopyTo).filter((a) => !named.has(a.toLowerCase()));
+  const bcc = shopRecipients(s).filter((a) => !named.has(a.toLowerCase()));
 
   // A payment can be taken through PayPal without the customer typing an
   // address here, so "no email" is a normal outcome, not a fault.

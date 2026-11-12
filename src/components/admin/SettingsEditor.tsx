@@ -416,19 +416,24 @@ export function SettingsEditor({
             </div>
           </Card>
           <Card
-            title="Who gets told about a lead"
-            description="Every quote request and contact message goes to all of these, with the customer's artwork attached."
+            title="Who gets told"
+            description="One list for every form on the site: quote requests, contact messages, orders and invoice payments."
           >
             <StringList
               values={s.notifyEmails}
               onChange={(v) => set('notifyEmails', v)}
               placeholder="orders@design-sportswear.com"
             />
-            <p className="mt-2 text-[12px] text-[#6B6D74]">
+            <ul className="mt-3 space-y-1 text-[12px] text-[#6B6D74]">
+              <li>• Quote requests, with the customer's artwork attached</li>
+              <li>• Contact form messages</li>
+              <li>• A blind copy of every order and invoice confirmation</li>
+            </ul>
+            <p className="mt-2.5 text-[12px] text-[#6B6D74]">
               Add as many as you like — the owner, the art team, whoever covers
               the week somebody is away. Leave it empty and everything goes to
-              the contact address above instead. Replying to one of these emails
-              answers the customer, not the website.
+              the contact address instead, so nothing is ever lost. Replying to
+              a quote or contact email answers the customer, not the website.
             </p>
           </Card>
           <Card
@@ -736,17 +741,18 @@ export function SettingsEditor({
                 onChange={(e) => set('orderEmailsEnabled', e.target.checked)}
               />
 
-              <div>
-                <span className="field-label">Send a copy to</span>
-                <Input
-                  value={s.orderEmailCopyTo}
-                  onChange={(e) => set('orderEmailCopyTo', e.target.value)}
-                  placeholder="orders@design-sportswear.com"
-                />
-                <p className="mt-1.5 text-[12px] text-[#8A8C93]">
-                  A blind copy of every order confirmation. Separate several addresses with commas.
-                </p>
-              </div>
+              <p className="text-[13px] text-[#6B6D74]">
+                A blind copy of every confirmation goes to the people listed
+                under{' '}
+                <button
+                  type="button"
+                  onClick={() => setTab('leads')}
+                  className="font-semibold text-ink underline underline-offset-2"
+                >
+                  Enquiries → Who gets told
+                </button>
+                , the same list the quote and contact forms use.
+              </p>
 
               <div>
                 <span className="field-label">Opening line</span>

@@ -24,6 +24,7 @@ const findUnique = vi.fn();
 const settings = {
   email: 'info@design-sportswear.com',
   notifyEmails: [] as string[],
+  orderEmailCopyTo: '',
 };
 
 vi.mock('@/lib/mail', () => ({
@@ -43,6 +44,7 @@ vi.mock('@/lib/settings', () => ({ getSettings: async () => settings }));
 vi.mock('@/lib/seo', () => ({ siteBase: () => 'https://design-sportswear.com' }));
 
 const { notifyQuote } = await import('@/lib/notify');
+const { shopRecipients } = await import('@/lib/utils');
 
 const QUOTE = {
   id: 'q_123',
@@ -200,5 +202,51 @@ describe('who the notification goes to', () => {
     settings.notifyEmails = ['owner@example.com', 'OWNER@example.com', 'owner@example.com'];
     await notifyQuote(QUOTE);
     expect(sent().to).toBe('owner@example.com');
+  });
+});
+
+describe('one recipient list for every form', () => {
+  it('takes the list the admin shows', () => {
+    expect(
+      shopRecipients({ notifyEmails: ['a@x.com', 'b@x.com'], email: 'shop@x.com' })
+    ).toEqual(['a@x.com', 'b@x.com']);
+  });
+
+  it('still honours the old order copy-to box', () => {
+    expect(
+      shopRecipients({ notifyEmails: [], orderEmailCopyTo: 'a@x.com, b@x.com', email: 'shop@x.com' })
+    ).toEqual(['a@x.com', 'b@x.com']);
+  });
+
+  it('merges the two without writing to anybody twice', () => {
+    expect(
+      shopRecipients({
+        notifyEmails: ['a@x.com', 'b@x.com'],
+        orderEmailCopyTo: 'B@x.com; c@x.com',
+        email: 'shop@x.com',
+      })
+    ).toEqual(['a@x.com', 'b@x.com', 'c@x.com']);
+  });
+
+  it('falls back to the shop address so a lead is never lost', () => {
+    expect(shopRecipients({ notifyEmails: [], orderEmailCopyTo: '', email: 'shop@x.com' })).toEqual([
+      'shop@x.com',
+    ]);
+  });
+
+  it('drops anything that is not an address', () => {
+    expect(
+      shopRecipients({ notifyEmails: ['  ', 'not an address', 'a@x.com'], email: 'shop@x.com' })
+    ).toEqual(['a@x.com']);
+  });
+
+  it('says nobody rather than guessing when there is nothing at all', () => {
+    expect(shopRecipients({})).toEqual([]);
+  });
+
+  it('is the same list the quote notification is addressed to', async () => {
+    settings.notifyEmails = ['owner@x.com', 'art@x.com'];
+    await notifyQuote(QUOTE);
+    expect(sent().to).toBe(shopRecipients(settings).join(', '));
   });
 });

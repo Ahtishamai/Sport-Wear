@@ -160,6 +160,41 @@ export function splitAddresses(raw: string): string[] {
 }
 
 /**
+ * Everyone at the shop who should be told that a form was filled in.
+ *
+ * One list for every form on the site: quote requests, contact messages,
+ * orders and invoice payments. There used to be two places to set this —
+ * a list for the enquiry forms and a "send a copy to" box for the order
+ * emails — so an address added in one place still missed half of what came
+ * in, which is a bad way to find out about an order.
+ *
+ * Both are read, because the copy-to box has real addresses in it. Repeats
+ * are dropped case-insensitively, since the same mailbox twice is a slip
+ * rather than a request for two copies, and anything without an @ is
+ * ignored rather than handed to a mail server that will reject the lot.
+ */
+export function shopRecipients(s: {
+  notifyEmails?: string[] | null;
+  orderEmailCopyTo?: string | null;
+  email?: string | null;
+}): string[] {
+  const listed = [...(s.notifyEmails ?? []), ...splitAddresses(s.orderEmailCopyTo ?? '')]
+    .map((a) => String(a ?? '').trim())
+    .filter((a) => a.includes('@'));
+
+  // Nobody named: the shop's own address is better than silence.
+  const all = listed.length ? listed : [String(s.email ?? '').trim()].filter((a) => a.includes('@'));
+
+  const seen = new Set<string>();
+  return all.filter((a) => {
+    const key = a.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+/**
  * Sorts a pasted list into what can be sent to and what cannot.
  *
  * Duplicates are dropped case-insensitively — the same person listed twice is

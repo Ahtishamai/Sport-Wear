@@ -2,7 +2,7 @@ import 'server-only';
 import { prisma } from '../db';
 import { getSettings } from '../settings';
 import { sendMail, type MailResult } from '../mail';
-import { checkAddresses, splitAddresses } from '../utils';
+import { checkAddresses, shopRecipients } from '../utils';
 import { renderOrderEmail, type OrderEmailItem } from './order';
 
 /**
@@ -89,7 +89,7 @@ export async function sendShopOrderEmail(
   const asked = Array.isArray(opts.to) ? opts.to.join(',') : opts.to;
   const to = opts.copyOnly ? [] : checkAddresses(asked ?? order.email ?? '').valid;
   const named = new Set(to.map((a) => a.toLowerCase()));
-  const bcc = splitAddresses(settings.orderEmailCopyTo).filter((a) => !named.has(a.toLowerCase()));
+  const bcc = shopRecipients(settings).filter((a) => !named.has(a.toLowerCase()));
 
   if (!to.length && !bcc.length) {
     return { ok: false, skipped: 'no-recipient', error: 'No address to send to.' };

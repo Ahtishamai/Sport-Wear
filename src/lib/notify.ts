@@ -1,5 +1,5 @@
 import 'server-only';
-import { money } from './utils';
+import { money, shopRecipients } from './utils';
 import { prisma } from './db';
 import { getMailConfig, isMailReady, sendMail, type MailConfig } from './mail';
 import { getSettings } from './settings';
@@ -285,18 +285,16 @@ async function deliver(
    * told. Duplicates are dropped, because the same address twice is a mail
    * server's idea of a reason to refuse the lot.
    */
-  const clean = (list: (string | null | undefined)[]) =>
-    list.map((a) => String(a ?? '').trim()).filter((a) => a.includes('@'));
-
-  const fromEnv = clean([
+  const fromEnv = [
     ...String(process.env.NOTIFY_EMAIL ?? '').split(/[,;]/),
     ...String(process.env.ADMIN_EMAIL ?? '').split(/[,;]/),
-  ]);
-  const listed = clean(settings?.notifyEmails ?? []);
-  // A list somebody has filled in is the answer, not a suggestion added to
-  // the contact address: naming three people and still copying the shop
-  // mailbox is not what naming three people means.
-  const wanted = [...fromEnv, ...(listed.length ? listed : clean([settings?.email]))];
+  ]
+    .map((a) => a.trim())
+    .filter((a) => a.includes('@'));
+
+  // The one list every form on the site uses. Environment variables stay in
+  // front of it for deployments configured before that list existed.
+  const wanted = [...fromEnv, ...shopRecipients(settings ?? {})];
   const to = [...new Set(wanted.map((a) => a.toLowerCase()))].join(', ');
 
   // Environment variables win when present; otherwise the admin's settings.

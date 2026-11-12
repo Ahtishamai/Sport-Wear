@@ -2,7 +2,7 @@ import 'server-only';
 import { prisma } from '../db';
 import { getSettings } from '../settings';
 import { sendMail, type MailResult } from '../mail';
-import { checkAddresses, formatStoreDeadline, splitAddresses } from '../utils';
+import { checkAddresses, formatStoreDeadline, shopRecipients } from '../utils';
 import { renderOrderEmail, type OrderEmailItem } from './order';
 
 /**
@@ -90,7 +90,7 @@ export async function sendOrderEmail(
   // Anyone named on the message must not also receive the blind copy, or the
   // shop's own mailbox gets two of every order it is listed on.
   const named = new Set(to.map((a) => a.toLowerCase()));
-  const bcc = splitAddresses(settings.orderEmailCopyTo).filter(
+  const bcc = shopRecipients(settings).filter(
     (a) => !named.has(a.toLowerCase())
   );
 
