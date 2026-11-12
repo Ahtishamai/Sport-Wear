@@ -26,17 +26,17 @@ export function AdminPage({
    * Most screens are a form or a list, and a line of text past about twelve
    * hundred pixels is harder to read, not easier — so they stay narrow and
    * centred. A screen that is mostly tables and figures side by side, like
-   * the dashboard, is given the whole window instead: on a wide monitor the
-   * cap left three hundred pixels of grey down each edge while the tables
-   * squeezed names onto five lines.
+   * the dashboard, takes the whole window: no cap at all, because a 2560
+   * monitor still had a strip of grey down each edge while the tables inside
+   * were squeezing names onto five lines. The gutter is the only margin.
    */
   width?: 'normal' | 'wide';
 }) {
   return (
     <div
       className={cn(
-        'mx-auto w-full px-5 py-8 md:px-8',
-        width === 'wide' ? 'max-w-[2000px]' : 'max-w-[1240px]'
+        'w-full px-5 py-8 md:px-8',
+        width === 'wide' ? 'max-w-none' : 'mx-auto max-w-[1240px]'
       )}
     >
       {back && (
