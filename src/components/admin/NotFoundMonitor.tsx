@@ -83,6 +83,42 @@ export function NotFoundMonitor() {
     }
   }
 
+  /**
+   * Says the page is gone for good: a rule with nowhere to send anybody,
+   * which the site answers 410 rather than 404.
+   *
+   * Worth the separate button rather than a checkbox on the redirect form,
+   * because this is the common case for a dead end. Most of them are not a
+   * page that moved, they are a page that never existed or will never come
+   * back, and the honest answer to a crawler asking for one is "stop asking"
+   * rather than "try again later".
+   */
+  async function markGone(row: NotFoundRow) {
+    if (!(await confirm({
+      title: 'Mark this address gone?',
+      message: `${row.path} will answer 410 Gone instead of 404, which tells a search engine to drop it rather than keep checking. Undo it from Redirects.`,
+      confirmLabel: 'Mark it gone',
+    }))) return;
+
+    setBusy(true);
+    try {
+      await api.create('redirects', {
+        from: row.path,
+        to: '',
+        kind: 'PERMANENT',
+        active: true,
+        note: 'Gone for good — answers 410.',
+      });
+      await api.notFound.act({ action: 'ignore', id: row.id });
+      toast('Marked gone');
+      await load();
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Could not mark it gone', 'error');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function act(action: 'ignore' | 'unignore' | 'delete', row: NotFoundRow) {
     try {
       await api.notFound.act({ action, id: row.id });
@@ -218,6 +254,16 @@ export function NotFoundMonitor() {
                           }}
                         >
                           Redirect it
+                        </Button>
+                      )}
+                      {!r.covered && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={busy}
+                          onClick={() => markGone(r)}
+                        >
+                          Mark gone
                         </Button>
                       )}
                       <Button

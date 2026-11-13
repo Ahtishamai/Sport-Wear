@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   isExternal,
+  isGoneRule,
+  matchGone,
   matchRedirect,
   normalizePath,
   normalizeTarget,
@@ -219,5 +221,63 @@ describe('what cannot be saved', () => {
 
   it('refuses an address too long to store', () => {
     expect(redirectProblem('/' + 'a'.repeat(600), '/x')).toBe('That address is too long to store.');
+  });
+});
+
+describe('an address that is gone for good', () => {
+  const gone = (from: string) => ({ from, to: '', kind: 'PERMANENT' as const });
+  const sendTo = (from: string, to: string) => ({ from, to, kind: 'PERMANENT' as const });
+
+  it('is a rule with nowhere to send anybody', () => {
+    expect(isGoneRule({ to: '' })).toBe(true);
+    expect(isGoneRule({ to: '   ' })).toBe(true);
+    expect(isGoneRule({ to: null })).toBe(true);
+    expect(isGoneRule({ to: '/collections' })).toBe(false);
+  });
+
+  it('is found by the address it was written for', () => {
+    expect(matchGone('/football', [gone('/football')])).toBe(true);
+    expect(matchGone('/blog', [gone('/football')])).toBe(false);
+  });
+
+  it('is matched however the address is spelled', () => {
+    const rules = [gone('/football')];
+    expect(matchGone('/Football/', rules)).toBe(true);
+    expect(matchGone('https://design-sportswear.com/football?utm=x', rules)).toBe(true);
+  });
+
+  it('never also looks like a redirect', () => {
+    expect(matchRedirect('/football', [gone('/football')])).toBeNull();
+  });
+
+  it('can cover everything below an address', () => {
+    const rules = [gone('/blog/*')];
+    expect(matchGone('/blog/anything', rules)).toBe(true);
+    expect(matchGone('/blog', rules)).toBe(true);
+    expect(matchGone('/blogger', rules)).toBe(false);
+  });
+
+  it('loses to an exact redirect, so one page can be saved from a gone branch', () => {
+    const rules = [gone('/blog/*'), sendTo('/blog/sizing', '/size-chart')];
+    expect(matchGone('/blog/sizing', rules)).toBe(false);
+    expect(matchRedirect('/blog/sizing', rules)?.to).toBe('/size-chart');
+    expect(matchGone('/blog/old-post', rules)).toBe(true);
+  });
+
+  it('beats a wildcard redirect when it is the more exact rule', () => {
+    const rules = [sendTo('/products/*', '/collections'), gone('/products/15')];
+    expect(matchGone('/products/15', rules)).toBe(true);
+    expect(matchRedirect('/products/15', rules)).toBeNull();
+    expect(matchRedirect('/products/other', rules)?.to).toBe('/collections');
+  });
+
+  it('is accepted by the form without a destination', () => {
+    expect(redirectProblem('/football', '', true)).toBeNull();
+    expect(redirectProblem('/football', '')).toBe('Type where the old address should send people.');
+  });
+
+  it('still refuses the home page and the admin', () => {
+    expect(redirectProblem('/', '', true)).toBe('The home page cannot be redirected away from.');
+    expect(redirectProblem('/admin/users', '', true)).toContain('cannot be redirected');
   });
 });

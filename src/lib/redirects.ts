@@ -16,6 +16,23 @@ export type RedirectRule = {
   kind: RedirectKind;
 };
 
+/**
+ * A rule with nowhere to send anybody means the address is gone for good.
+ *
+ * It is stored as an empty target rather than a third kind, because the kind
+ * column is a database enum and adding to it needs a migration run against a
+ * live shop. An empty target was already meaningless — a rule that sent
+ * visitors nowhere was simply ignored — so the one spare state the data
+ * already had is the one being used.
+ *
+ * Gone means 410: the page existed, it is not coming back, and a search
+ * engine should drop it rather than keep asking. That is the difference
+ * between it and the 404 every other unknown address gets.
+ */
+export function isGoneRule(rule: { to?: string | null }): boolean {
+  return !String(rule?.to ?? '').trim();
+}
+
 /** A rule whose `from` ends in this matches everything below it. */
 const STAR = '/*';
 
@@ -88,10 +105,30 @@ export function matchRedirect<R extends RedirectRule>(
   path: string,
   rules: R[]
 ): { rule: R; to: string } | null {
+  const hit = ruleFor(path, rules);
+  if (!hit || isGoneRule(hit.rule)) return null;
+  return finish(hit.rule, hit.to, normalizePath(path));
+}
+
+/** True when the rule that answers this address says it is gone for good. */
+export function matchGone<R extends RedirectRule>(path: string, rules: R[]): boolean {
+  const hit = ruleFor(path, rules);
+  return !!hit && isGoneRule(hit.rule);
+}
+
+/**
+ * The one rule that answers this address, before anything is decided about
+ * what to do with it.
+ *
+ * An exact rule always beats a wildcard, and among wildcards the longest one
+ * wins — so `/shop/jerseys/*` can be pointed somewhere of its own without
+ * `/shop/*` above it getting in the way.
+ */
+function ruleFor<R extends RedirectRule>(path: string, rules: R[]): { rule: R; to: string } | null {
   const here = normalizePath(path);
 
   const exact = rules.find((r) => !r.from.endsWith(STAR) && normalizePath(r.from) === here);
-  if (exact) return finish(exact, exact.to, here);
+  if (exact) return { rule: exact, to: exact.to };
 
   let best: R | null = null;
   let bestPrefix = '';
@@ -113,7 +150,7 @@ export function matchRedirect<R extends RedirectRule>(
     ? best.to.slice(0, -STAR.length) + (bestPrefix === '/' ? here : here.slice(bestPrefix.length))
     : best.to;
 
-  return finish(best, to, here);
+  return { rule: best, to };
 }
 
 function finish<R extends RedirectRule>(rule: R, rawTo: string, here: string) {
@@ -130,19 +167,21 @@ function finish<R extends RedirectRule>(rule: R, rawTo: string, here: string) {
  * either would lock someone out of the site or out of the panel they would
  * need to delete it from.
  */
-export function redirectProblem(rawFrom: string, rawTo: string): string | null {
+export function redirectProblem(rawFrom: string, rawTo: string, gone = false): string | null {
   const from = normalizePath(rawFrom);
   const to = normalizeTarget(rawTo);
 
   if (!String(rawFrom ?? '').trim()) return 'Type the old address this rule is for.';
-  if (!to) return 'Type where the old address should send people.';
+  // No target is how an address is marked gone, so it is only missing when
+  // the rule was meant to send somebody somewhere.
+  if (!to && !gone) return 'Type where the old address should send people.';
 
   if (from === '/') return 'The home page cannot be redirected away from.';
   if (/^\/(admin|api)(\/|$)/.test(from)) {
     return 'Addresses under /admin and /api are the panel itself and cannot be redirected.';
   }
 
-  if (!isExternal(to) && normalizePath(to) === from) {
+  if (to && !isExternal(to) && normalizePath(to) === from) {
     return 'That sends the address back to itself.';
   }
   if (rawTo.trim().endsWith(STAR) && !from.endsWith(STAR)) {
