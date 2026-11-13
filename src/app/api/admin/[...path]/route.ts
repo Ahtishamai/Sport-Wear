@@ -130,7 +130,13 @@ function checkRedirect(data: Record<string, any>, existing?: Record<string, any>
   const from = 'from' in data ? String(data.from ?? '') : String(existing?.from ?? '');
   const to = 'to' in data ? String(data.to ?? '') : String(existing?.to ?? '');
 
-  const wrong = redirectProblem(from, to);
+  /*
+   * No destination is how an address is marked gone for good: the site
+   * answers it 410 rather than 404, so a search engine drops it instead of
+   * checking again. It is spelled out in the field's own help and shown as
+   * "gone" in the list, and switching the rule off puts the 404 back.
+   */
+  const wrong = redirectProblem(from, to, !to.trim());
   if (wrong) return wrong;
 
   if ('from' in data) data.from = normalizePath(from);

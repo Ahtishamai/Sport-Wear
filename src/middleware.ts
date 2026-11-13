@@ -17,20 +17,27 @@ import { matchGone, type RedirectRule } from '@/lib/redirects';
  * through does not, so the public side keeps its prerendering.
  */
 
-/** How long the middleware trusts its copy of the rules. */
-const TTL_MS = 60_000;
+/**
+ * How long the middleware trusts its copy of the rules.
+ *
+ * Short, because the cost of being stale is a shop owner marking an address
+ * gone, reloading, and being shown the 404 they just fixed. Refreshing is an
+ * internal request to a route that is itself cached and only touches the
+ * database after a rule actually changes, so doing it often is close to free.
+ */
+const TTL_MS = 5_000;
 
 let cache: { at: number; rules: RedirectRule[] } = { at: 0, rules: [] };
 let inFlight: Promise<void> | null = null;
 
 /**
- * The rules, kept in memory and refreshed at most once a minute.
+ * The rules, kept in memory and refreshed no more than once every few seconds.
  *
  * A stale copy is served while the new one is fetched, and a failure leaves
- * the old copy in place rather than throwing: the worst a stale minute can do
- * is answer 404 where it should have answered 410, and the worst a failure
- * can do is the same. Neither is worth putting an error in front of a
- * shopper for.
+ * the old copy in place rather than throwing: the worst a stale few
+ * seconds can do is answer 404 where it should have answered 410, and the
+ * worst a failure can do is the same. Neither is worth putting an error in
+ * front of a shopper for.
  */
 async function currentRules(origin: string): Promise<RedirectRule[]> {
   const fresh = Date.now() - cache.at < TTL_MS;
@@ -43,7 +50,7 @@ async function currentRules(origin: string): Promise<RedirectRule[]> {
         if (res.ok) cache = { at: Date.now(), rules: (await res.json()) as RedirectRule[] };
         else cache = { ...cache, at: Date.now() };
       } catch {
-        // Keep what we have and try again after the next minute.
+        // Keep what we have and try again after the next interval.
         cache = { ...cache, at: Date.now() };
       } finally {
         inFlight = null;

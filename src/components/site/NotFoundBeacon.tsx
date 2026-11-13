@@ -14,27 +14,48 @@ export function NotFoundBeacon() {
 
   useEffect(() => {
     const here = window.location.pathname + window.location.search;
-    setPath(window.location.pathname);
+    const path = window.location.pathname;
+    setPath(path);
+
+    /*
+     * Tell the admin bar this address is a dead end.
+     *
+     * Only the browser knows for certain which address was asked for, and
+     * the bar lives in the layout rather than in this page, so the two are
+     * not in a position to hand anything to each other directly. Both the
+     * attribute and the event are set because neither can know which of them
+     * mounts first: the attribute answers a bar that arrives late, the event
+     * wakes one that was already there.
+     */
+    document.documentElement.dataset.deadEnd = path;
+    window.dispatchEvent(new CustomEvent('ds:dead-end', { detail: path }));
 
     // Once per address per tab. A visitor pressing back and forward over a
     // broken link should not make it look like a hundred people did.
     const key = 'ds-404:' + here;
+    let seen = false;
     try {
-      if (sessionStorage.getItem(key)) return;
-      sessionStorage.setItem(key, '1');
+      seen = !!sessionStorage.getItem(key);
+      if (!seen) sessionStorage.setItem(key, '1');
     } catch {
       /* a locked-down browser just reports it again */
     }
 
-    const body = JSON.stringify({ path: window.location.pathname, from: document.referrer || null });
-    fetch('/api/not-found', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body,
-      keepalive: true,
-    }).catch(() => {
-      /* the report is a nicety; never bother the visitor about it */
-    });
+    if (!seen) {
+      fetch('/api/not-found', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path, from: document.referrer || null }),
+        keepalive: true,
+      }).catch(() => {
+        /* the report is a nicety; never bother the visitor about it */
+      });
+    }
+
+    return () => {
+      delete document.documentElement.dataset.deadEnd;
+      window.dispatchEvent(new CustomEvent('ds:dead-end', { detail: null }));
+    };
   }, []);
 
   if (!path) return null;

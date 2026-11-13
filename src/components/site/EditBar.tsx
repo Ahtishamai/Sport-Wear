@@ -11,6 +11,11 @@ const InlineEditor = dynamic(() => import('./InlineEditor').then((m) => m.Inline
   ssr: false,
 });
 
+/** Loaded only on a page that turned out to be a dead end. */
+const DeadEndBar = dynamic(() => import('./DeadEndBar').then((m) => m.DeadEndBar), {
+  ssr: false,
+});
+
 /** Maps a public URL to the admin screen that edits it. */
 export function adminEditHref(pathname: string) {
   if (pathname === '/') return '/admin/pages/home/edit';
@@ -35,6 +40,8 @@ export function EditBar() {
   const [me, setMe] = useState<Me>(null);
   const [hidden, setHidden] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [deadEnd, setDeadEnd] = useState<string | null>(null);
+  const [ignored, setIgnored] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -49,12 +56,40 @@ export function EditBar() {
     };
   }, []);
 
-  // Leaving the page cancels edit mode.
-  useEffect(() => setEditing(false), [pathname]);
+  /*
+   * Whether this page turned out to be a dead end.
+   *
+   * The 404 view says so, because only the browser knows for certain which
+   * address was asked for. Both the attribute and the event are read: the
+   * attribute catches a page that was already rendered when this mounted,
+   * the event catches one that renders afterwards.
+   */
+  useEffect(() => {
+    const read = () => setDeadEnd(document.documentElement.dataset.deadEnd ?? null);
+    const onSignal = (e: Event) =>
+      setDeadEnd((e as CustomEvent<string | null>).detail ?? null);
+
+    read();
+    window.addEventListener('ds:dead-end', onSignal);
+    return () => window.removeEventListener('ds:dead-end', onSignal);
+  }, [pathname]);
+
+  // Leaving the page cancels edit mode, and a dismissal only covers the page
+  // it was made on.
+  useEffect(() => {
+    setEditing(false);
+    setIgnored(false);
+  }, [pathname]);
 
   if (!me) return null;
 
   if (editing) return <InlineEditor onExit={() => setEditing(false)} />;
+
+  // A dead end is the one thing worth interrupting for: there is nothing on
+  // this page to edit, and mending it is the only reason an admin is here.
+  if (deadEnd && !ignored) {
+    return <DeadEndBar path={deadEnd} onDone={() => setIgnored(true)} />;
+  }
 
   if (hidden) return null;
 
