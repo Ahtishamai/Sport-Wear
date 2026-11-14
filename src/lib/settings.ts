@@ -29,6 +29,17 @@ export type SiteSettings = {
   defaultSeoTitle: string;
   defaultSeoDescription: string;
   /**
+   * Whether a product page may be indexed on its own.
+   *
+   * Off is a real strategy rather than a mistake, and for a catalogue of
+   * near identical designs it is usually the right one: seventy pages that
+   * differ only by a photograph compete with each other and with the shelf
+   * they sit on, and the shelf is the page with the writing on it. Off, the
+   * products stay on the site, stay linked and stay crawlable — a search
+   * engine is simply asked to rank the collection instead.
+   */
+  indexProducts: boolean;
+  /**
    * Who gets told when a form is filled in.
    *
    * A shop is rarely one person: the owner wants the lead, the art team
@@ -115,6 +126,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   defaultSeoTitle: 'Design Sportswear — Custom Baseball & Softball Uniforms',
   defaultSeoDescription:
     'Custom sublimated baseball and softball uniforms with a free digital mockup in 24 hours, 3–4 week turnaround and no art or setup fees.',
+  indexProducts: true,
   notifyEmails: [],
   gtmId: '',
   ga4Id: '',

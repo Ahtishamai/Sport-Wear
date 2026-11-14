@@ -2,6 +2,7 @@ import type { MetadataRoute } from 'next';
 import { prisma } from '@/lib/db';
 import { siteBase } from '@/lib/seo';
 import { freshness } from '@/lib/schema';
+import { getSettings } from '@/lib/settings';
 
 export const revalidate = 3600;
 
@@ -30,7 +31,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   try {
-    const [pages, products, collections] = await Promise.all([
+    const [settings, pages, products, collections] = await Promise.all([
+      getSettings(),
       prisma.page.findMany({
         where: { status: 'PUBLISHED' },
         select: { slug: true, createdAt: true, updatedAt: true },
@@ -79,12 +81,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         changeFrequency: 'weekly' as const,
         priority: 0.8,
       })),
-      ...products.map((p) => ({
-        url: `${base}/products/${p.handle}`,
-        lastModified: lastModified(p),
-        changeFrequency: 'weekly' as const,
-        priority: 0.7,
-      })),
+      /*
+       * Products are left out while they are asked not to be indexed.
+       *
+       * A sitemap is a list of pages worth ranking, so listing one that
+       * carries a noindex tag is the site contradicting itself — Search
+       * Console reports it as an error, and rightly.
+       */
+      ...(settings.indexProducts === false
+        ? []
+        : products.map((p) => ({
+            url: `${base}/products/${p.handle}`,
+            lastModified: lastModified(p),
+            changeFrequency: 'weekly' as const,
+            priority: 0.7,
+          }))),
     ];
   } catch {
     return bareRoutes;

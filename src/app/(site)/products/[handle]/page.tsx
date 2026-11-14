@@ -83,6 +83,17 @@ export async function generateMetadata({
       description,
       images: absolute ? [absolute] : undefined,
     },
+    /*
+     * Whether this page may be ranked on its own.
+     *
+     * Turned off, it is still crawled and its links are still followed, so
+     * the collections it sits on lose nothing: the only thing being said is
+     * that the shelf is the page worth ranking, not seventy designs that
+     * differ by a photograph. The structured data stays either way — it is
+     * what an assistant reads to describe the product, which has nothing to
+     * do with whether the page holds a position in a result list.
+     */
+    robots: s.indexProducts === false ? { index: false, follow: true } : undefined,
     // The same two dates the product's structured data and the sitemap give.
     other: freshnessMeta(p),
   };

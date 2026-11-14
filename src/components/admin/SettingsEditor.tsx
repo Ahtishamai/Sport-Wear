@@ -364,6 +364,21 @@ export function SettingsEditor({
           </Card>
           <Card title="Default SEO" description="Used when a page has no SEO fields of its own.">
             <div className="grid gap-4">
+              <div className="border-b border-[#EFEFEC] pb-4">
+                <Checkbox
+                  label="Let search engines rank product pages on their own"
+                  checked={s.indexProducts !== false}
+                  onChange={(e) => set('indexProducts', e.target.checked)}
+                />
+                <p className="mt-1.5 text-[12px] text-[#6B6D74]">
+                  Off is a deliberate choice, not a fault. Designs that differ
+                  only by a photograph compete with each other and with the
+                  collection they sit on, and the collection is the page with
+                  the writing on it. Off, products stay on the site, stay
+                  linked and stay crawlable, and they leave the sitemap so it
+                  does not list pages it has asked not to be ranked.
+                </p>
+              </div>
               <div>
                 <span className="field-label">Default title</span>
                 <Input
