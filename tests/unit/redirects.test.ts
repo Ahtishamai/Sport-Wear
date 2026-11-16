@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  coversWholeSite,
   isExternal,
   isGoneRule,
   matchGone,
@@ -279,5 +280,29 @@ describe('an address that is gone for good', () => {
   it('still refuses the home page and the admin', () => {
     expect(redirectProblem('/', '', true)).toBe('The home page cannot be redirected away from.');
     expect(redirectProblem('/admin/users', '', true)).toContain('cannot be redirected');
+  });
+});
+
+describe('a gone rule may not swallow the whole site', () => {
+  it('knows which patterns cover everything', () => {
+    expect(coversWholeSite('/*')).toBe(true);
+    expect(coversWholeSite('/')).toBe(true);
+    expect(coversWholeSite('https://design-sportswear.com/*')).toBe(true);
+    expect(coversWholeSite('/products/*')).toBe(false);
+    expect(coversWholeSite('/football')).toBe(false);
+  });
+
+  it('refuses one at the form', () => {
+    expect(redirectProblem('/*', '', true)).toContain('every address on the site');
+  });
+
+  it('still allows /* as a redirect, which only answers a dead end', () => {
+    expect(redirectProblem('/*', '/collections')).toBeNull();
+  });
+
+  it('would have answered 410 for the home page before the guard', () => {
+    // The shape of the mistake, kept so it cannot come back.
+    expect(matchGone('/', [{ from: '/*', to: '', kind: 'PERMANENT' }])).toBe(true);
+    expect(redirectProblem('/*', '', true)).not.toBeNull();
   });
 });

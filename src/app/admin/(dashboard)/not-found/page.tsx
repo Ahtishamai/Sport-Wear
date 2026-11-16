@@ -2,6 +2,7 @@
 
 import { AdminPage, LinkButton } from '@/components/admin/ui';
 import { NotFoundMonitor } from '@/components/admin/NotFoundMonitor';
+import { BulkGone } from '@/components/admin/BulkGone';
 
 export default function NotFoundAdmin() {
   return (
@@ -10,6 +11,9 @@ export default function NotFoundAdmin() {
       description="Every address a visitor or a search engine asked for and did not get. The loudest one is the one worth mending first — type where it should go and the redirect is written for you."
       actions={<LinkButton href="/admin/redirects">Redirects</LinkButton>}
     >
+      <div className="mb-5">
+        <BulkGone />
+      </div>
       <NotFoundMonitor />
     </AdminPage>
   );

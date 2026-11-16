@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { matchGone, type RedirectRule } from '@/lib/redirects';
+import { coversWholeSite, isGoneRule, matchGone, type RedirectRule } from '@/lib/redirects';
 
 /**
  * Two jobs, and they must stay apart.
@@ -47,7 +47,20 @@ async function currentRules(origin: string): Promise<RedirectRule[]> {
     inFlight = (async () => {
       try {
         const res = await fetch(origin + '/api/gone', { cache: 'no-store' });
-        if (res.ok) cache = { at: Date.now(), rules: (await res.json()) as RedirectRule[] };
+        if (res.ok) {
+          const all = (await res.json()) as RedirectRule[];
+          /*
+           * A gone rule that covers the whole site is dropped here as well as
+           * refused at the form. It would answer 410 for every address,
+           * home page included, and it is the kind of thing that arrives by
+           * accident in a pasted list. Two guards, because one of them is in
+           * a form somebody can go around.
+           */
+          cache = {
+            at: Date.now(),
+            rules: all.filter((r) => !(isGoneRule(r) && coversWholeSite(r.from))),
+          };
+        }
         else cache = { ...cache, at: Date.now() };
       } catch {
         // Keep what we have and try again after the next interval.

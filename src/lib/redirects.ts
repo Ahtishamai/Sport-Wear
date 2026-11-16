@@ -9,6 +9,8 @@
 
 export type RedirectKind = 'PERMANENT' | 'TEMPORARY';
 
+const starPrefix = (from: string) => from.slice(0, -STAR.length) || '/';
+
 /** A rule as the database holds it. */
 export type RedirectRule = {
   from: string;
@@ -31,6 +33,26 @@ export type RedirectRule = {
  */
 export function isGoneRule(rule: { to?: string | null }): boolean {
   return !String(rule?.to ?? '').trim();
+}
+
+/**
+ * True for a pattern that covers every address on the site.
+ *
+ * `/*` as a redirect is a reasonable catch-all: a redirect is only consulted
+ * after the site has failed to find a page, so the worst it can do is give a
+ * lost visitor somewhere to go. `/*` as a gone rule is a different thing
+ * entirely, because gone is answered before the page is looked for — it
+ * would turn the whole shop, home page included, into 410.
+ *
+ * It is worth a name because it arrives by accident: a list of addresses
+ * copied out of an old robots.txt has `/*` in it, and nothing about pasting
+ * that in looks like switching the site off.
+ */
+export function coversWholeSite(rawFrom: string): boolean {
+  const from = normalizePath(rawFrom);
+  if (from === '/') return true;
+  if (!from.endsWith(STAR)) return false;
+  return normalizePath(starPrefix(from)) === '/';
 }
 
 /** A rule whose `from` ends in this matches everything below it. */
@@ -89,8 +111,6 @@ export function normalizeTarget(raw: string | null | undefined): string {
   if (isExternal(v)) return v;
   return ('/' + v.replace(/\\/g, '/').replace(/^\/+/, '')).replace(/([^:])\/{2,}/g, '$1/');
 }
-
-const starPrefix = (from: string) => from.slice(0, -STAR.length) || '/';
 
 /**
  * The rule that answers this address, and where it sends it.
@@ -177,6 +197,9 @@ export function redirectProblem(rawFrom: string, rawTo: string, gone = false): s
   if (!to && !gone) return 'Type where the old address should send people.';
 
   if (from === '/') return 'The home page cannot be redirected away from.';
+  if (gone && coversWholeSite(rawFrom)) {
+    return 'That would mark every address on the site gone, including the home page. Name the addresses themselves.';
+  }
   if (/^\/(admin|api)(\/|$)/.test(from)) {
     return 'Addresses under /admin and /api are the panel itself and cannot be redirected.';
   }
