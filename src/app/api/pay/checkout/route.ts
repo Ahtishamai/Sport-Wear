@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/db';
 import { badRequest, clientIp, json, rateLimit, serverError } from '@/lib/api';
-import { checkPayment, nextPaymentReference, PayError } from '@/lib/invoice-pay';
+import { checkPayment, formatShipTo, nextPaymentReference, PayError } from '@/lib/invoice-pay';
 import { createPayPalOrder, getPayPalConfig, PayPalError } from '@/lib/paypal';
 
 export const runtime = 'nodejs';
@@ -46,20 +46,43 @@ export async function POST(req: Request) {
       description: `Invoice ${payment.invoiceNumber}`,
     });
 
-    await prisma.invoicePayment.create({
-      data: {
-        reference,
-        invoiceNumber: payment.invoiceNumber,
-        customerName: payment.customerName,
-        email: payment.email,
-        phone: payment.phone,
-        note: payment.note,
-        amount: payment.amount,
-        currency: cfg.currency,
-        status: 'PENDING',
-        paypalOrderId,
-      },
-    });
+    const row = {
+      reference,
+      invoiceNumber: payment.invoiceNumber,
+      customerName: payment.customerName,
+      email: payment.email,
+      phone: payment.phone,
+      note: payment.note,
+      amount: payment.amount,
+      currency: cfg.currency,
+      status: 'PENDING' as const,
+      paypalOrderId,
+    };
+
+    try {
+      await prisma.invoicePayment.create({ data: { ...row, shipTo: payment.shipTo ?? undefined } });
+    } catch (err) {
+      /*
+       * The address column may not be on the table yet.
+       *
+       * Adding it is one line of SQL (scripts/sql/add-invoice-shipto.sql) and
+       * until somebody runs it, writing the address would fail — which would
+       * mean refusing a payment over a delivery address. So the payment is
+       * written without the column and the address is kept in the note, where
+       * whoever packs the order will still read it. Once the column exists
+       * this branch stops being reached and can go.
+       */
+      const unknownColumn =
+        typeof err === 'object' && err !== null && (err as { code?: string }).code === 'P2022';
+      if (!unknownColumn) throw err;
+
+      const written = payment.shipTo
+        ? [payment.note, 'Address: ' + formatShipTo(payment.shipTo)]
+            .filter(Boolean)
+            .join(String.fromCharCode(10, 10))
+        : payment.note;
+      await prisma.invoicePayment.create({ data: { ...row, note: written } });
+    }
 
     return json({ ok: true, reference, paypalOrderId, amount: payment.amount, currency: cfg.currency });
   } catch (err) {

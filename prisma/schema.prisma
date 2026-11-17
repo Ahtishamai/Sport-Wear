@@ -697,6 +697,12 @@ model InvoicePayment {
   phone         String? @db.VarChar(40)
   note          String? @db.Text
 
+  /// Where the order goes, in the same shape the two order tables use, so a
+  /// paid invoice can be packed from the same fields as anything else. Kept
+  /// optional: an invoice is often settled by somebody whose address is
+  /// already on the original order.
+  shipTo        Json?
+
   amount   Decimal          @db.Decimal(10, 2)
   currency String           @default("USD") @db.VarChar(8)
   status   StoreOrderStatus @default(PENDING)

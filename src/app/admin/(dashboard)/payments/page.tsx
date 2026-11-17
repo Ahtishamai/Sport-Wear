@@ -32,6 +32,16 @@ const STATUSES = ['PENDING', 'PAID', 'CANCELLED', 'REFUNDED'];
  * worth seeing, because a run of them usually means something on the page is
  * wrong rather than that customers changed their minds.
  */
+/** The delivery address on one line, or nothing if none was given. */
+function addressOf(value: unknown): string | null {
+  if (!value || typeof value !== 'object') return null;
+  const a = value as Record<string, unknown>;
+  const parts = ['line1', 'line2', 'city', 'region', 'postcode', 'country']
+    .map((k) => String(a[k] ?? '').trim())
+    .filter(Boolean);
+  return parts.length ? parts.join(', ') : null;
+}
+
 export default async function PaymentsIndex({
   searchParams,
 }: {
@@ -137,7 +147,17 @@ export default async function PaymentsIndex({
                     {p.email}
                   </a>
                 )}
-                {p.phone && <span className="block text-[12px] text-[#8A8C93]">{p.phone}</span>}
+                {p.phone && <span className="block text-[12px] text-[#6B6D74]">{p.phone}</span>}
+                {/*
+                  Where it goes, when the person paying gave one. An invoice
+                  is often settled by somebody other than whoever ordered, so
+                  this is the only address the shop has for that payment.
+                */}
+                {addressOf(p.shipTo) && (
+                  <span className="mt-1 block text-[12px] text-[#6B6D74]">
+                    {addressOf(p.shipTo)}
+                  </span>
+                )}
               </Td>
               <Td className="whitespace-nowrap font-display font-bold">
                 {money(Number(p.amount))}

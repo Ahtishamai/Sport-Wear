@@ -30,6 +30,17 @@ export type PaymentInput = {
   email?: unknown;
   phone?: unknown;
   note?: unknown;
+  shipTo?: unknown;
+};
+
+/** Where the order goes, in the shape the two order tables already use. */
+export type ShipTo = {
+  line1: string;
+  line2?: string;
+  city: string;
+  region: string;
+  postcode: string;
+  country: string;
 };
 
 export type CheckedPayment = {
@@ -39,7 +50,35 @@ export type CheckedPayment = {
   email: string;
   phone: string | null;
   note: string | null;
+  shipTo: ShipTo | null;
 };
+
+/**
+ * The address, if enough of one was given to post something to.
+ *
+ * Partly filled in is treated as not filled in. A street with no town is not
+ * an address anybody can pack against, and keeping it would put a half
+ * written one in front of whoever is packing as though it were usable.
+ */
+function checkShipTo(raw: unknown): ShipTo | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+
+  const line1 = clean(r.line1, 120);
+  const city = clean(r.city, 80);
+  const region = clean(r.region, 80);
+  const postcode = clean(r.postcode, 20);
+  if (!line1 || !city || !postcode) return null;
+
+  return {
+    line1,
+    line2: clean(r.line2, 120) || undefined,
+    city,
+    region,
+    postcode,
+    country: clean(r.country, 60) || 'United States',
+  };
+}
 
 const clean = (v: unknown, max: number) => String(v ?? '').trim().slice(0, max);
 
@@ -70,7 +109,16 @@ export async function checkPayment(raw: PaymentInput): Promise<CheckedPayment> {
     email,
     phone: clean(raw.phone, 40) || null,
     note: clean(raw.note, 800) || null,
+    shipTo: checkShipTo(raw.shipTo),
   };
+}
+
+/** The address on one line, for an email or a note. */
+export function formatShipTo(a: ShipTo): string {
+  return [a.line1, a.line2, a.city, a.region, a.postcode, a.country]
+    .map((p) => String(p ?? '').trim())
+    .filter(Boolean)
+    .join(', ');
 }
 
 /** `PY` + five digits, so it cannot be mistaken for a DS order number. */

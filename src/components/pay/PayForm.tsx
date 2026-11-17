@@ -36,6 +36,16 @@ export function PayForm({
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [note, setNote] = useState('');
+  // Where the order goes. Kept as one object because it travels as one.
+  const [ship, setShip] = useState({
+    line1: '',
+    line2: '',
+    city: '',
+    region: '',
+    postcode: '',
+    country: 'United States',
+  });
+  const setAddr = (k: keyof typeof ship, v: string) => setShip((a) => ({ ...a, [k]: v }));
   const [error, setError] = useState('');
   const [done, setDone] = useState<null | { reference: string; amount?: number }>(null);
 
@@ -157,6 +167,94 @@ export function PayForm({
           </label>
         </div>
 
+        {/*
+          The delivery address.
+          Asked for here because an invoice is often paid by somebody other
+          than whoever placed the order — a parent settling a coach's invoice
+          — and the shop then has a payment with nowhere to send the kit.
+          Optional, and all or nothing: a street with no town is not an
+          address anybody can pack against, so a half filled one is kept out
+          of the packer's way rather than shown as though it were usable.
+        */}
+        <fieldset className="border border-hairline p-4 sm:p-5">
+          <legend className="px-1.5 text-[12px] font-bold uppercase tracking-[.1em] text-muted">
+            Delivery address{' '}
+            <span className="font-normal normal-case tracking-normal">(optional)</span>
+          </legend>
+          <p className="mb-4 text-[13px] text-body">
+            Fill this in if the order still has to be sent somewhere. Leave it
+            empty if we already have the address.
+          </p>
+          <div className="grid gap-4">
+            <label className="block">
+              <span className="mb-1.5 block text-[12px] font-bold uppercase tracking-[.1em] text-muted">Street address</span>
+              <input
+                value={ship.line1}
+                onChange={(e) => setAddr('line1', e.target.value)}
+                maxLength={120}
+                autoComplete="address-line1"
+                className="w-full border border-hairline bg-white px-4 py-3 text-[16px] outline-none focus:border-ink"
+              />
+            </label>
+            <label className="block">
+              <span className="mb-1.5 block text-[12px] font-bold uppercase tracking-[.1em] text-muted">
+                Apartment, suite{' '}
+                <span className="font-normal normal-case tracking-normal">(optional)</span>
+              </span>
+              <input
+                value={ship.line2}
+                onChange={(e) => setAddr('line2', e.target.value)}
+                maxLength={120}
+                autoComplete="address-line2"
+                className="w-full border border-hairline bg-white px-4 py-3 text-[16px] outline-none focus:border-ink"
+              />
+            </label>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <label className="block">
+                <span className="mb-1.5 block text-[12px] font-bold uppercase tracking-[.1em] text-muted">Town or city</span>
+                <input
+                  value={ship.city}
+                  onChange={(e) => setAddr('city', e.target.value)}
+                  maxLength={80}
+                  autoComplete="address-level2"
+                  className="w-full border border-hairline bg-white px-4 py-3 text-[16px] outline-none focus:border-ink"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-[12px] font-bold uppercase tracking-[.1em] text-muted">State</span>
+                <input
+                  value={ship.region}
+                  onChange={(e) => setAddr('region', e.target.value)}
+                  maxLength={80}
+                  autoComplete="address-level1"
+                  className="w-full border border-hairline bg-white px-4 py-3 text-[16px] outline-none focus:border-ink"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-[12px] font-bold uppercase tracking-[.1em] text-muted">ZIP code</span>
+                <input
+                  value={ship.postcode}
+                  onChange={(e) => setAddr('postcode', e.target.value)}
+                  maxLength={20}
+                  autoComplete="postal-code"
+                  inputMode="numeric"
+                  className="w-full border border-hairline bg-white px-4 py-3 text-[16px] outline-none focus:border-ink"
+                />
+              </label>
+            </div>
+            <label className="block">
+              <span className="mb-1.5 block text-[12px] font-bold uppercase tracking-[.1em] text-muted">Country</span>
+              <input
+                value={ship.country}
+                onChange={(e) => setAddr('country', e.target.value)}
+                maxLength={60}
+                autoComplete="country-name"
+                className="w-full border border-hairline bg-white px-4 py-3 text-[16px] outline-none focus:border-ink"
+              />
+            </label>
+          </div>
+        </fieldset>
+
         <label className="block">
           <span className="mb-1.5 block text-[12px] font-bold uppercase tracking-[.1em] text-muted">
             Anything we should know{' '}
@@ -211,6 +309,7 @@ export function PayForm({
                   customerName: name,
                   email,
                   note,
+                  shipTo: ship,
                 })}
                 onPaid={(result) => setDone({ reference: result.reference, amount: result.amount })}
               />
