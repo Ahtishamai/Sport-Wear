@@ -1,20 +1,34 @@
 import type { Metadata, Viewport } from 'next';
-import { Saira, Poppins } from 'next/font/google';
+import localFont from 'next/font/local';
 import Script from 'next/script';
 import './globals.css';
 import { getSettings } from '@/lib/settings';
 import { siteBase } from '@/lib/seo';
 
-const saira = Saira({
-  subsets: ['latin'],
-  weight: ['500', '600', '700', '800', '900'],
+/*
+ * The fonts live in the repo (src/app/fonts), not on Google.
+ *
+ * next/font/google downloads them during every build, so a build could only
+ * succeed while Google Fonts answered in the shape Next expects — and one
+ * deploy failed outright when it did not ("An error occurred in next/font").
+ * These are the same Latin files Google serves (via Fontsource, OFL), so the
+ * site looks exactly as before, and the build needs no network for them.
+ */
+const saira = localFont({
+  // Variable: covers every weight the site uses (500–900) in one file.
+  src: './fonts/saira-latin-wght.woff2',
+  weight: '100 900',
   variable: '--font-saira',
   display: 'swap',
 });
 
-const poppins = Poppins({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
+const poppins = localFont({
+  src: [
+    { path: './fonts/poppins-latin-400.woff2', weight: '400', style: 'normal' },
+    { path: './fonts/poppins-latin-500.woff2', weight: '500', style: 'normal' },
+    { path: './fonts/poppins-latin-600.woff2', weight: '600', style: 'normal' },
+    { path: './fonts/poppins-latin-700.woff2', weight: '700', style: 'normal' },
+  ],
   variable: '--font-poppins',
   display: 'swap',
 });
