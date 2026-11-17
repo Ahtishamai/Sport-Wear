@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { siteBase } from '@/lib/seo';
 import { freshness } from '@/lib/schema';
 import { getSettings } from '@/lib/settings';
+import { getCatalogFacets } from '@/lib/queries';
 
 export const revalidate = 3600;
 
@@ -31,7 +32,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   try {
-    const [settings, pages, products, collections] = await Promise.all([
+    const [settings, pages, products, collections, facets] = await Promise.all([
       getSettings(),
       prisma.page.findMany({
         where: { status: 'PUBLISHED' },
@@ -45,7 +46,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         where: { status: 'PUBLISHED' },
         select: { handle: true, createdAt: true, updatedAt: true },
       }),
+      // The same live counts the collection page reads to decide whether it
+      // asks not to be indexed.
+      getCatalogFacets(),
     ]);
+
+    /*
+     * A collection with nothing on it asks not to be indexed (see
+     * collections/[handle]/page.tsx), so listing it here would be the site
+     * contradicting itself — the same reason products are left out below.
+     * Read from the same count, so the two cannot disagree; it rejoins the
+     * sitemap by itself the moment a product is filed there.
+     */
+    const stocked = new Set(facets.collections.filter((c) => c.count > 0).map((c) => c.handle));
+    // No counts at all means they could not be read (the shared cache falls
+    // back to an empty list), not that every shelf is bare. List them all
+    // rather than drop every collection from the sitemap on a database blip.
+    const isListed = (handle: string) => facets.collections.length === 0 || stocked.has(handle);
 
     const skip = new Set(['home', 'collections', 'team-packages', 'product-extras']);
 
@@ -75,7 +92,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           changeFrequency: 'monthly' as const,
           priority: 0.6,
         })),
-      ...collections.map((c) => ({
+      ...collections.filter((c) => isListed(c.handle)).map((c) => ({
         url: `${base}/collections/${c.handle}`,
         lastModified: lastModified(c),
         changeFrequency: 'weekly' as const,

@@ -210,7 +210,19 @@ export async function CatalogView({
     getSettings(),
   ]);
   const showPrice = settings.showPrices !== false;
-  const maxPrice = Number(searchParams.max) || bounds.max;
+  /*
+   * The price cap applies only when the shopper actually moved the slider.
+   *
+   * It used to default to the highest shown price, and was applied even with
+   * no `max` in the address and even with prices switched off. Every product
+   * whose stored price sat above that figure — a quote-only one, most often —
+   * silently fell off every collection page, for shoppers and crawlers alike.
+   */
+  const requestedMax = Number(searchParams.max);
+  const maxPrice =
+    showPrice && bounds.usable && requestedMax > 0 && requestedMax < bounds.max
+      ? requestedMax
+      : undefined;
 
   // Where this collection sits in the tree: the facets already carry it, so
   // the breadcrumb and the sub-collection links cost no extra query.
@@ -333,7 +345,13 @@ export async function CatalogView({
           <Suspense fallback={<div />}>
             <CatalogToolbar
               shown={products.length}
-              total={facets.total}
+              // This shelf's own count, not the whole catalogue's: "12 of 70"
+              // on a collection of twelve reads as if 58 were hidden.
+              total={
+                handle === 'all'
+                  ? facets.total
+                  : Math.max(self?.count ?? 0, products.length)
+              }
               showPriceSort={showPrice && bounds.usable}
             />
           </Suspense>

@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
+import { cache } from 'react';
 import { notFound } from 'next/navigation';
+import { getAccessor } from '@/lib/auth';
 import { redirectAwayIfMoved } from '@/lib/not-found';
 import { prisma } from '@/lib/db';
 import { getCatalogFacets, getCollectionByHandle } from '@/lib/queries';
@@ -12,6 +14,21 @@ import { freshnessMeta } from '@/lib/schema';
 import { getSettings } from '@/lib/settings';
 
 export const revalidate = 120;
+
+/**
+ * The collection at this address, if this visitor may see it.
+ *
+ * Only a PUBLISHED collection is public. A DRAFT is how a new shelf is built
+ * before it goes live, so it must not be reachable — or indexable — by anyone
+ * but the staff building it, who see it as it will look. Checking who is
+ * asking costs a cookie read and one lookup, and only ever for a draft.
+ */
+const visibleCollection = cache(async (handle: string) => {
+  const c = await getCollectionByHandle(handle);
+  if (!c) return null;
+  if (c.status === 'PUBLISHED') return { collection: c, draft: false };
+  return (await getAccessor()) ? { collection: c, draft: true } : null;
+});
 
 /*
  * No generateStaticParams here, unlike the product pages.
@@ -29,14 +46,19 @@ export async function generateMetadata({
   params: Promise<{ handle: string }>;
 }): Promise<Metadata> {
   const { handle } = await params;
-  const [c, s, facets] = await Promise.all([
-    getCollectionByHandle(handle),
+  const [found, s, facets] = await Promise.all([
+    visibleCollection(handle),
     getSettings(),
     // Already read once for every page and held; see lib/cache.ts.
     getCatalogFacets(),
   ]);
-  if (!c) return {};
+  if (!found) return {};
+  const { collection: c, draft } = found;
   const stocked = facets.collections.find((f) => f.handle === handle)?.count ?? 0;
+  // An empty list means the counts could not be read (a cold process with the
+  // database at capacity falls back to []), not that every shelf is bare —
+  // so it must not noindex every collection on the site for that request.
+  const knownEmpty = facets.collections.length > 0 && stocked === 0;
   const title = pageTitle(c.seoTitle || c.title, s.siteName);
   // A collection with nothing written about it still needs a sentence, or
   // Google writes one out of whatever text the page happens to start with.
@@ -75,7 +97,12 @@ export async function generateMetadata({
      * page indexes itself again, because this is read from the live count
      * rather than a flag somebody has to remember to turn off.
      */
-    robots: stocked === 0 ? { index: false, follow: true } : undefined,
+    // A draft is only ever seen by staff, but says so anyway.
+    robots: draft
+      ? { index: false, follow: false }
+      : knownEmpty
+        ? { index: false, follow: true }
+        : undefined,
     // The same two dates the page's structured data and the sitemap give.
     other: freshnessMeta(c),
   };
@@ -89,11 +116,12 @@ export default async function CollectionPage({
   searchParams: Promise<CatalogSearchParams>;
 }) {
   const [{ handle }, sp] = await Promise.all([params, searchParams]);
-  const collection = await getCollectionByHandle(handle);
-  if (!collection) {
+  const found = await visibleCollection(handle);
+  if (!found) {
     await redirectAwayIfMoved(`/collections/${handle}`);
     notFound();
   }
+  const { collection } = found;
 
   const blocks = Array.isArray(collection.blocks) ? collection.blocks : [];
   // Its own products plus those of its sub-collections: a parent collection

@@ -163,6 +163,7 @@ export const getProductByHandle = cache(async (handle: string) => {
     collections: p.collections.map((c) => ({
       handle: c.collection.handle,
       title: c.collection.title,
+      published: c.collection.status === 'PUBLISHED',
     })),
   };
 });
@@ -346,7 +347,14 @@ export async function getCatalog(query: CatalogQuery) {
       },
     };
   }
-  if (query.maxPrice) where.basePrice = { lte: query.maxPrice };
+  if (query.maxPrice) {
+    // The price cap only narrows products that show a price. A quote-only
+    // product shows no figure to filter by, so it must never be dropped by
+    // one — the cap would otherwise remove it from the shelf for a number
+    // the shopper cannot even see. Kept under AND because `where.OR` below
+    // belongs to the fabric filter.
+    where.AND = [{ OR: [{ showPrice: false }, { basePrice: { lte: query.maxPrice } }] }];
+  }
   if (query.q) where.title = { contains: query.q };
   if (query.fabric?.length) {
     const map: Record<string, string> = { 'full-sub': 'Full sub', stock: 'Stock' };

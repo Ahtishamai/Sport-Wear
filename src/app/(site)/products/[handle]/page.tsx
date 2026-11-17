@@ -161,7 +161,8 @@ export default async function ProductPage({ params }: { params: Promise<{ handle
   };
 
   // The collection it is filed in, so the trail reads the way the site does.
-  const home = product.collections[0];
+  // Only a published one: a draft collection answers 404 to the public.
+  const home = product.collections.find((c) => c.published);
 
   return (
     <>
