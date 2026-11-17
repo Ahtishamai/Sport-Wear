@@ -27,6 +27,11 @@ const TASKS = [
     file: 'scripts/split-jersey-collections.mjs',
     args: ['--apply', '--once'],
   },
+  {
+    name: 'list softball jerseys right under baseball jerseys',
+    file: 'scripts/order-jersey-collections.mjs',
+    args: ['--apply'],
+  },
 ];
 
 let changed = false;
