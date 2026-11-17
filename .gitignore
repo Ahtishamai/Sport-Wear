@@ -12,8 +12,5 @@ next-env.d.ts
 .env.backup-*
 .env.test
 
-# rows saved by data scripts before they change them
-/backups/
-
 # screenshots from the live checks
 tests/live/.shots/
