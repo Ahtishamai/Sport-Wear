@@ -38,11 +38,20 @@ import {
   TileGroupsBlock,
   TimelineBlock,
 } from './sections';
+import {
+  DesignShowcaseBlock,
+  FaqListBlock,
+  LeadFormBlock,
+  LeadHeroBlock,
+  PriceLadderBlock,
+} from '@/components/landing/blocks';
 
 export type RenderContext = {
   breadcrumb?: { label: string; href?: string }[];
   /** Excluded from product grids (used on the PDP). */
   excludeProductId?: string;
+  /** Recorded on leads from this page's forms: "landing:custom-baseball-jerseys". */
+  leadSource?: string;
 };
 
 export async function BlockRenderer({
@@ -229,6 +238,44 @@ async function renderBlock(block: Block, index: number, ctx: RenderContext) {
 
     case 'html':
       return <HtmlBlock key={key} p={p} bid={block.id} />;
+
+    case 'leadHero':
+    case 'leadForm': {
+      const s = await getSettings();
+      const lead = {
+        source: ctx.leadSource || 'site:form',
+        phone: s.phone,
+        phoneHref: s.phoneHref,
+      };
+      return block.type === 'leadHero' ? (
+        <LeadHeroBlock key={key} p={p} bid={block.id} lead={lead} priority={index === 0} />
+      ) : (
+        <LeadFormBlock key={key} p={p} bid={block.id} lead={lead} />
+      );
+    }
+
+    case 'designShowcase': {
+      const products = await getProductsForBlock({
+        source: 'collection',
+        collectionHandle: p.collectionHandle,
+        limit: p.limit,
+      });
+      return (
+        <DesignShowcaseBlock
+          key={key}
+          p={p}
+          bid={block.id}
+          products={products}
+          showPrice={await pricesShown()}
+        />
+      );
+    }
+
+    case 'priceLadder':
+      return <PriceLadderBlock key={key} p={p} bid={block.id} />;
+
+    case 'faqList':
+      return <FaqListBlock key={key} p={p} bid={block.id} />;
 
     default:
       if (process.env.NODE_ENV === 'development') {

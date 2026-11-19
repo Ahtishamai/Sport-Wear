@@ -4,6 +4,13 @@ import { useEffect, useState } from 'react';
 import type { Block } from '@/lib/blocks/types';
 import type { CardPackage, CardProduct } from '@/components/blocks/primitives';
 import type { CollectionCard, ReviewItem } from '@/components/blocks/sections';
+import {
+  DesignShowcaseBlock,
+  FaqListBlock,
+  LeadFormBlock,
+  LeadHeroBlock,
+  PriceLadderBlock,
+} from '@/components/landing/blocks';
 import type { FaqItem } from '@/components/blocks/FaqBlock';
 import { FaqBlock } from '@/components/blocks/FaqBlock';
 import { ContactFormBlock } from '@/components/blocks/ContactFormBlock';
@@ -205,6 +212,35 @@ function PreviewBlock({
       return <SpacerBlock p={p} bid={block.id} />;
     case 'html':
       return <HtmlBlock p={p} bid={block.id} />;
+    case 'leadHero':
+      return (
+        <LeadHeroBlock
+          p={p}
+          bid={block.id}
+          lead={{ source: 'preview', phone: data.contact.phone, phoneHref: data.contact.phoneHref }}
+        />
+      );
+    case 'leadForm':
+      return (
+        <LeadFormBlock
+          p={p}
+          bid={block.id}
+          lead={{ source: 'preview', phone: data.contact.phone, phoneHref: data.contact.phoneHref }}
+        />
+      );
+    case 'designShowcase':
+      return (
+        <DesignShowcaseBlock
+          p={p}
+          bid={block.id}
+          products={(data.byCollection[p.collectionHandle] ?? data.products).slice(0, Number(p.limit) || 8)}
+          showPrice
+        />
+      );
+    case 'priceLadder':
+      return <PriceLadderBlock p={p} bid={block.id} />;
+    case 'faqList':
+      return <FaqListBlock p={p} bid={block.id} />;
     default:
       return (
         <div className="gutter border-y border-hairline bg-surface py-6 text-[13px] text-muted">

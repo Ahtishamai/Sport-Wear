@@ -3,6 +3,7 @@ import { badRequest, clientIp, json, rateLimit, serverError } from '@/lib/api';
 import { isEmail, reference } from '@/lib/utils';
 import { saveUpload } from '@/lib/upload';
 import { notifyQuote } from '@/lib/notify';
+import { cleanAttribution } from '@/lib/attribution';
 
 export const runtime = 'nodejs';
 
@@ -19,10 +20,11 @@ export async function POST(req: Request) {
     // Honeypot — bots fill hidden fields.
     if (get('company')) return json({ ok: true });
 
-    const team = get('team');
-    const name = get('name');
-    const phone = get('phone');
-    const email = get('email');
+    // VARCHAR(191) columns: an over-long value is cut, never a lost lead.
+    const team = get('team').slice(0, 191);
+    const name = get('name').slice(0, 191);
+    const phone = get('phone').slice(0, 60);
+    const email = get('email').slice(0, 191);
 
     if (!team) return badRequest('Team or organization is required.');
     if (!name) return badRequest('Your name is required.');
@@ -71,14 +73,14 @@ export async function POST(req: Request) {
       prisma.quoteRequest.create({
       data: {
         reference: reference('Q'),
-        subject: get('subject') || 'Custom team kit',
+        subject: get('subject').slice(0, 191) || 'Custom team kit',
         team,
         name,
         phone,
         email: email.toLowerCase(),
-        sport: get('sport') || null,
+        sport: get('sport').slice(0, 191) || null,
         rosterSize,
-        deadline: get('deadline') || null,
+        deadline: get('deadline').slice(0, 191) || null,
         message: get('message') || null,
         productId,
         productTitle: typeof context.productTitle === 'string' ? context.productTitle : null,
@@ -88,8 +90,14 @@ export async function POST(req: Request) {
         unitPrice: Number(context.unitPrice) || null,
         estTotal: Number(context.estTotal) || null,
         attachments: attachments.length ? attachments : undefined,
-        pageUrl: get('pageUrl') || null,
-        referrer: get('referrer') || null,
+        // Both columns are VARCHAR(512); a long ad-click address must not
+        // be the reason a lead fails to save.
+        pageUrl: get('pageUrl').slice(0, 512) || null,
+        referrer: get('referrer').slice(0, 512) || null,
+        utm: cleanAttribution(get('utm')) ?? undefined,
+        // Where on the site it was sent from: "landing:custom-baseball-jerseys"
+        // for an ad landing page, otherwise the drawer every page shares.
+        source: /^[a-z0-9:-]{1,60}$/.test(get('source')) ? get('source') : 'site',
         },
       })
     );

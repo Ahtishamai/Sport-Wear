@@ -11,6 +11,7 @@ import {
 } from 'react';
 import { Icon } from './Icon';
 import { isEmail } from '@/lib/utils';
+import { attributionField, captureAttribution } from '@/lib/attribution';
 
 export type QuoteContextPayload = {
   productId?: string;
@@ -78,6 +79,11 @@ export function QuoteProvider({
   const close = useCallback(() => {
     setState('closed');
     lastFocus.current?.focus?.();
+  }, []);
+
+  // Note the ad or campaign this visit came from, on whichever page it lands.
+  useEffect(() => {
+    captureAttribution();
   }, []);
 
   // Any element with href="#quote" or data-quote opens the drawer.
@@ -226,6 +232,7 @@ function Drawer({
       body.set('pageUrl', window.location.href);
       body.set('referrer', document.referrer || '');
       body.set('context', JSON.stringify(payload));
+      body.set('utm', attributionField());
       files.forEach((f) => body.append('files', f));
 
       const res = await fetch('/api/quote', { method: 'POST', body });

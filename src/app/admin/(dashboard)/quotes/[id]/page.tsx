@@ -162,12 +162,33 @@ export default async function QuoteDetail({ params }: { params: Promise<{ id: st
               <Row label="Landed on" value={q.pageUrl || '—'} small />
               <Row label="Referrer" value={q.referrer || 'Direct'} small />
               <Row label="Channel" value={q.source} small />
+              {campaign(q.utm) && <Row label="Campaign" value={campaign(q.utm)!} small />}
             </dl>
           </Card>
         </div>
       </div>
     </AdminPage>
   );
+}
+
+/**
+ * The ad or campaign the lead came from, in a line: "google / cpc ·
+ * jerseys-baseball · Google Ads click". Empty when the visit carried no tags.
+ * The click id itself is what an offline-conversion upload needs, so it is
+ * printed in full.
+ */
+function campaign(utm: unknown): string | null {
+  if (!utm || typeof utm !== 'object') return null;
+  const u = utm as Record<string, string | undefined>;
+  const parts = [
+    [u.utm_source, u.utm_medium].filter(Boolean).join(' / '),
+    u.utm_campaign,
+    u.utm_term ? `“${u.utm_term}”` : '',
+    u.gclid ? `Google Ads click ${u.gclid}` : u.gbraid || u.wbraid ? 'Google Ads click (iOS)' : '',
+    u.msclkid ? 'Microsoft Ads click' : '',
+    u.fbclid ? 'Meta ad click' : '',
+  ].filter(Boolean);
+  return parts.length ? parts.join(' · ') : null;
 }
 
 function Row({

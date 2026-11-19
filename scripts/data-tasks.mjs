@@ -32,6 +32,11 @@ const TASKS = [
     file: 'scripts/order-jersey-collections.mjs',
     args: ['--apply'],
   },
+  {
+    name: 'create the baseball and softball jersey landing pages',
+    file: 'scripts/make-landing-pages.mjs',
+    args: ['--apply'],
+  },
 ];
 
 let changed = false;

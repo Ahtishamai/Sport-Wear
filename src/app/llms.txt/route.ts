@@ -55,7 +55,8 @@ export async function GET() {
 
     // The same pages the sitemap leaves out: they are the site, not a page of it.
     const skip = new Set(['home', 'collections', 'product-extras']);
-    const extras = pages.filter((p) => !skip.has(p.slug));
+    // Ad landing pages (lp-…) are for paid visitors, not for describing the shop.
+    const extras = pages.filter((p) => !skip.has(p.slug) && !p.slug.startsWith('lp-'));
 
     const body = [
       `# ${s.siteName}`,

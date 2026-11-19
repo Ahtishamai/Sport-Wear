@@ -25,6 +25,9 @@ export function adminEditHref(pathname: string) {
   if (collection) return `/admin/collections/${collection[1]}`;
   if (pathname === '/collections') return '/admin/collections';
   if (pathname === '/team-packages') return '/admin/pages/team-packages/edit';
+  // A landing page /lp/x is the CMS page with the slug lp-x.
+  const landing = pathname.match(/^\/lp\/([^/]+)/);
+  if (landing) return `/admin/pages/lp-${landing[1]}/edit`;
   const slug = pathname.replace(/^\//, '').split('/')[0];
   return slug ? `/admin/pages/${slug}/edit` : '/admin';
 }
