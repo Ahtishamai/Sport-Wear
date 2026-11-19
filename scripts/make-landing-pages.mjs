@@ -3,19 +3,14 @@
  *
  *   /custom-pinstripe-uniforms   (CMS page "lp-custom-pinstripe-uniforms")
  *
- * One collection only — Custom Pinstripe Uniforms (/collections/pinstripe-uniform)
- * — for baseball and softball alike. The form asks which sport, and an ad's
- * final URL can say so (?sport=softball), which picks it on the form and
- * swaps in that sport's headline.
+ * The shop's one landing page, for one collection only: Custom Pinstripe
+ * Uniforms (/collections/pinstripe-uniform). The form asks whether the team
+ * plays baseball or softball, so the lead says which.
  *
  * It is an ordinary page of page-builder sections, so after this runs every
  * word, photo and price on it is edited in Admin → Pages. This writes only
  * the first version and never touches the page once it exists, so a deploy
  * can run it every time (scripts/data-tasks.mjs) without undoing an edit.
- *
- * Earlier jersey landing pages (lp-custom-jerseys and the per-sport pair)
- * were never put live. If any exists it is set to Draft, which takes it off
- * the site without deleting it.
  *
  * Every claim is one the shop already makes on its pinstripe collection and
  * product pages: the stripe is printed into the fabric rather than sewn; any
@@ -40,7 +35,6 @@ const apply = process.argv.includes('--apply');
 
 const SLUG = 'lp-custom-pinstripe-uniforms';
 const PATH = '/custom-pinstripe-uniforms';
-const RETIRED = ['lp-custom-jerseys', 'lp-custom-baseball-jerseys', 'lp-custom-softball-jerseys'];
 const COLLECTION = 'pinstripe-uniform';
 const SUBJECT = 'Custom pinstripe uniforms (ad landing page)';
 
@@ -54,8 +48,6 @@ function blocks({ hero, detail, reviews }) {
         badge: 'Printed, not sewn',
         image: hero,
         heading: 'Custom Pinstripe Uniforms That Never Peel or Fray',
-        headingBaseball: 'Custom Pinstripe Baseball Uniforms That Never Peel or Fray',
-        headingSoftball: 'Custom Pinstripe Softball Uniforms That Never Peel or Fray',
         body: 'The classic pinstripe look, printed into the fabric in your team colors. Team name and numbers included. See your free design within 24 hours.',
         bullets: [
           'Free design mockup in 24 hours',
@@ -224,17 +216,6 @@ function blocks({ hero, detail, reviews }) {
 
 console.log(apply ? '\n=== APPLYING ===' : '\n=== DRY RUN (add --apply) ===');
 let changed = false;
-
-for (const slug of RETIRED) {
-  const old = await db.page.findUnique({ where: { slug }, select: { id: true, status: true } });
-  if (old && old.status !== 'DRAFT') {
-    console.log(`  ${apply ? 'setting' : 'would set'} /${slug} to Draft — replaced by ${PATH}`);
-    if (apply) {
-      await db.page.update({ where: { id: old.id }, data: { status: 'DRAFT' } });
-      changed = true;
-    }
-  }
-}
 
 if (await db.page.findUnique({ where: { slug: SLUG }, select: { id: true } })) {
   console.log(`  /${SLUG} already exists — left as it is`);
