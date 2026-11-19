@@ -1,5 +1,4 @@
 import Image from 'next/image';
-import Link from 'next/link';
 import { getSettings } from '@/lib/settings';
 import { QuoteProvider } from '@/components/site/QuoteProvider';
 import { SiteEffects } from '@/components/site/SiteEffects';
@@ -7,6 +6,7 @@ import { EditBar } from '@/components/site/EditBar';
 import { Beacon } from '@/components/site/Beacon';
 import { Icon } from '@/components/site/Icon';
 import { FORM_ANCHOR } from '@/components/landing/blocks';
+import { LandingFooter } from '@/components/landing/LandingFooter';
 
 /**
  * The frame around an ad landing page (see lib/landing.ts).
@@ -14,13 +14,12 @@ import { FORM_ANCHOR } from '@/components/landing/blocks';
  * Deliberately not the shop's header and footer. Somebody who clicked an ad
  * has one thing to do here, and every menu link is a way to wander off before
  * doing it. What stays is what earns trust or converts: the logo, a phone
- * number that dials, one button to the form — and, at the foot, the address,
- * contact details and privacy policy that Google Ads requires a landing page
- * to show.
+ * number that dials, one button to the form — and a footer of its own
+ * (LandingFooter) that keeps to the pinstripe collection, with the address,
+ * contact details and privacy policy Google Ads asks a landing page to show.
  */
 export default async function LandingLayout({ children }: { children: React.ReactNode }) {
   const s = await getSettings();
-  const year = new Date().getFullYear();
 
   return (
     <QuoteProvider
@@ -66,34 +65,11 @@ export default async function LandingLayout({ children }: { children: React.Reac
         </div>
       </header>
 
-      {/* Room at the foot on phones for the bar below. */}
-      <main id="main" className="pb-[76px] md:pb-0">
-        {children}
-      </main>
+      <main id="main">{children}</main>
 
-      <footer className="gutter border-t border-white/10 bg-ink py-8 text-[13px] text-white/70">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <p>
-            © {year} {s.siteName}
-            {s.address ? ` · ${s.address}` : ''}
-          </p>
-          <p className="flex flex-wrap gap-x-4 gap-y-1">
-            {s.phone && s.phoneHref && (
-              <a href={s.phoneHref} className="hover:text-white">
-                {s.phone}
-              </a>
-            )}
-            {s.email && (
-              <a href={`mailto:${s.email}`} className="hover:text-white">
-                {s.email}
-              </a>
-            )}
-            <Link href="/privacy-policy" className="hover:text-white">
-              Privacy policy
-            </Link>
-          </p>
-        </div>
-      </footer>
+      <LandingFooter s={s} />
+      {/* Room at the foot on phones, so the bar below never covers the footer. */}
+      <div aria-hidden="true" className="h-[76px] bg-ink md:hidden" />
 
       {/* On a phone the form scrolls away; these two never do. */}
       <div className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-[auto_1fr] gap-2 border-t border-hairline bg-white p-2.5 shadow-[0_-8px_24px_rgba(0,0,0,.08)] md:hidden">

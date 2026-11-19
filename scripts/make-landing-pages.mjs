@@ -40,6 +40,54 @@ const SUBJECT = 'Custom pinstripe uniforms (ad landing page)';
 
 const id = () => 'b_' + randomBytes(5).toString('hex');
 
+/** The scrolling strip: what makes these pinstripes different, not who buys. */
+const PINSTRIPE_STRIP = [
+  'Printed, not sewn',
+  'Never peels or frays',
+  'Any two colors',
+  'Youth to adult 3XL',
+  'Baseball & softball',
+  'Free mockup in 24 hours',
+  'Free shipping',
+];
+
+/**
+ * Changes made after the page first went live, to keep it about the
+ * pinstripe collection alone. Each one replaces a value only while it is
+ * still exactly what this script first wrote, so nothing changed by hand in
+ * the admin is ever overwritten. Returns the new list, or null if nothing
+ * needed changing.
+ */
+function focusOnPinstripes(list) {
+  const OLD_STRIP = ['Baseball', 'Softball', 'Youth leagues', 'Travel teams', 'High school', 'Fastpitch', 'Slowpitch', 'Men’s leagues'];
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  let changes = 0;
+  const next = list.map((b) => {
+    const p = { ...(b?.props ?? {}) };
+    if (b?.type === 'marquee' && same(p.items, OLD_STRIP)) {
+      p.items = PINSTRIPE_STRIP;
+      changes++;
+    }
+    if (b?.type === 'steps' && p.heading === 'Your uniforms in 4 simple steps') {
+      p.heading = 'Your pinstripe uniforms in 4 simple steps';
+      changes++;
+    }
+    // One headline for the one page, whatever link an ad uses.
+    if (b?.type === 'leadHero') {
+      if (p.headingBaseball === 'Custom Pinstripe Baseball Uniforms That Never Peel or Fray') {
+        delete p.headingBaseball;
+        changes++;
+      }
+      if (p.headingSoftball === 'Custom Pinstripe Softball Uniforms That Never Peel or Fray') {
+        delete p.headingSoftball;
+        changes++;
+      }
+    }
+    return { ...b, props: p };
+  });
+  return changes ? { list: next, changes } : null;
+}
+
 function blocks({ hero, detail, reviews }) {
   return [
     {
@@ -132,16 +180,7 @@ function blocks({ hero, detail, reviews }) {
     {
       type: 'marquee',
       props: {
-        items: [
-          'Baseball',
-          'Softball',
-          'Youth leagues',
-          'Travel teams',
-          'High school',
-          'Fastpitch',
-          'Slowpitch',
-          'Men’s leagues',
-        ],
+        items: PINSTRIPE_STRIP,
         speed: 30,
       },
     },
@@ -166,7 +205,7 @@ function blocks({ hero, detail, reviews }) {
       type: 'steps',
       props: {
         eyebrow: 'How it works',
-        heading: 'Your uniforms in 4 simple steps',
+        heading: 'Your pinstripe uniforms in 4 simple steps',
         background: 'surface',
         steps: [
           { title: 'Send your idea', icon: 'chat', body: 'Fill in the short form. Your colors, a logo or a rough sketch is plenty.' },
@@ -217,8 +256,22 @@ function blocks({ hero, detail, reviews }) {
 console.log(apply ? '\n=== APPLYING ===' : '\n=== DRY RUN (add --apply) ===');
 let changed = false;
 
-if (await db.page.findUnique({ where: { slug: SLUG }, select: { id: true } })) {
-  console.log(`  /${SLUG} already exists — left as it is`);
+const existing = await db.page.findUnique({ where: { slug: SLUG }, select: { id: true, blocks: true } });
+if (existing) {
+  const focused = Array.isArray(existing.blocks) ? focusOnPinstripes(existing.blocks) : null;
+  if (!focused) {
+    console.log(`  ${PATH} already exists and is up to date — left as it is`);
+  } else {
+    console.log(`  ${apply ? 'updating' : 'would update'} ${PATH}: ${focused.changes} line(s) made about pinstripes`);
+    if (apply) {
+      // The version before, kept in the page builder's history.
+      await db.pageRevision.create({
+        data: { pageId: existing.id, blocks: existing.blocks, label: 'Before the pinstripe focus update' },
+      });
+      await db.page.update({ where: { id: existing.id }, data: { blocks: focused.list } });
+      changed = true;
+    }
+  }
 } else {
   // The collection's own photographs: the first for the hero, the next for
   // the "printed, not sewn" section, so the page shows what is being sold.
