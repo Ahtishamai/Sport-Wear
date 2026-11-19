@@ -10,6 +10,7 @@ import {
   type CardProduct,
 } from '@/components/blocks/primitives';
 import { LeadForm } from './LeadForm';
+import { SportHeading } from './SportHeading';
 
 /**
  * Blocks made for paid-traffic landing pages (/lp/…), and usable on any page.
@@ -31,6 +32,9 @@ export type LeadContext = {
 
 /** Where every "get a quote" button on a landing page scrolls to. */
 export const FORM_ANCHOR = 'get-quote';
+
+/** Baseball / Softball buttons on the form, when the block asks for them. */
+const sportChoices = (p: P) => (p.askSport ? ['Baseball', 'Softball'] : undefined);
 
 const list = (v: unknown): string[] =>
   Array.isArray(v) ? v.map((x) => String(x ?? '').trim()).filter(Boolean) : [];
@@ -79,13 +83,11 @@ export function LeadHeroBlock({
               {p.badge}
             </span>
           )}
-          <h1
-            className="h-display text-white"
-            style={{ fontSize: 'clamp(32px,4.4vw,58px)', lineHeight: 0.98 }}
-            {...edText(bid, 'heading')}
-          >
-            {p.heading}
-          </h1>
+          <SportHeading
+            heading={p.heading}
+            bySport={{ Baseball: p.headingBaseball ?? '', Softball: p.headingSoftball ?? '' }}
+            bid={bid}
+          />
           {p.body && (
             <p
               className="mt-5 max-w-[560px] text-[17px] leading-relaxed text-white/85 md:text-[19px]"
@@ -153,6 +155,7 @@ export function LeadHeroBlock({
             idPrefix={`lh-${bid ?? 'x'}`}
             subject={p.subject || 'Custom jerseys'}
             sport={p.sport || 'Baseball'}
+            sports={sportChoices(p)}
             source={lead.source}
             ctaLabel={p.ctaLabel || undefined}
             reassurance={p.reassurance || undefined}
@@ -365,6 +368,7 @@ export function LeadFormBlock({ p, bid, lead }: { p: P; bid?: string; lead: Lead
             idPrefix={`lf-${bid ?? 'x'}`}
             subject={p.subject || 'Custom jerseys'}
             sport={p.sport || 'Baseball'}
+            sports={sportChoices(p)}
             source={lead.source}
             ctaLabel={p.ctaLabel || undefined}
             reassurance={p.reassurance || undefined}

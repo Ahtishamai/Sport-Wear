@@ -18,8 +18,14 @@ import { attributionField } from '@/lib/attribution';
 export type LeadFormProps = {
   /** "Custom baseball jerseys" — the subject line the shop sees. */
   subject: string;
-  /** Preset, so the form does not ask what the page already knows. */
+  /** The sport the lead is for, when the page is about one. */
   sport: string;
+  /**
+   * Offer a choice of sports instead ("Baseball", "Softball"). The first is
+   * the default, unless the address names one (?sport=softball), so an ad for
+   * softball arrives with softball already picked.
+   */
+  sports?: string[];
   /** "landing:custom-baseball-jerseys" — which page sent it. */
   source: string;
   ctaLabel?: string;
@@ -40,7 +46,8 @@ const MAX_FILE_MB = 25;
 
 export function LeadForm({
   subject,
-  sport,
+  sport: presetSport,
+  sports,
   source,
   ctaLabel = 'Get my free mockup',
   reassurance = 'No deposit. No obligation. We reply within 24 hours.',
@@ -62,6 +69,17 @@ export function LeadForm({
   // matter and the submit button fit on one screen.
   const [more, setMore] = useState(false);
   const [design, setDesign] = useState('');
+  const choices = sports && sports.length > 1 ? sports : null;
+  const [sport, setSport] = useState(choices ? choices[0] : presetSport);
+
+  // The sport the ad was for, read from the address after load (the page
+  // itself is cached, so it cannot be drawn per visitor on the server).
+  useEffect(() => {
+    if (!choices) return;
+    const wanted = sportFromUrl(choices);
+    if (wanted) setSport(wanted);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const id = (n: string) => `${idPrefix}-${n}`;
 
   // "Use this design" on a design card (data-design) writes the design into
@@ -125,7 +143,8 @@ export function LeadForm({
     setBusy(true);
     try {
       const body = new FormData();
-      body.set('subject', subject);
+      // "Custom jerseys — Softball": the shop sees the sport in the list.
+      body.set('subject', choices ? `${subject} — ${sport}` : subject);
       body.set('name', get('name'));
       body.set('team', get('team'));
       body.set('email', get('email'));
@@ -194,6 +213,30 @@ export function LeadForm({
         <label htmlFor={id('company')}>Company</label>
         <input id={id('company')} name="company" tabIndex={-1} autoComplete="off" />
       </div>
+
+      {choices && (
+        <fieldset className="mb-3">
+          <legend className={label}>Your sport</legend>
+          <div className="grid grid-cols-2 gap-2">
+            {choices.map((s) => {
+              const on = s === sport;
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => setSport(s)}
+                  className={`border px-3 py-3 text-[14px] font-bold transition-colors ${
+                    on ? 'border-ink bg-brand text-ink' : 'border-field bg-white text-body hover:border-ink'
+                  }`}
+                >
+                  {s}
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+      )}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Input id={id('name')} name="name" label="Your name" autoComplete="name" placeholder="Coach Smith" error={errors.name} labelClass={label} />
@@ -272,6 +315,17 @@ export function LeadForm({
       </p>
     </form>
   );
+}
+
+/** "Softball" when the address says ?sport=softball and that is one of the choices. */
+export function sportFromUrl(choices: string[]): string | null {
+  try {
+    const raw = new URLSearchParams(window.location.search).get('sport')?.trim().toLowerCase();
+    if (!raw) return null;
+    return choices.find((c) => c.toLowerCase() === raw) ?? null;
+  } catch {
+    return null;
+  }
 }
 
 function Input({
