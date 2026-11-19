@@ -1150,7 +1150,7 @@ export const BLOCKS: BlockDefinition[] = [
   },
 
   // ------------------------------------------------------------- landing pages
-  // Made for /lp/… pages that ads point at; see components/landing/blocks.tsx.
+  // Made for ad landing pages (lib/landing.ts); see components/landing/blocks.tsx.
   {
     type: 'leadHero',
     label: 'Hero with lead form',
@@ -1274,6 +1274,7 @@ export const BLOCKS: BlockDefinition[] = [
         ],
       },
       { name: 'note', label: 'Small print', type: 'text' },
+      { name: 'unit', label: 'Under each price', type: 'text', width: 'half', placeholder: 'per jersey' },
       { name: 'ctaLabel', label: 'Button label', type: 'text', width: 'half', help: 'Scrolls to the form.' },
       bgField,
     ],

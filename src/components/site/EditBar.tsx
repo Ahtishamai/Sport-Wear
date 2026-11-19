@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Icon } from './Icon';
+import { isLandingPath, landingCmsSlug } from '@/lib/landing';
 
 /** Loaded only when an admin actually turns editing on. */
 const InlineEditor = dynamic(() => import('./InlineEditor').then((m) => m.InlineEditor), {
@@ -25,10 +26,9 @@ export function adminEditHref(pathname: string) {
   if (collection) return `/admin/collections/${collection[1]}`;
   if (pathname === '/collections') return '/admin/collections';
   if (pathname === '/team-packages') return '/admin/pages/team-packages/edit';
-  // A landing page /lp/x is the CMS page with the slug lp-x.
-  const landing = pathname.match(/^\/lp\/([^/]+)/);
-  if (landing) return `/admin/pages/lp-${landing[1]}/edit`;
   const slug = pathname.replace(/^\//, '').split('/')[0];
+  // An ad landing page /x is the CMS page with the slug lp-x.
+  if (isLandingPath(slug)) return `/admin/pages/${landingCmsSlug(slug)}/edit`;
   return slug ? `/admin/pages/${slug}/edit` : '/admin';
 }
 

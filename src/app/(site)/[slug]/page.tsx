@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
+import { LANDING_PREFIX } from '@/lib/landing';
 import { redirectAwayIfMoved } from '@/lib/not-found';
 import { prisma } from '@/lib/db';
 import { getPage } from '@/lib/queries';
@@ -12,8 +13,6 @@ import { breadcrumbLd, pageDescription, pageTitle } from '@/lib/seo';
 import { freshnessMeta, webPageLd } from '@/lib/schema';
 
 export const revalidate = 300;
-
-const LANDING_PREFIX = 'lp-';
 
 const RESERVED = new Set([
   'home',
@@ -76,10 +75,10 @@ export async function generateMetadata({
 export default async function CmsPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   if (RESERVED.has(slug)) notFound();
-  // A landing page's CMS slug is lp-x, and it lives at /lp/x with its own
-  // stripped-down layout. Its slug address (the admin's "View" link) goes there.
+  // An ad landing page's CMS slug is lp-x, and it lives at /x in its own
+  // stripped-down frame. Its slug address (the admin's "View" link) goes there.
   if (slug.startsWith(LANDING_PREFIX) && slug.length > LANDING_PREFIX.length) {
-    redirect(`/lp/${slug.slice(LANDING_PREFIX.length)}`);
+    redirect(`/${slug.slice(LANDING_PREFIX.length)}`);
   }
 
   const page = await getPage(slug);

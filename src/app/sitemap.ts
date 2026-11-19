@@ -85,7 +85,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         };
       }),
       ...pages
-        // Ad landing pages (lp-…) ask not to be indexed; see app/lp.
+        // Ad landing pages (lp-…) ask not to be indexed; see lib/landing.ts.
         .filter((p) => !skip.has(p.slug) && !p.slug.startsWith('lp-'))
         .map((p) => ({
           url: `${base}/${p.slug}`,

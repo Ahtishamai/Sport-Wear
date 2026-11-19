@@ -33,7 +33,7 @@ const TASKS = [
     args: ['--apply'],
   },
   {
-    name: 'create the jerseys ad landing page',
+    name: 'create the pinstripe uniforms ad landing page',
     file: 'scripts/make-landing-pages.mjs',
     args: ['--apply'],
   },

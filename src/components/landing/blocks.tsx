@@ -13,7 +13,7 @@ import { LeadForm } from './LeadForm';
 import { SportHeading } from './SportHeading';
 
 /**
- * Blocks made for paid-traffic landing pages (/lp/…), and usable on any page.
+ * Blocks made for paid-traffic landing pages (lib/landing.ts), usable on any page.
  *
  * A visitor from an ad decides in seconds, so the order of the page is the
  * argument: what it is and what it costs them (nothing, to find out), the form
@@ -249,7 +249,16 @@ export function PriceLadderBlock({ p, bid }: { p: P; bid?: string }) {
   return (
     <Section background={(p.background as Bg) ?? 'surface'}>
       <SectionHeading eyebrow={p.eyebrow} heading={p.heading} body={p.body} align="center" bid={bid} />
-      <ul className="mx-auto grid max-w-[1080px] grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
+      {/* As many columns as there are steps, up to seven, so four steps
+          fill a row instead of huddling at one end of a seven-wide grid. */}
+      <ul
+        className={cn(
+          'mx-auto grid grid-cols-2 gap-3',
+          tiers.length <= 4
+            ? 'max-w-[860px] sm:grid-cols-4'
+            : 'max-w-[1080px] sm:grid-cols-4 lg:grid-cols-7'
+        )}
+      >
         {tiers.map((t, i) => (
           <li
             key={i}
@@ -272,7 +281,7 @@ export function PriceLadderBlock({ p, bid }: { p: P; bid?: string }) {
             <span className="mt-1 font-display text-[30px] font-black leading-none" {...edText(bid, `tiers.${i}.price`)}>
               {t.price}
             </span>
-            <span className="mt-1 text-[12px] font-medium text-muted">per jersey</span>
+            <span className="mt-1 text-[12px] font-medium text-muted">{p.unit || 'per jersey'}</span>
           </li>
         ))}
       </ul>

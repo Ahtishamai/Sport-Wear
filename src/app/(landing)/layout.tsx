@@ -9,7 +9,7 @@ import { Icon } from '@/components/site/Icon';
 import { FORM_ANCHOR } from '@/components/landing/blocks';
 
 /**
- * The frame around an ad landing page (/lp/…).
+ * The frame around an ad landing page (see lib/landing.ts).
  *
  * Deliberately not the shop's header and footer. Somebody who clicked an ad
  * has one thing to do here, and every menu link is a way to wander off before
