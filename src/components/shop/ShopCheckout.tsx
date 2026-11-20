@@ -206,11 +206,11 @@ export function ShopCheckout({
           <Field label="Your name *" value={form.customerName} onChange={(v) => set('customerName', v)} placeholder="Coach name" span />
           <Field label="Email *" type="email" value={form.email} onChange={(v) => set('email', v)} placeholder="coach@team.com" />
           <Field label="Phone" type="tel" value={form.phone} onChange={(v) => set('phone', v)} placeholder="(959) 000-0000" />
-          <Field label="Address *" value={form.address1} onChange={(v) => set('address1', v)} placeholder="1601 Main St" span />
+          <Field label="Address *" value={form.address1} onChange={(v) => set('address1', v)} placeholder="Street address" span />
           <Field label="Apartment, suite (optional)" value={form.address2} onChange={(v) => set('address2', v)} span />
-          <Field label="City *" value={form.city} onChange={(v) => set('city', v)} placeholder="Springfield" />
-          <Field label="State" value={form.state} onChange={(v) => set('state', v)} placeholder="MA" />
-          <Field label="ZIP" value={form.postcode} onChange={(v) => set('postcode', v)} placeholder="01103" />
+          <Field label="City *" value={form.city} onChange={(v) => set('city', v)} placeholder="City" />
+          <Field label="State" value={form.state} onChange={(v) => set('state', v)} placeholder="State" />
+          <Field label="ZIP" value={form.postcode} onChange={(v) => set('postcode', v)} placeholder="ZIP code" />
           <label className="block sm:col-span-2">
             <span className="field-label">Anything we should know?</span>
             <textarea
