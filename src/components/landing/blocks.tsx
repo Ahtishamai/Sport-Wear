@@ -691,3 +691,42 @@ export function CompareTableBlock({ p, bid }: { p: P; bid?: string }) {
     </Section>
   );
 }
+
+// -------------------------------------------------------------------- trust bar
+
+/**
+ * Four reasons to trust the shop, small enough to sit straight under the
+ * hero without pushing the products off the first scroll: two by two on a
+ * phone, one row on a wide screen, icon beside the words rather than above.
+ */
+export function TrustBarBlock({ p, bid }: { p: P; bid?: string }) {
+  const items: P[] = (Array.isArray(p.items) ? p.items : []).filter((x: P) => x?.title);
+  return (
+    <section
+      className={cn('gutter border-b border-hairline py-5 md:py-7', p.background === 'surface' ? 'bg-surface' : 'bg-white')}
+    >
+      <ul className="mx-auto grid max-w-[1180px] grid-cols-2 gap-x-4 gap-y-5 lg:grid-cols-4">
+        {items.map((it, i) => (
+          <li key={i} className="flex items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand text-ink md:h-11 md:w-11">
+              <Icon name={it.icon || 'check'} size={20} />
+            </span>
+            <span className="min-w-0">
+              <span
+                className="block font-display text-[13px] font-extrabold uppercase leading-tight tracking-[.03em] md:text-[14px]"
+                {...edText(bid, `items.${i}.title`)}
+              >
+                {it.title}
+              </span>
+              {it.body && (
+                <span className="mt-0.5 block text-[12px] leading-snug text-muted md:text-[13px]" {...edText(bid, `items.${i}.body`)}>
+                  {it.body}
+                </span>
+              )}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}

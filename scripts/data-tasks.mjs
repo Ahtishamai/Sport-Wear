@@ -37,6 +37,11 @@ const TASKS = [
     file: 'scripts/make-landing-pages.mjs',
     args: ['--apply'],
   },
+  {
+    name: 'sell every pinstripe uniform online',
+    file: 'scripts/sell-pinstripes-online.mjs',
+    args: ['--apply'],
+  },
 ];
 
 let changed = false;

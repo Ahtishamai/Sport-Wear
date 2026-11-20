@@ -48,6 +48,7 @@ import {
   OfferHeroBlock,
   PriceLadderBlock,
   ProductOfferBlock,
+  TrustBarBlock,
 } from '@/components/landing/blocks';
 
 export type RenderContext = {
@@ -361,6 +362,9 @@ async function renderBlock(block: Block, index: number, ctx: RenderContext) {
 
     case 'compareTable':
       return <CompareTableBlock key={key} p={p} bid={block.id} />;
+
+    case 'trustBar':
+      return <TrustBarBlock key={key} p={p} bid={block.id} />;
 
     default:
       if (process.env.NODE_ENV === 'development') {

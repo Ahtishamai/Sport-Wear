@@ -1387,6 +1387,43 @@ export const BLOCKS: BlockDefinition[] = [
     },
   },
   {
+    type: 'trustBar',
+    label: 'Trust bar',
+    group: 'Social proof',
+    glyph: '✓',
+    description: 'Four short reasons to trust the shop, two by two on phones and in one row on wide screens.',
+    fields: [
+      {
+        name: 'items',
+        label: 'Reasons',
+        type: 'list',
+        fields: [
+          { name: 'title', label: 'Title', type: 'text', width: 'half' },
+          { name: 'icon', label: 'Icon', type: 'icon', width: 'half', default: 'check' },
+          { name: 'body', label: 'Line under it', type: 'text' },
+        ],
+      },
+      {
+        name: 'background',
+        label: 'Background',
+        type: 'select',
+        width: 'half',
+        default: 'white',
+        options: [
+          { label: 'White', value: 'white' },
+          { label: 'Surface grey', value: 'surface' },
+        ],
+      },
+    ],
+    defaults: {
+      items: [
+        { title: 'Secure checkout', icon: 'shield', body: 'Pay online with PayPal or a card.' },
+        { title: 'Free shipping', icon: 'truck', body: 'On every order.' },
+      ],
+      background: 'white',
+    },
+  },
+  {
     type: 'compareTable',
     label: 'Comparison table',
     group: 'Conversion',

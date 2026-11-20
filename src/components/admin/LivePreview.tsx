@@ -13,6 +13,7 @@ import {
   OfferHeroBlock,
   PriceLadderBlock,
   ProductOfferBlock,
+  TrustBarBlock,
 } from '@/components/landing/blocks';
 import type { FaqItem } from '@/components/blocks/FaqBlock';
 import { FaqBlock } from '@/components/blocks/FaqBlock';
@@ -284,6 +285,8 @@ function PreviewBlock({
       return <FaqListBlock p={p} bid={block.id} />;
     case 'compareTable':
       return <CompareTableBlock p={p} bid={block.id} />;
+    case 'trustBar':
+      return <TrustBarBlock p={p} bid={block.id} />;
     default:
       return (
         <div className="gutter border-y border-hairline bg-surface py-6 text-[13px] text-muted">

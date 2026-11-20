@@ -68,6 +68,13 @@ const SEO = {
 const id = () => 'b_' + randomBytes(5).toString('hex');
 const SHOP = { label: 'Shop the uniforms', href: '#shop' };
 
+const TRUST_ITEMS = [
+  { title: 'Secure checkout', icon: 'shield', body: 'Pay online with PayPal or a card.' },
+  { title: 'Free shipping', icon: 'truck', body: 'On every order.' },
+  { title: 'Made in-house', icon: 'factory', body: 'Printed in our own shop in Springfield, MA.' },
+  { title: '1,000+ happy customers', icon: 'star', body: 'Over 8 years outfitting teams.' },
+];
+
 function blocks({ detail, reviews, phoneHref, rating }) {
   return [
     // 1 — What is it, what does it cost?
@@ -93,24 +100,8 @@ function blocks({ detail, reviews, phoneHref, rating }) {
         ],
       },
     },
-    // 2 — Can I trust them?
-    {
-      type: 'iconFeatures',
-      props: {
-        eyebrow: '',
-        heading: '',
-        body: '',
-        size: 'compact',
-        align: 'center',
-        background: 'white',
-        items: [
-          { title: 'Secure checkout', icon: 'shield', body: 'Pay online with PayPal or a card.' },
-          { title: 'Free shipping', icon: 'truck', body: 'On every order.' },
-          { title: 'Made in-house', icon: 'factory', body: 'Printed in our own shop in Springfield, MA.' },
-          { title: '1,000+ happy customers', icon: 'star', body: 'Over 8 years outfitting teams.' },
-        ],
-      },
-    },
+    // 2 — Can I trust them? (Small, so the products stay one scroll away.)
+    { type: 'trustBar', props: { background: 'white', items: TRUST_ITEMS } },
     // 3 — Show me. (This section is #shop: every "Shop" button lands here.)
     {
       type: 'productOffer',
@@ -258,9 +249,49 @@ function blocks({ detail, reviews, phoneHref, rating }) {
 console.log(apply ? '\n=== APPLYING ===' : '\n=== DRY RUN (add --apply) ===');
 
 if (await db.setting.findUnique({ where: { key: MARKER } })) {
-  console.log(`  ${PATH} already has this layout — left as it is`);
+  await upgradeTrustBadges();
   await db.$disconnect();
   process.exit(0);
+}
+
+/**
+ * Once the page has this layout: the four trust badges were first written as
+ * an "Icon feature row", whose cards stack four tall on a phone and push the
+ * products a whole screen down. They become a Trust bar — two by two on a
+ * phone. Only while the section is still exactly as first written, so an
+ * edited one is left alone; once, by its own marker.
+ */
+async function upgradeTrustBadges() {
+  const key = 'task:lp-pinstripe-trust-bar';
+  if (await db.setting.findUnique({ where: { key } })) {
+    console.log(`  ${PATH} is up to date — left as it is`);
+    return;
+  }
+  const page = await db.page.findUnique({ where: { slug: SLUG }, select: { id: true, blocks: true } });
+  const list = Array.isArray(page?.blocks) ? page.blocks : [];
+  const same = (b) =>
+    b?.type === 'iconFeatures' &&
+    b.props?.size === 'compact' &&
+    JSON.stringify((b.props.items ?? []).map((x) => x.title)) ===
+      JSON.stringify(TRUST_ITEMS.map((x) => x.title));
+  const at = list.findIndex(same);
+  console.log(
+    at < 0
+      ? `  ${PATH}: trust badges already changed by hand — left as they are`
+      : `  ${apply ? '' : 'would '}turn ${PATH}'s trust badges into a compact trust bar`
+  );
+  if (!apply) return;
+  if (at >= 0) {
+    const next = list.map((b, i) =>
+      i === at ? { id: b.id, type: 'trustBar', props: { background: 'white', items: b.props.items } } : b
+    );
+    await db.pageRevision.create({
+      data: { pageId: page.id, blocks: list, label: 'Before the compact trust bar' },
+    });
+    await db.page.update({ where: { id: page.id }, data: { blocks: next } });
+    console.log('DATA_CHANGED');
+  }
+  await db.setting.create({ data: { key, value: { doneAt: new Date().toISOString() } } });
 }
 
 const photos = await db.productImage.findMany({
