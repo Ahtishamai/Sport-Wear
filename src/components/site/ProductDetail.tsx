@@ -15,8 +15,6 @@ import {
 } from '@/lib/utils';
 import { useQuote } from './QuoteProvider';
 import { Icon } from './Icon';
-import { SizeChart } from './SizeChart';
-import { usesShirtSizes } from '@/lib/size-chart';
 import { useAddOnce } from '@/components/shop/CartProvider';
 import { ImagePlaceholder } from '@/components/blocks/primitives';
 
@@ -99,7 +97,6 @@ export function ProductDetail({
   const [added, setAdded] = useState(false);
 
   const hasSizes = product.sizes.length > 0;
-  const hasShirtSizes = usesShirtSizes(product.sizes);
   const noun = unitNoun(product);
 
   // A box per size, or one size and a count. A quote-only product keeps the
@@ -515,9 +512,7 @@ export function ProductDetail({
               </h2>
               {hasSizes && (
                 <Link
-                  // The chart is at the foot of this page for anything sized
-                  // like a shirt; anything else keeps the size chart page.
-                  href={hasShirtSizes ? '#size-chart' : '/size-chart'}
+                  href="/size-chart"
                   className="text-[13px] font-semibold text-muted underline underline-offset-2 hover:text-ink"
                 >
                   Size chart
@@ -909,15 +904,6 @@ export function ProductDetail({
           )}
         </div>
       </div>
-
-      {/* ------------------------------------------------------ size chart */}
-      {hasShirtSizes && (
-        <div className="gutter border-t border-hairline pb-16 pt-12">
-          <div className="mx-auto max-w-[1100px]">
-            <SizeChart intro="Check your size before you order: measure a shirt that fits well and compare it with the chart." />
-          </div>
-        </div>
-      )}
 
       {/* ------------------------------------------------------ sticky bar */}
       <div
