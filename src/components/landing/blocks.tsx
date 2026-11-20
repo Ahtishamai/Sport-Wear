@@ -709,7 +709,15 @@ export function TrustBarBlock({ p, bid }: { p: P; bid?: string }) {
     <section
       className={cn('gutter border-b border-hairline py-5 md:py-7', p.background === 'surface' ? 'bg-surface' : 'bg-white')}
     >
-      <ul className="mx-auto grid max-w-[1180px] grid-cols-2 gap-x-4 gap-y-5 lg:grid-cols-4">
+      {/* Columns to suit the count, so three reasons leave no gap: four sit
+          two by two on a phone, an odd number one per row. */}
+      <ul
+        className={cn(
+          'mx-auto grid max-w-[1180px] gap-x-4 gap-y-5',
+          items.length % 2 === 0 ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-3',
+          items.length === 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-4'
+        )}
+      >
         {items.map((it, i) => (
           <li key={i} className="flex items-start gap-3">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand text-ink md:h-11 md:w-11">

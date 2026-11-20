@@ -68,10 +68,12 @@ const SEO = {
 const id = () => 'b_' + randomBytes(5).toString('hex');
 const SHOP = { label: 'Shop the uniforms', href: '#shop' };
 
+/** The badges as first written — what the trust bar upgrade looks for. */
+const FIRST_TRUST_TITLES = ['Secure checkout', 'Free shipping', 'Made in-house', '1,000+ happy customers'];
+
 const TRUST_ITEMS = [
   { title: 'Secure checkout', icon: 'shield', body: 'Pay online with PayPal or a card.' },
   { title: 'Free shipping', icon: 'truck', body: 'On every order.' },
-  { title: 'Made in-house', icon: 'factory', body: 'Printed in our own shop in Springfield, MA.' },
   { title: '1,000+ happy customers', icon: 'star', body: 'Over 8 years outfitting teams.' },
 ];
 
@@ -253,6 +255,7 @@ console.log(apply ? '\n=== APPLYING ===' : '\n=== DRY RUN (add --apply) ===');
 if (await db.setting.findUnique({ where: { key: MARKER } })) {
   await upgradeTrustBadges();
   await dropPriceNote();
+  await dropMadeInHouse();
   await db.$disconnect();
   process.exit(0);
 }
@@ -269,6 +272,38 @@ if (await db.setting.findUnique({ where: { key: MARKER } })) {
  * Clears the note only while it still says what was first written, so a note
  * typed in the admin stays. Once, by its own marker.
  */
+/**
+ * The shop asked for the "Made in-house" badge to go. Removes that one item
+ * from the trust badges, wherever it still is; once, by its own marker.
+ */
+async function dropMadeInHouse() {
+  const key = 'task:lp-pinstripe-no-made-in-house';
+  if (await db.setting.findUnique({ where: { key } })) return;
+  const page = await db.page.findUnique({ where: { slug: SLUG }, select: { id: true, blocks: true } });
+  const list = Array.isArray(page?.blocks) ? page.blocks : [];
+  const isBadge = (x) => String(x?.title ?? '').trim().toLowerCase() === 'made in-house';
+  let changes = 0;
+  const next = list.map((b) => {
+    if (!['trustBar', 'iconFeatures'].includes(b?.type) || !Array.isArray(b.props?.items)) return b;
+    const items = b.props.items.filter((x) => !isBadge(x));
+    if (items.length === b.props.items.length) return b;
+    changes++;
+    return { ...b, props: { ...b.props, items } };
+  });
+  console.log(
+    changes
+      ? `  ${apply ? '' : 'would '}remove the "Made in-house" badge from ${PATH}`
+      : `  ${PATH}: no "Made in-house" badge to remove`
+  );
+  if (!apply) return;
+  if (changes) {
+    await db.pageRevision.create({ data: { pageId: page.id, blocks: list, label: 'Before removing "Made in-house"' } });
+    await db.page.update({ where: { id: page.id }, data: { blocks: next } });
+    console.log('DATA_CHANGED');
+  }
+  await db.setting.create({ data: { key, value: { doneAt: new Date().toISOString() } } });
+}
+
 async function dropPriceNote() {
   const key = 'task:lp-pinstripe-no-price-note';
   if (await db.setting.findUnique({ where: { key } })) return;
@@ -302,7 +337,7 @@ async function upgradeTrustBadges() {
     b?.type === 'iconFeatures' &&
     b.props?.size === 'compact' &&
     JSON.stringify((b.props.items ?? []).map((x) => x.title)) ===
-      JSON.stringify(TRUST_ITEMS.map((x) => x.title));
+      JSON.stringify(FIRST_TRUST_TITLES);
   const at = list.findIndex(same);
   console.log(
     at < 0
