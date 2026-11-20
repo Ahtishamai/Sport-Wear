@@ -42,6 +42,11 @@ const TASKS = [
     file: 'scripts/sell-pinstripes-online.mjs',
     args: ['--apply'],
   },
+  {
+    name: 'price the pinstripe uniforms on the shirt list',
+    file: 'scripts/price-pinstripes-like-shirts.mjs',
+    args: ['--apply'],
+  },
 ];
 
 let changed = false;

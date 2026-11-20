@@ -237,7 +237,7 @@ export function ProductOfferBlock({
                           const best = t.price === lowest;
                           return (
                             <tr key={t.label} className={cn('border-t border-hairline', best && 'bg-brand-tint')}>
-                              <td className="px-2 py-1.5 text-body">{t.label} pcs</td>
+                              <td className="px-2 py-1.5 text-body">{t.label === '1' ? '1 pc' : `${t.label} pcs`}</td>
                               <td className={cn('px-2 py-1.5 text-right font-semibold text-ink', best && 'font-extrabold')}>
                                 {money(t.price)}
                               </td>
@@ -503,6 +503,8 @@ export function PriceLadderBlock({ p, bid }: { p: P; bid?: string }) {
             key={i}
             className={cn(
               'relative flex flex-col items-center border px-3 pb-5 pt-6 text-center',
+              // An odd last card would sit alone on a phone; it takes the row.
+              tiers.length % 2 === 1 && i === tiers.length - 1 && 'col-span-2 sm:col-span-1',
               t.highlight ? 'border-ink bg-brand' : 'border-hairline bg-white'
             )}
           >

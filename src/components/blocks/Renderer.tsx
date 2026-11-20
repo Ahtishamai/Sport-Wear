@@ -100,10 +100,11 @@ function ladderFrom(tiers: { label: string; price: number }[]) {
     const save = i > 0 && first > 0 ? Math.round(((first - t.price) / first) * 100) : 0;
     const best = t.price === lowest;
     return {
-      qty: `${t.label} jerseys`,
+      qty: t.label === '1' ? '1 jersey' : `${t.label} jerseys`,
       price: `${Number.isInteger(t.price) ? t.price : t.price.toFixed(2)}`,
       highlight: best,
-      tag: best ? (save > 0 ? `Best value · save ${save}%` : 'Best value') : save > 0 ? `Save ${save}%` : '',
+      // Short, to fit a card in a seven-step ladder.
+      tag: best ? 'Best value' : save > 0 ? `Save ${save}%` : '',
     };
   });
 }
