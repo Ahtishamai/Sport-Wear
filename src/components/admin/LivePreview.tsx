@@ -9,7 +9,9 @@ import {
   FaqListBlock,
   LeadFormBlock,
   LeadHeroBlock,
+  OfferHeroBlock,
   PriceLadderBlock,
+  ProductOfferBlock,
 } from '@/components/landing/blocks';
 import type { FaqItem } from '@/components/blocks/FaqBlock';
 import { FaqBlock } from '@/components/blocks/FaqBlock';
@@ -237,6 +239,35 @@ function PreviewBlock({
           showPrice
         />
       );
+    case 'offerHero':
+    case 'productOffer': {
+      // The preview has only each product's starting price, not its tiers;
+      // the live page shows the full bulk list.
+      const products = (data.byCollection[p.collectionHandle] ?? data.products)
+        .slice(0, Number(p.limit) || 12)
+        .map((x) => ({
+          id: x.id,
+          handle: x.handle,
+          title: x.title,
+          image: x.image ?? null,
+          tiers: x.basePrice > 0 ? [{ label: '1+', price: x.basePrice }] : [],
+          from: x.basePrice,
+          showPrice: x.showPrice !== false,
+          sellOnline: true,
+        }));
+      if (block.type === 'productOffer') {
+        return <ProductOfferBlock p={p} bid={block.id} products={products} showPrices />;
+      }
+      return (
+        <OfferHeroBlock
+          p={p}
+          bid={block.id}
+          from={products.length ? Math.min(...products.map((x) => x.from)) : null}
+          fallbackImage={products[0]?.image}
+          lead={{ source: 'preview', phone: data.contact.phone, phoneHref: data.contact.phoneHref }}
+        />
+      );
+    }
     case 'priceLadder':
       return <PriceLadderBlock p={p} bid={block.id} />;
     case 'faqList':

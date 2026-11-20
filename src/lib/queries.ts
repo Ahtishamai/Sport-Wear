@@ -6,7 +6,7 @@ import type { CardPackage, CardProduct } from '@/components/blocks/primitives';
 import type { CollectionCard, ReviewItem } from '@/components/blocks/sections';
 import type { FaqItem } from '@/components/blocks/FaqBlock';
 import type { NavLink } from '@/components/site/Header';
-import { DEFAULT_TIERS, SIZE_RUN, type VolumeTier } from './utils';
+import { DEFAULT_TIERS, SIZE_RUN, tierLabel, tierPrice, type VolumeTier } from './utils';
 
 const PUBLISHED = { status: 'PUBLISHED' as const };
 
@@ -376,6 +376,67 @@ export async function getCatalog(query: CatalogQuery) {
   const rows = await prisma.product.findMany({ where, orderBy, select: productSelect });
   return rows.map(toCard);
 }
+
+/** A product as a landing page sells it: with its whole bulk price list. */
+export type OfferProduct = {
+  id: string;
+  handle: string;
+  title: string;
+  image: string | null;
+  /** Each quantity step and what one costs at it, from the product's own tiers. */
+  tiers: { label: string; price: number }[];
+  /** The lowest of those prices: "Starting at". */
+  from: number;
+  showPrice: boolean;
+  sellOnline: boolean;
+};
+
+/**
+ * A collection's published products with their volume pricing worked out —
+ * the same tiers, and the same arithmetic, the product page and the cart use
+ * (lib/utils `tierPrice`), so the landing page can never quote a price the
+ * checkout will not charge.
+ */
+export const getOfferProducts = cache(
+  async (collectionHandle: string, limit = 12): Promise<OfferProduct[]> => {
+    if (!collectionHandle) return [];
+    const rows = await prisma.product.findMany({
+      where: { ...PUBLISHED, collections: { some: { collection: { handle: collectionHandle } } } },
+      orderBy: { position: 'asc' },
+      take: Math.min(Math.max(Number(limit) || 12, 1), 24),
+      select: {
+        id: true,
+        handle: true,
+        title: true,
+        basePrice: true,
+        volumeTiers: true,
+        showPrice: true,
+        sellOnline: true,
+        images: { select: { url: true }, orderBy: { position: 'asc' }, take: 1 },
+      },
+    });
+
+    return rows.map((p) => {
+      const base = Number(p.basePrice);
+      const list = (p.volumeTiers as VolumeTier[] | null)?.length
+        ? (p.volumeTiers as VolumeTier[])
+        : DEFAULT_TIERS;
+      const tiers = list
+        .map((t) => ({ label: tierLabel(t), price: tierPrice(base, t) }))
+        .filter((t) => t.price > 0);
+      return {
+        id: p.id,
+        handle: p.handle,
+        title: p.title,
+        image: p.images[0]?.url ?? null,
+        tiers,
+        from: tiers.length ? Math.min(...tiers.map((t) => t.price)) : base,
+        showPrice: p.showPrice,
+        sellOnline: p.sellOnline,
+      };
+    });
+  }
+);
 
 export const getPriceBounds = cache(async () => {
   // Only products that actually show a price can be filtered by one.

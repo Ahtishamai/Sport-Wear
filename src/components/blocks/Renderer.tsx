@@ -2,6 +2,7 @@ import type { Block } from '@/lib/blocks/types';
 import {
   getCollectionCards,
   getFaqs,
+  getOfferProducts,
   getPackages,
   getProductsForBlock,
   getReviews,
@@ -43,7 +44,9 @@ import {
   FaqListBlock,
   LeadFormBlock,
   LeadHeroBlock,
+  OfferHeroBlock,
   PriceLadderBlock,
+  ProductOfferBlock,
 } from '@/components/landing/blocks';
 
 export type RenderContext = {
@@ -267,6 +270,33 @@ async function renderBlock(block: Block, index: number, ctx: RenderContext) {
           bid={block.id}
           products={products}
           showPrice={await pricesShown()}
+        />
+      );
+    }
+
+    case 'offerHero':
+    case 'productOffer': {
+      const [s, products] = await Promise.all([
+        getSettings(),
+        getOfferProducts(p.collectionHandle, p.limit),
+      ]);
+      const showPrices = s.showPrices !== false;
+      if (block.type === 'productOffer') {
+        return (
+          <ProductOfferBlock key={key} p={p} bid={block.id} products={products} showPrices={showPrices} />
+        );
+      }
+      const priced = products.filter((x) => x.showPrice && x.tiers.length);
+      const from = showPrices && priced.length ? Math.min(...priced.map((x) => x.from)) : null;
+      return (
+        <OfferHeroBlock
+          key={key}
+          p={p}
+          bid={block.id}
+          priority={index === 0}
+          from={from}
+          fallbackImage={products[0]?.image}
+          lead={{ source: ctx.leadSource || 'site:form', phone: s.phone, phoneHref: s.phoneHref }}
         />
       );
     }

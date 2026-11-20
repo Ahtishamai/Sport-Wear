@@ -9,6 +9,7 @@ import {
   type Bg,
   type CardProduct,
 } from '@/components/blocks/primitives';
+import type { OfferProduct } from '@/lib/queries';
 import { LeadForm } from './LeadForm';
 import { SportHeading } from './SportHeading';
 
@@ -32,6 +33,218 @@ export type LeadContext = {
 
 /** Where every "get a quote" button on a landing page scrolls to. */
 export const FORM_ANCHOR = 'get-quote';
+
+/** Where "Shop now" scrolls to: the product offer on a page that sells. */
+export const SHOP_ANCHOR = 'shop';
+
+const money = (n: number) => `$${Number.isInteger(n) ? n : n.toFixed(2)}`;
+
+// -------------------------------------------------------------------- offer hero
+
+/**
+ * A landing hero for a page that sells rather than collects leads: the
+ * product, its lowest price, and one button down to the products.
+ *
+ * The price is the lowest the collection's own bulk pricing reaches, worked
+ * out from the products (see getOfferProducts) rather than typed, so it moves
+ * when the prices do.
+ */
+export function OfferHeroBlock({
+  p,
+  bid,
+  priority,
+  from,
+  fallbackImage,
+  lead,
+}: {
+  p: P;
+  bid?: string;
+  priority?: boolean;
+  /** Lowest price across the collection; null when prices are hidden. */
+  from: number | null;
+  fallbackImage?: string | null;
+  lead: LeadContext;
+}) {
+  const bullets = list(p.bullets);
+  const image = p.image || fallbackImage;
+
+  return (
+    <section className="relative overflow-hidden bg-ink text-white">
+      <div className="gutter relative grid gap-8 py-10 md:py-14 lg:grid-cols-[1.1fr_1fr] lg:items-center lg:gap-14 lg:py-16">
+        <div>
+          {p.badge && (
+            <span
+              className="mb-5 inline-flex bg-brand px-3 py-1.5 font-display text-[12px] font-extrabold uppercase tracking-[.12em] text-ink"
+              {...edText(bid, 'badge')}
+            >
+              {p.badge}
+            </span>
+          )}
+          <h1
+            className="h-display text-white"
+            style={{ fontSize: 'clamp(34px,4.6vw,62px)', lineHeight: 0.96 }}
+            {...edText(bid, 'heading')}
+          >
+            {p.heading}
+          </h1>
+          {p.body && (
+            <p
+              className="mt-5 max-w-[580px] text-[17px] leading-relaxed text-white/85 md:text-[18px]"
+              {...edText(bid, 'body')}
+            >
+              {p.body}
+            </p>
+          )}
+
+          {from !== null && (
+            <p className="mt-6 flex items-baseline gap-3">
+              <span className="text-[14px] font-semibold uppercase tracking-[.12em] text-white/70">
+                {p.priceLabel || 'Starting at'}
+              </span>
+              <span className="font-display text-[44px] font-black leading-none text-brand md:text-[52px]">
+                {money(from)}
+              </span>
+              <span className="text-[15px] font-semibold text-white/80">{p.priceNote || 'per jersey'}</span>
+            </p>
+          )}
+
+          {bullets.length > 0 && (
+            <ul className="mt-6 grid gap-2.5 sm:grid-cols-2">
+              {bullets.map((b, i) => (
+                <li key={i} className="flex items-start gap-2.5 text-[15px] font-semibold">
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand text-ink">
+                    <Icon name="check" size={13} strokeWidth={3} />
+                  </span>
+                  <span {...edText(bid, `bullets.${i}`)}>{b}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <a href={`#${SHOP_ANCHOR}`} className="btn btn-yellow btn-lg w-full sm:w-auto">
+              <span {...edText(bid, 'ctaLabel')}>{p.ctaLabel || 'Shop now'}</span>
+            </a>
+            {lead.phone && lead.phoneHref && (
+              <a href={lead.phoneHref} className="btn btn-ghost-light btn-lg w-full sm:w-auto">
+                Call {lead.phone}
+              </a>
+            )}
+          </div>
+        </div>
+
+        {image && (
+          <div className="relative aspect-square w-full overflow-hidden bg-[#0b0c0e]">
+            <Image
+              src={image}
+              alt={p.imageAlt || p.heading || ''}
+              fill
+              priority={priority}
+              sizes="(min-width:1024px) 45vw, 100vw"
+              className="object-cover"
+              {...edImage(bid, 'image')}
+            />
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+// -------------------------------------------------------------------- product offer
+
+/**
+ * The collection's products, each with its full bulk price list and a button
+ * straight to its product page, where it is put in the cart.
+ *
+ * The prices are the product's own volume tiers, so what a card says is what
+ * the cart charges. With prices switched off (site-wide or on the product)
+ * the card shows "Price on request" and no figures.
+ */
+export function ProductOfferBlock({
+  p,
+  bid,
+  products,
+  showPrices,
+}: {
+  p: P;
+  bid?: string;
+  products: OfferProduct[];
+  showPrices: boolean;
+}) {
+  return (
+    <Section id={SHOP_ANCHOR} background={(p.background as Bg) ?? 'white'} className="scroll-mt-20">
+      <SectionHeading eyebrow={p.eyebrow} heading={p.heading} body={p.body} align="center" bid={bid} />
+      <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {products.map((d) => {
+          const priced = showPrices && d.showPrice && d.tiers.length > 0;
+          const lowest = d.from;
+          return (
+            <li key={d.id} className="flex flex-col border border-hairline bg-white">
+              <a href={`/products/${d.handle}`} className="relative block aspect-square bg-plate">
+                {d.image && (
+                  <Image
+                    src={d.image}
+                    alt={d.title}
+                    fill
+                    sizes="(min-width:1024px) 25vw, (min-width:640px) 50vw, 100vw"
+                    className="object-cover"
+                  />
+                )}
+              </a>
+              <div className="flex flex-1 flex-col p-4 md:p-5">
+                <h3 className="font-display text-[16px] font-extrabold uppercase leading-tight">{d.title}</h3>
+
+                {priced ? (
+                  <>
+                    <p className="mt-2 flex items-baseline gap-1.5">
+                      <span className="text-[13px] font-medium text-muted">Starting at</span>
+                      <span className="font-display text-[26px] font-black leading-none">{money(lowest)}</span>
+                      <span className="text-[13px] font-medium text-muted">each</span>
+                    </p>
+
+                    <table className="mt-4 w-full text-[14px]">
+                      <caption className="mb-1.5 text-left font-display text-[11px] font-extrabold uppercase tracking-[.14em] text-muted">
+                        Bulk pricing
+                      </caption>
+                      <tbody>
+                        {d.tiers.map((t) => {
+                          const best = t.price === lowest;
+                          return (
+                            <tr key={t.label} className={cn('border-t border-hairline', best && 'bg-brand-tint')}>
+                              <td className="px-2 py-1.5 text-body">{t.label} pcs</td>
+                              <td className={cn('px-2 py-1.5 text-right font-semibold text-ink', best && 'font-extrabold')}>
+                                {money(t.price)}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </>
+                ) : (
+                  <p className="mt-2 text-[14px] font-semibold text-muted">Price on request</p>
+                )}
+
+                <a
+                  href={`/products/${d.handle}`}
+                  className={cn('btn mt-5 w-full py-3.5 text-[13px]', d.sellOnline && priced ? 'btn-yellow' : 'btn-outline')}
+                >
+                  {d.sellOnline && priced ? p.buttonLabel || 'Order now' : 'View details'}
+                </a>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+      {p.footnote && (
+        <p className="mt-7 text-center text-[14px] text-muted" {...edText(bid, 'footnote')}>
+          {p.footnote}
+        </p>
+      )}
+    </Section>
+  );
+}
 
 /** Baseball / Softball buttons on the form, when the block asks for them. */
 const sportChoices = (p: P) => (p.askSport ? ['Baseball', 'Softball'] : undefined);

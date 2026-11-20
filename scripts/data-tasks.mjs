@@ -33,7 +33,7 @@ const TASKS = [
     args: ['--apply'],
   },
   {
-    name: 'create the pinstripe uniforms ad landing page',
+    name: 'DTF pinstripe uniforms landing page',
     file: 'scripts/make-landing-pages.mjs',
     args: ['--apply'],
   },

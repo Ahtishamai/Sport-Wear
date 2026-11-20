@@ -3,7 +3,7 @@ import Link from 'next/link';
 import type { SiteSettings } from '@/lib/settings';
 import { Icon } from '@/components/site/Icon';
 import { SocialIcon } from '@/components/site/SocialIcon';
-import { FORM_ANCHOR } from './blocks';
+import { SHOP_ANCHOR } from './blocks';
 
 /**
  * The footer of the pinstripe landing page.
@@ -18,11 +18,11 @@ import { FORM_ANCHOR } from './blocks';
 export function LandingFooter({ s }: { s: SiteSettings }) {
   const year = new Date().getFullYear();
   const promises = [
-    'Stripe printed into the fabric — never peels or frays',
+    'Pinstripes printed into the fabric',
+    'Team name & numbers as DTF transfers',
     'Any two colors, at no extra cost',
-    'Team name & numbers included',
-    'Youth to adult 3XL, one price',
-    'From $45 a jersey',
+    'Youth to adult 3XL',
+    'Bulk pricing: the more you order, the less you pay',
   ];
 
   return (
@@ -35,8 +35,8 @@ export function LandingFooter({ s }: { s: SiteSettings }) {
             <span className="font-display text-[18px] font-black uppercase tracking-[.06em]">{s.siteName}</span>
           )}
           <p className="mt-5 max-w-[340px] text-[15px] leading-relaxed text-ondark-3">
-            Custom pinstripe baseball and softball uniforms, printed into the fabric in your team
-            colors. Free mockup in 24 hours, delivered in 3–4 weeks.
+            DTF pinstripe baseball and softball uniforms, printed in your team colors, with
+            your team name and numbers applied as DTF transfers.
           </p>
           {s.social?.length > 0 && (
             <div className="mt-6 flex gap-2.5">
@@ -99,8 +99,8 @@ export function LandingFooter({ s }: { s: SiteSettings }) {
               </li>
             )}
           </ul>
-          <a href={`#${FORM_ANCHOR}`} className="btn btn-yellow btn-md mt-6">
-            Get my free mockup
+          <a href={`#${SHOP_ANCHOR}`} className="btn btn-yellow btn-md mt-6">
+            Shop now
           </a>
         </div>
       </div>

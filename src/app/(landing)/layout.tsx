@@ -5,7 +5,7 @@ import { SiteEffects } from '@/components/site/SiteEffects';
 import { EditBar } from '@/components/site/EditBar';
 import { Beacon } from '@/components/site/Beacon';
 import { Icon } from '@/components/site/Icon';
-import { FORM_ANCHOR } from '@/components/landing/blocks';
+import { SHOP_ANCHOR } from '@/components/landing/blocks';
 import { LandingFooter } from '@/components/landing/LandingFooter';
 
 /**
@@ -14,7 +14,7 @@ import { LandingFooter } from '@/components/landing/LandingFooter';
  * Deliberately not the shop's header and footer. Somebody who clicked an ad
  * has one thing to do here, and every menu link is a way to wander off before
  * doing it. What stays is what earns trust or converts: the logo, a phone
- * number that dials, one button to the form — and a footer of its own
+ * number that dials, one button to the products — and a footer of its own
  * (LandingFooter) that keeps to the pinstripe collection, with the address,
  * contact details and privacy policy Google Ads asks a landing page to show.
  */
@@ -58,8 +58,8 @@ export default async function LandingLayout({ children }: { children: React.Reac
                 <span className="hidden md:inline">{s.phone}</span>
               </a>
             )}
-            <a href={`#${FORM_ANCHOR}`} className="btn btn-yellow btn-md hidden sm:inline-flex">
-              Get free mockup
+            <a href={`#${SHOP_ANCHOR}`} className="btn btn-yellow btn-md hidden sm:inline-flex">
+              Shop now
             </a>
           </div>
         </div>
@@ -83,8 +83,8 @@ export default async function LandingLayout({ children }: { children: React.Reac
             Call
           </a>
         )}
-        <a href={`#${FORM_ANCHOR}`} className="btn btn-yellow flex h-[52px] items-center justify-center text-[15px]">
-          Get my free mockup
+        <a href={`#${SHOP_ANCHOR}`} className="btn btn-yellow flex h-[52px] items-center justify-center text-[15px]">
+          Shop now
         </a>
       </div>
 
