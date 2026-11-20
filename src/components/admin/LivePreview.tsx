@@ -268,6 +268,14 @@ function PreviewBlock({
         />
       );
     }
+    case 'bulkPricing':
+      // The live page reads the ladder from the products' tiers.
+      return (
+        <PriceLadderBlock
+          p={{ ...p, tiers: [{ qty: 'Prices from the products', price: '—', highlight: true, tag: '' }] }}
+          bid={block.id}
+        />
+      );
     case 'priceLadder':
       return <PriceLadderBlock p={p} bid={block.id} />;
     case 'faqList':

@@ -180,20 +180,27 @@ export function ProductOfferBlock({
           const priced = showPrices && d.showPrice && d.tiers.length > 0;
           const lowest = d.from;
           return (
-            <li key={d.id} className="flex flex-col border border-hairline bg-white">
-              <a href={`/products/${d.handle}`} className="relative block aspect-square bg-plate">
+            <li
+              key={d.id}
+              className="group flex flex-col border border-hairline bg-white transition-shadow hover:shadow-[0_12px_32px_rgba(0,0,0,.12)]"
+            >
+              <a href={`/products/${d.handle}`} className="relative block aspect-square overflow-hidden bg-plate">
                 {d.image && (
                   <Image
                     src={d.image}
                     alt={d.title}
                     fill
                     sizes="(min-width:1024px) 25vw, (min-width:640px) 50vw, 100vw"
-                    className="object-cover"
+                    className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                   />
                 )}
               </a>
               <div className="flex flex-1 flex-col p-4 md:p-5">
-                <h3 className="font-display text-[16px] font-extrabold uppercase leading-tight">{d.title}</h3>
+                <h3 className="font-display text-[16px] font-extrabold uppercase leading-tight">
+                  <a href={`/products/${d.handle}`} className="hover:underline">
+                    {d.title}
+                  </a>
+                </h3>
 
                 {priced ? (
                   <>
@@ -466,7 +473,8 @@ export function PriceLadderBlock({ p, bid }: { p: P; bid?: string }) {
           fill a row instead of huddling at one end of a seven-wide grid. */}
       <ul
         className={cn(
-          'mx-auto grid grid-cols-2 gap-3',
+          // Room above each card for its "Save …" tag.
+          'mx-auto grid grid-cols-2 gap-x-3 gap-y-6 pt-3',
           tiers.length <= 4
             ? 'max-w-[860px] sm:grid-cols-4'
             : 'max-w-[1080px] sm:grid-cols-4 lg:grid-cols-7'
@@ -480,9 +488,12 @@ export function PriceLadderBlock({ p, bid }: { p: P; bid?: string }) {
               t.highlight ? 'border-ink bg-brand' : 'border-hairline bg-white'
             )}
           >
-            {t.highlight && t.tag && (
+            {t.tag && (
               <span
-                className="absolute -top-3 bg-ink px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-[.1em] text-white"
+                className={cn(
+                  'absolute -top-3 whitespace-nowrap px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-[.1em]',
+                  t.highlight ? 'bg-ink text-white' : 'bg-brand text-ink'
+                )}
                 {...edText(bid, `tiers.${i}.tag`)}
               >
                 {t.tag}
@@ -505,7 +516,7 @@ export function PriceLadderBlock({ p, bid }: { p: P; bid?: string }) {
       )}
       {p.ctaLabel && (
         <div className="mt-8 text-center">
-          <a href={`#${FORM_ANCHOR}`} className="btn btn-yellow btn-lg">
+          <a href={p.ctaHref || `#${FORM_ANCHOR}`} className="btn btn-yellow btn-lg">
             <span {...edText(bid, 'ctaLabel')}>{p.ctaLabel}</span>
           </a>
         </div>

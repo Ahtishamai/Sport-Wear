@@ -74,6 +74,25 @@ export async function BlockRenderer({
   return <>{rendered}</>;
 }
 
+/**
+ * A product's tiers as price-ladder cards: "12–23 jerseys · $48.50", the
+ * cheapest step marked, each later step with what it saves on the first.
+ */
+function ladderFrom(tiers: { label: string; price: number }[]) {
+  const first = tiers[0]?.price ?? 0;
+  const lowest = Math.min(...tiers.map((t) => t.price));
+  return tiers.map((t, i) => {
+    const save = i > 0 && first > 0 ? Math.round(((first - t.price) / first) * 100) : 0;
+    const best = t.price === lowest;
+    return {
+      qty: `${t.label} jerseys`,
+      price: `${Number.isInteger(t.price) ? t.price : t.price.toFixed(2)}`,
+      highlight: best,
+      tag: best ? (save > 0 ? `Best value · save ${save}%` : 'Best value') : save > 0 ? `Save ${save}%` : '',
+    };
+  });
+}
+
 export function normalizeBlocks(blocks: unknown): Block[] {
   if (!Array.isArray(blocks)) return [];
   return blocks.filter(
@@ -299,6 +318,18 @@ async function renderBlock(block: Block, index: number, ctx: RenderContext) {
           lead={{ source: ctx.leadSource || 'site:form', phone: s.phone, phoneHref: s.phoneHref }}
         />
       );
+    }
+
+    case 'bulkPricing': {
+      // The collection's bulk pricing, from its first priced product's own
+      // tiers, so the table is what the cart charges and moves with it.
+      const [s, products] = await Promise.all([
+        getSettings(),
+        getOfferProducts(p.collectionHandle, 24),
+      ]);
+      const priced = products.find((x) => x.showPrice && x.tiers.length > 1);
+      if (s.showPrices === false || !priced) return null;
+      return <PriceLadderBlock key={key} p={{ ...p, tiers: ladderFrom(priced.tiers) }} bid={block.id} />;
     }
 
     case 'priceLadder':
