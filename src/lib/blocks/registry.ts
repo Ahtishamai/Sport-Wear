@@ -1395,6 +1395,32 @@ export const BLOCKS: BlockDefinition[] = [
     },
   },
   {
+    type: 'sizeChart',
+    label: 'Size chart',
+    group: 'Content',
+    glyph: '⇔',
+    description:
+      'The shop’s T-shirt and jersey size chart: adult and youth measurements as tables, with the chart picture. The figures are set in src/lib/size-chart.ts.',
+    fields: [
+      { name: 'heading', label: 'Heading', type: 'text', width: 'half' },
+      { name: 'anchor', label: 'Anchor', type: 'text', width: 'half', placeholder: 'size-chart', help: 'For links to it: /page#size-chart.' },
+      { name: 'intro', label: 'Intro', type: 'textarea', rows: 2 },
+      { name: 'showImage', label: 'Show the chart picture', type: 'boolean', width: 'half', default: true },
+      {
+        name: 'background',
+        label: 'Background',
+        type: 'select',
+        width: 'half',
+        default: 'white',
+        options: [
+          { label: 'White', value: 'white' },
+          { label: 'Surface grey', value: 'surface' },
+        ],
+      },
+    ],
+    defaults: { heading: 'Size chart', anchor: 'size-chart', intro: '', showImage: true, background: 'white' },
+  },
+  {
     type: 'trustBar',
     label: 'Trust bar',
     group: 'Social proof',

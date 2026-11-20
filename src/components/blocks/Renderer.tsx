@@ -48,6 +48,7 @@ import {
   OfferHeroBlock,
   PriceLadderBlock,
   ProductOfferBlock,
+  SizeChartBlock,
   TrustBarBlock,
 } from '@/components/landing/blocks';
 
@@ -366,6 +367,9 @@ async function renderBlock(block: Block, index: number, ctx: RenderContext) {
 
     case 'trustBar':
       return <TrustBarBlock key={key} p={p} bid={block.id} />;
+
+    case 'sizeChart':
+      return <SizeChartBlock key={key} p={p} bid={block.id} />;
 
     default:
       if (process.env.NODE_ENV === 'development') {

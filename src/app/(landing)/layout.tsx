@@ -25,6 +25,7 @@ const SECTIONS = [
   ['#reviews', 'Reviews'],
   ['#how-to-order', 'How to order'],
   ['#faq', 'FAQ'],
+  ['#size-chart', 'Size chart'],
 ] as const;
 
 export default async function LandingLayout({ children }: { children: React.ReactNode }) {

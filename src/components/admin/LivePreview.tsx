@@ -13,6 +13,7 @@ import {
   OfferHeroBlock,
   PriceLadderBlock,
   ProductOfferBlock,
+  SizeChartBlock,
   TrustBarBlock,
 } from '@/components/landing/blocks';
 import type { FaqItem } from '@/components/blocks/FaqBlock';
@@ -287,6 +288,8 @@ function PreviewBlock({
       return <CompareTableBlock p={p} bid={block.id} />;
     case 'trustBar':
       return <TrustBarBlock p={p} bid={block.id} />;
+    case 'sizeChart':
+      return <SizeChartBlock p={p} bid={block.id} />;
     default:
       return (
         <div className="gutter border-y border-hairline bg-surface py-6 text-[13px] text-muted">

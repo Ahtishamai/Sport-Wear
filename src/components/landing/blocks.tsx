@@ -12,6 +12,7 @@ import {
 import type { OfferProduct } from '@/lib/queries';
 import { LeadForm } from './LeadForm';
 import { SportHeading } from './SportHeading';
+import { SizeChart } from '@/components/site/SizeChart';
 
 /**
  * Blocks made for paid-traffic landing pages (lib/landing.ts), usable on any page.
@@ -742,5 +743,24 @@ export function TrustBarBlock({ p, bid }: { p: P; bid?: string }) {
         ))}
       </ul>
     </section>
+  );
+}
+
+// -------------------------------------------------------------------- size chart
+
+/** The shop's size chart (components/site/SizeChart) as a page section. */
+export function SizeChartBlock({ p }: { p: P; bid?: string }) {
+  return (
+    <Section background={(p.background as Bg) ?? 'white'}>
+      <div className="mx-auto max-w-[1100px]">
+        <SizeChart
+          // With an anchor, the renderer's wrapper already carries that id.
+          id={p.anchor ? 'size-chart-tables' : 'size-chart'}
+          heading={p.heading || 'Size chart'}
+          intro={p.intro || undefined}
+          showImage={p.showImage !== false}
+        />
+      </div>
+    </Section>
   );
 }

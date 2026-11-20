@@ -52,6 +52,11 @@ const TASKS = [
     file: 'scripts/add-youth-xl-size.mjs',
     args: ['--apply'],
   },
+  {
+    name: 'the size chart page, and Size Chart in the menu',
+    file: 'scripts/size-chart-page.mjs',
+    args: ['--apply'],
+  },
 ];
 
 let changed = false;

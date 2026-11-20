@@ -68,6 +68,14 @@ const SEO = {
 const id = () => 'b_' + randomBytes(5).toString('hex');
 const SHOP = { label: 'Shop the uniforms', href: '#shop' };
 
+const SIZE_CHART_BLOCK = {
+  anchor: 'size-chart',
+  heading: 'Size chart',
+  intro: 'Find the right size before you order. Youth and adult sizes can be mixed on one order.',
+  showImage: true,
+  background: 'surface',
+};
+
 /** The badges as first written — what the trust bar upgrade looks for. */
 const FIRST_TRUST_TITLES = ['Secure checkout', 'Free shipping', 'Made in-house', '1,000+ happy customers'];
 
@@ -234,7 +242,9 @@ function blocks({ detail, reviews, phoneHref, rating }) {
         ],
       },
     },
-    // 11 — OK.
+    // 11 — Will it fit? The client's size chart, at the end as they asked.
+    { type: 'sizeChart', props: SIZE_CHART_BLOCK },
+    // 12 — OK.
     {
       type: 'ctaBand',
       props: {
@@ -256,6 +266,7 @@ if (await db.setting.findUnique({ where: { key: MARKER } })) {
   await upgradeTrustBadges();
   await dropPriceNote();
   await dropMadeInHouse();
+  await addSizeChart();
   await db.$disconnect();
   process.exit(0);
 }
@@ -276,6 +287,30 @@ if (await db.setting.findUnique({ where: { key: MARKER } })) {
  * The shop asked for the "Made in-house" badge to go. Removes that one item
  * from the trust badges, wherever it still is; once, by its own marker.
  */
+/**
+ * The client asked for the size chart at the end of the page. Adds the
+ * "Size chart" section before the closing call to action (or at the end, if
+ * that has been removed); once, by its own marker, and never twice.
+ */
+async function addSizeChart() {
+  const key = 'task:lp-pinstripe-size-chart';
+  if (await db.setting.findUnique({ where: { key } })) return;
+  const page = await db.page.findUnique({ where: { slug: SLUG }, select: { id: true, blocks: true } });
+  const list = Array.isArray(page?.blocks) ? page.blocks : [];
+  const has = list.some((b) => b?.type === 'sizeChart');
+  console.log(has ? `  ${PATH} already has a size chart` : `  ${apply ? '' : 'would '}add the size chart to the end of ${PATH}`);
+  if (!apply) return;
+  if (!has && page) {
+    const at = list.findIndex((b) => b?.type === 'ctaBand');
+    const block = { id: id(), type: 'sizeChart', props: SIZE_CHART_BLOCK };
+    const next = at >= 0 ? [...list.slice(0, at), block, ...list.slice(at)] : [...list, block];
+    await db.pageRevision.create({ data: { pageId: page.id, blocks: list, label: 'Before adding the size chart' } });
+    await db.page.update({ where: { id: page.id }, data: { blocks: next } });
+    console.log('DATA_CHANGED');
+  }
+  await db.setting.create({ data: { key, value: { doneAt: new Date().toISOString() } } });
+}
+
 async function dropMadeInHouse() {
   const key = 'task:lp-pinstripe-no-made-in-house';
   if (await db.setting.findUnique({ where: { key } })) return;
