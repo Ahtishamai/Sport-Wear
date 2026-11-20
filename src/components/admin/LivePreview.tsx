@@ -5,6 +5,7 @@ import type { Block } from '@/lib/blocks/types';
 import type { CardPackage, CardProduct } from '@/components/blocks/primitives';
 import type { CollectionCard, ReviewItem } from '@/components/blocks/sections';
 import {
+  CompareTableBlock,
   DesignShowcaseBlock,
   FaqListBlock,
   LeadFormBlock,
@@ -280,6 +281,8 @@ function PreviewBlock({
       return <PriceLadderBlock p={p} bid={block.id} />;
     case 'faqList':
       return <FaqListBlock p={p} bid={block.id} />;
+    case 'compareTable':
+      return <CompareTableBlock p={p} bid={block.id} />;
     default:
       return (
         <div className="gutter border-y border-hairline bg-surface py-6 text-[13px] text-muted">

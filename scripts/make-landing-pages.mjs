@@ -8,9 +8,10 @@
  * collection is shown, and each card goes to its product page, where it is
  * put in the cart. Top to bottom:
  *
- *   hero with the lowest price · trust strip · every product with its bulk
- *   prices · the bulk price ladder · why DTF pinstripes · product details ·
- *   how to order · Google reviews · FAQ · closing call to action
+ *   hero with the lowest price · trust badges · every product with its bulk
+ *   prices · the bulk price ladder · printed vs sewn comparison · why these
+ *   pinstripes · product details · who we are · Google reviews · how to
+ *   order · FAQ · closing call to action
  *
  * No price is typed here. The hero's "Starting at", every card's ladder and
  * the bulk pricing section are read from the products' own volume tiers when
@@ -44,7 +45,7 @@ const SLUG = 'lp-custom-pinstripe-uniforms';
 const PATH = '/custom-pinstripe-uniforms';
 const COLLECTION = 'pinstripe-uniform';
 /** Set once this layout has been written; see the header. */
-const MARKER = 'task:lp-pinstripe-full-landing';
+const MARKER = 'task:lp-pinstripe-landing-v4';
 
 const SEO = {
   seoTitle: 'DTF Pinstripe Uniforms | Bulk Pricing, Free Shipping',
@@ -75,15 +76,21 @@ function blocks({ detail, reviews, phoneHref }) {
         ],
       },
     },
+    // Trust at a glance, straight under the hero.
     {
-      type: 'statStrip',
+      type: 'iconFeatures',
       props: {
+        eyebrow: '',
+        heading: '',
+        body: '',
+        size: 'compact',
+        align: 'center',
         background: 'white',
         items: [
-          { value: 'Free', label: 'Shipping on every order', count: 0, suffix: '', highlight: false },
-          { value: '3–4 weeks', label: 'Delivery', count: 0, suffix: '', highlight: false },
-          { value: 'YS–3XL', label: 'Youth to adult sizes', count: 0, suffix: '', highlight: false },
-          { value: '$0', label: 'Setup fees', count: 0, suffix: '', highlight: true },
+          { title: 'Secure checkout', icon: 'shield', body: 'Pay online with PayPal or a card.' },
+          { title: 'Free shipping', icon: 'truck', body: 'On every order.' },
+          { title: 'Made in-house', icon: 'factory', body: 'Printed in our own shop in Springfield, MA.' },
+          { title: '1,000+ happy customers', icon: 'star', body: 'Over 8 years outfitting teams.' },
         ],
       },
     },
@@ -112,6 +119,26 @@ function blocks({ detail, reviews, phoneHref }) {
         ctaLabel: 'Shop the uniforms',
         ctaHref: '#shop',
         background: 'surface',
+      },
+    },
+    // Why ours, against the usual sewn-on stripe.
+    {
+      type: 'compareTable',
+      props: {
+        eyebrow: 'Printed, not sewn',
+        heading: 'Why our pinstripes last longer',
+        body: 'Many pinstripe uniforms have the stripe sewn on. Ours is printed into the fabric itself.',
+        oursLabel: 'Our pinstripes',
+        theirsLabel: 'Sewn-on stripes',
+        rows: [
+          { feature: 'After a season of washing', ours: 'Part of the fabric — cannot peel or fray', theirs: 'Can lift at the shoulder and fray at the hem' },
+          { feature: 'Across the seams', ours: 'Stays straight', theirs: 'Can pull crooked' },
+          { feature: 'On youth and adult sizes', ours: 'Even spacing on every size', theirs: 'Stretched with the garment' },
+          { feature: 'Stripe colors', ours: 'Any two shades, no extra cost', theirs: 'Limited to what the mill weaves' },
+        ],
+        ctaLabel: 'Shop the uniforms',
+        ctaHref: '#shop',
+        background: 'white',
       },
     },
     {
@@ -151,6 +178,25 @@ function blocks({ detail, reviews, phoneHref }) {
         cta: [{ label: 'Shop the uniforms', href: '#shop' }],
       },
     },
+    // Who is behind it.
+    {
+      type: 'numbersGrid',
+      props: {
+        eyebrow: 'Who we are',
+        heading: 'Trusted by teams across North America',
+        body: 'For over 8 years we have made uniforms for youth organizations, schools, travel teams, colleges and clubs — designed and printed in our own shop in Springfield, Massachusetts.',
+        columns: 4,
+        background: 'ink',
+        items: [
+          { value: '8+', label: 'Years making team uniforms', count: 8, suffix: '+' },
+          { value: '1,000+', label: 'Happy customers', count: 1000, suffix: '+' },
+          { value: '3–4 wks', label: 'Standard delivery', count: 0, suffix: '' },
+          { value: '$0', label: 'Setup fees', count: 0, suffix: '' },
+        ],
+      },
+    },
+    // What other customers say: the home page's Google reviews.
+    ...(reviews ? [reviews] : []),
     {
       type: 'steps',
       props: {
@@ -160,12 +206,11 @@ function blocks({ detail, reviews, phoneHref }) {
         steps: [
           { title: 'Pick your uniform', icon: 'check', body: 'Choose a pinstripe color from the uniforms above.' },
           { title: 'Add sizes, names & numbers', icon: 'palette', body: 'On the product page, order for one player or the whole team.' },
-          { title: 'Check out securely', icon: 'shield', body: 'Pay online. Bulk pricing is applied in your cart automatically.' },
+          { title: 'Check out securely', icon: 'shield', body: 'Pay online with PayPal or a card. Bulk pricing is applied automatically.' },
           { title: 'Delivered to your door', icon: 'truck', body: 'Your uniforms arrive in 3–4 weeks, with free shipping.' },
         ],
       },
     },
-    ...(reviews ? [reviews] : []),
     {
       type: 'faqList',
       props: {
@@ -175,6 +220,9 @@ function blocks({ detail, reviews, phoneHref }) {
         items: [
           { q: 'What does DTF mean?', a: 'DTF stands for direct-to-film. Your team name and numbers are printed onto a special film, then heat-pressed onto the jersey. It gives sharp, clean lettering in any color.' },
           { q: 'How does bulk pricing work?', a: 'The more of a uniform you order, the less each one costs. The lower price is applied in your cart automatically — no code needed.' },
+          { q: 'Can I order just one jersey?', a: 'Yes. You can order a single jersey for one player, or the whole roster at once.' },
+          { q: 'How do I know which size to order?', a: 'Sizes run from youth small to adult 3XL, all at the same price, and you can mix sizes in one order. Check our size chart, or ask us for a free sizing kit.' },
+          { q: 'How do I pay?', a: 'You check out securely online with PayPal or a card.' },
           { q: 'Will the pinstripes peel or fray?', a: 'No. The stripes are printed into the fabric, not sewn on, so they cannot lift, fray or pull crooked across a seam.' },
           { q: 'Can I get different colors?', a: 'Yes. Any two shades work for the base and the stripe, at no extra cost. Mention your colors in your order notes, or call us.' },
           { q: 'Can I mix youth and adult sizes?', a: 'Yes. Sizes run from youth small to adult 3XL, and every size costs the same.' },

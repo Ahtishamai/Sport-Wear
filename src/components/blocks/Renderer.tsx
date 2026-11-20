@@ -40,6 +40,7 @@ import {
   TimelineBlock,
 } from './sections';
 import {
+  CompareTableBlock,
   DesignShowcaseBlock,
   FaqListBlock,
   LeadFormBlock,
@@ -337,6 +338,9 @@ async function renderBlock(block: Block, index: number, ctx: RenderContext) {
 
     case 'faqList':
       return <FaqListBlock key={key} p={p} bid={block.id} />;
+
+    case 'compareTable':
+      return <CompareTableBlock key={key} p={p} bid={block.id} />;
 
     default:
       if (process.env.NODE_ENV === 'development') {

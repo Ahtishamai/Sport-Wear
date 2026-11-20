@@ -613,3 +613,67 @@ export function LeadFormBlock({ p, bid, lead }: { p: P; bid?: string; lead: Lead
     </section>
   );
 }
+
+// -------------------------------------------------------------------- comparison
+
+/**
+ * Ours against the usual way, row by row — the strongest single argument a
+ * pinstripe page has, set out so it can be read in five seconds. Every row is
+ * a claim typed in the page builder, so it must be one the shop stands by.
+ */
+export function CompareTableBlock({ p, bid }: { p: P; bid?: string }) {
+  const rows: P[] = (Array.isArray(p.rows) ? p.rows : []).filter((r: P) => r?.feature);
+  return (
+    <Section background={(p.background as Bg) ?? 'white'}>
+      <SectionHeading eyebrow={p.eyebrow} heading={p.heading} body={p.body} align="center" bid={bid} />
+      <div className="mx-auto max-w-[920px] overflow-hidden border border-hairline">
+        <div className="grid grid-cols-2 bg-ink text-white sm:grid-cols-[1.1fr_1fr_1fr]">
+          <div className="hidden px-3 py-3.5 sm:block md:px-5" />
+          <div
+            className="bg-brand px-3 py-3.5 text-center font-display text-[12px] font-extrabold uppercase tracking-[.08em] text-ink md:px-5 md:text-[14px]"
+            {...edText(bid, 'oursLabel')}
+          >
+            {p.oursLabel || 'Ours'}
+          </div>
+          <div
+            className="px-3 py-3.5 text-center font-display text-[12px] font-extrabold uppercase tracking-[.08em] text-white/80 md:px-5 md:text-[14px]"
+            {...edText(bid, 'theirsLabel')}
+          >
+            {p.theirsLabel || 'Others'}
+          </div>
+        </div>
+        {rows.map((r, i) => (
+          <div
+            key={i}
+            // On a phone the row's name runs across the top and the two answers sit
+            // side by side under it; three columns of wrapped words read badly.
+            className={cn('grid grid-cols-2 border-t border-hairline sm:grid-cols-[1.1fr_1fr_1fr]', i % 2 ? 'bg-surface' : 'bg-white')}
+          >
+            <div className="col-span-2 px-3 pb-1 pt-3.5 text-[12px] font-extrabold uppercase tracking-[.06em] text-ink sm:col-span-1 sm:py-4 sm:text-[13px] sm:normal-case sm:tracking-normal md:px-5 md:text-[15px]" {...edText(bid, `rows.${i}.feature`)}>
+              {r.feature}
+            </div>
+            <div className="flex items-start gap-2 bg-brand-tint px-3 py-4 text-[13px] font-semibold text-ink md:px-5 md:text-[14px]">
+              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand">
+                <Icon name="check" size={12} strokeWidth={3} />
+              </span>
+              <span {...edText(bid, `rows.${i}.ours`)}>{r.ours}</span>
+            </div>
+            <div className="flex items-start gap-2 px-3 py-4 text-[13px] text-body md:px-5 md:text-[14px]">
+              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#ececE8] text-muted">
+                <Icon name="close" size={11} strokeWidth={2.6} />
+              </span>
+              <span {...edText(bid, `rows.${i}.theirs`)}>{r.theirs}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+      {p.ctaLabel && (
+        <div className="mt-9 text-center">
+          <a href={p.ctaHref || `#${SHOP_ANCHOR}`} className="btn btn-yellow btn-lg">
+            <span {...edText(bid, 'ctaLabel')}>{p.ctaLabel}</span>
+          </a>
+        </div>
+      )}
+    </Section>
+  );
+}
