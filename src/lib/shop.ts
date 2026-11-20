@@ -128,7 +128,9 @@ export async function priceShopCart(
   opts: { code?: unknown; email?: string } = {}
 ): Promise<PricedShopCart> {
   if (!Array.isArray(lines) || lines.length === 0) throw new ShopError('Your cart is empty.');
-  if (lines.length > 50) throw new ShopError('That is too many different items for one order.');
+  // A team roster is one line per player (each shirt its own size and
+  // number), so a big squad is many lines.
+  if (lines.length > 120) throw new ShopError('That is too many different items for one order.');
 
   const ids = [...new Set(lines.map((l) => clean(l.productId, 191)).filter(Boolean))];
   const products = await prisma.product.findMany({
@@ -177,7 +179,9 @@ export async function priceShopCart(
     if (offersSizes && !size) throw new ShopError(`Choose a size for ${product.title}.`);
 
     const teamName = product.askTeamName ? clean(raw.teamName, 64) : '';
-    const number = product.askNumber && orderType === 'individual' ? clean(raw.number, 8) : '';
+    // Every shirt carries its own number: one for an individual order, and one
+    // per player on a team roster.
+    const number = product.askNumber ? clean(raw.number, 8) : '';
     if (number && !/^[0-9]{1,3}$/.test(number)) throw new ShopError('A number must be 1 to 3 digits.');
 
     const tiers = (product.volumeTiers as VolumeTier[] | null) ?? DEFAULT_TIERS;

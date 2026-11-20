@@ -105,7 +105,7 @@ export function ProductEditor({
     product.sports ?? ['Baseball', 'Softball', 'Other']
   );
   const [sizes, setSizes] = useState<string[]>(
-    product.sizes ?? ['YS', 'YM', 'YL', 'S', 'M', 'L', 'XL', '2XL', '3XL']
+    product.sizes ?? ['YS', 'YM', 'YL', 'YXL', 'S', 'M', 'L', 'XL', '2XL', '3XL']
   );
   const [defaultQty, setDefaultQty] = useState<Record<string, number>>(
     product.defaultQty ?? { S: 2, M: 4, L: 4, XL: 2 }

@@ -28,7 +28,7 @@ const BLANK: EditableProduct = {
     { name: 'Black / Red', from: '#1A1A1A', to: '#C42027' },
     { name: 'Royal / White', from: '#1B4FD8', to: '#F2F2EF' },
   ],
-  sizes: ['YS', 'YM', 'YL', 'S', 'M', 'L', 'XL', '2XL', '3XL'],
+  sizes: ['YS', 'YM', 'YL', 'YXL', 'S', 'M', 'L', 'XL', '2XL', '3XL'],
   defaultQty: { S: 2, M: 4, L: 4, XL: 2 },
   volumeTiers: SHIRT_TIERS,
   specs: [

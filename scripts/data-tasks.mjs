@@ -47,6 +47,11 @@ const TASKS = [
     file: 'scripts/price-pinstripes-like-shirts.mjs',
     args: ['--apply'],
   },
+  {
+    name: 'offer YXL wherever youth sizes are offered',
+    file: 'scripts/add-youth-xl-size.mjs',
+    args: ['--apply'],
+  },
 ];
 
 let changed = false;

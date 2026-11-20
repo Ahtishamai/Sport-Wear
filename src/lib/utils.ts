@@ -135,7 +135,7 @@ export function tierSavings(base: number, tiers: VolumeTier[], index: number) {
   return `Save ${Math.round(((one - here) / one) * 100)}%`;
 }
 
-export const SIZE_RUN = ['YS', 'YM', 'YL', 'S', 'M', 'L', 'XL', '2XL', '3XL'];
+export const SIZE_RUN = ['YS', 'YM', 'YL', 'YXL', 'S', 'M', 'L', 'XL', '2XL', '3XL'];
 
 export function sumQty(qty: Record<string, number>) {
   return Object.values(qty).reduce((a, b) => a + (Number(b) || 0), 0);

@@ -14,6 +14,7 @@ import {
   unitPriceFor,
 } from '@/lib/utils';
 import { useQuote } from './QuoteProvider';
+import { Icon } from './Icon';
 import { useAddOnce } from '@/components/shop/CartProvider';
 import { ImagePlaceholder } from '@/components/blocks/primitives';
 
@@ -102,8 +103,41 @@ export function ProductDetail({
   // size run whoever is buying it, which is the shape a quote has always had.
   const perSize = !sellsOnline || mode === 'team';
 
+  /*
+   * A team bought outright is a roster: one row per player, each with their
+   * own size and their own number, because no two shirts on a team are the
+   * same. It starts at the team minimum and grows a row at a time.
+   */
+  const roster = sellsOnline && mode === 'team' && hasSizes;
+  const [players, setPlayers] = useState<{ size: string; number: string }[]>(() =>
+    Array.from({ length: TEAM_MINIMUM }, () => ({ size: '', number: '' }))
+  );
+  const setPlayer = (i: number, patch: Partial<{ size: string; number: string }>) =>
+    setPlayers((list) => list.map((p, j) => (j === i ? { ...p, ...patch } : p)));
+  const addPlayers = (n: number) =>
+    setPlayers((list) => [...list, ...Array.from({ length: n }, () => ({ size: '', number: '' }))].slice(0, 120));
+  const removePlayer = (i: number) => setPlayers((list) => (list.length > 1 ? list.filter((_, j) => j !== i) : list));
+
+  /** Why the roster cannot go in the cart yet, or null when it can. */
+  const rosterProblem = (() => {
+    if (!roster) return null;
+    if (players.some((p) => !p.size)) return 'Choose a size for every player.';
+    if (asksNumber && players.some((p) => !p.number)) return 'Add a number for every player.';
+    if (asksNumber) {
+      const seen = new Set<string>();
+      for (const p of players) {
+        const n = String(Number(p.number));
+        if (seen.has(n)) return `Number ${p.number} is used twice — every player needs their own.`;
+        seen.add(n);
+      }
+    }
+    return null;
+  })();
+
   /** What is being ordered, as lines of size and count. */
-  const lines = perSize
+  const lines = roster
+    ? players.map((p) => ({ size: p.size, quantity: 1 }))
+    : perSize
     ? hasSizes
       ? Object.entries(qty)
           .filter(([size, n]) => size && Number(n) > 0)
@@ -111,7 +145,12 @@ export function ProductDetail({
       : [{ size: '', quantity: teamQty }]
     : [{ size: hasSizes ? oneSize : '', quantity: oneQty }];
 
-  const sizeRun = Object.fromEntries(lines.map((l) => [l.size || 'One size', l.quantity]));
+  // Counted per size (a roster has several players in one size).
+  const sizeRun = lines.reduce<Record<string, number>>((run, l) => {
+    const key = l.size || 'One size';
+    run[key] = (run[key] ?? 0) + l.quantity;
+    return run;
+  }, {});
   const units = lines.reduce((n, l) => n + l.quantity, 0);
   // The ten only binds a team order being bought outright. Nothing stops
   // anyone asking for a quote on two.
@@ -175,7 +214,7 @@ export function ProductDetail({
    * changed later without unpicking the rest.
    */
   const addToCart = () => {
-    if (shortOfMinimum || !sellable) return;
+    if (shortOfMinimum || !sellable || rosterProblem) return;
     const common = {
       productId: product.id,
       handle: product.handle,
@@ -188,9 +227,18 @@ export function ProductDetail({
       orderType: mode,
       unitPrice,
     };
-    const lines = Object.entries(sizeRun)
-      .filter(([size, n]) => size && Number(n) > 0)
-      .map(([size, n]) => ({ ...common, size, quantity: Number(n) }));
+    // A roster goes in as one line per player, with that player's own size
+    // and number; anything else as one line per size.
+    const lines = roster
+      ? players.map((p) => ({
+          ...common,
+          size: p.size,
+          number: asksNumber ? p.number.trim() : '',
+          quantity: 1,
+        }))
+      : Object.entries(sizeRun)
+          .filter(([size, n]) => size && Number(n) > 0)
+          .map(([size, n]) => ({ ...common, size, quantity: Number(n) }));
     // A second tap within the moment is the same tap; see useAddOnce.
     if (!addLines(lines)) return;
     setAdded(true);
@@ -541,7 +589,7 @@ export function ProductDetail({
                     />
                   </label>
                 )}
-                {asksNumber && perSize && (
+                {asksNumber && perSize && !roster && (
                   <p className="self-end pb-3 text-[12.5px] text-muted sm:max-w-[220px]">
                     Names and numbers for the roster are collected with your mockup.
                   </p>
@@ -586,6 +634,73 @@ export function ProductDetail({
                     className="w-[120px] border border-hairline px-4 py-2.5 text-center font-display text-[20px] font-black outline-none focus:border-ink"
                   />
                 </label>
+              </div>
+            ) : roster ? (
+              /* One row per player: their size and the number on their back. */
+              <div>
+                <div className="mb-1.5 grid grid-cols-[34px_1fr_96px_34px] gap-2 text-[11px] font-bold uppercase tracking-[.14em] text-muted">
+                  <span>#</span>
+                  <span>Size</span>
+                  <span className={asksNumber ? undefined : 'invisible'}>Number</span>
+                  <span />
+                </div>
+                <ol className="space-y-2">
+                  {players.map((p, i) => (
+                    <li key={i} className="grid grid-cols-[34px_1fr_96px_34px] items-center gap-2">
+                      <span className="text-[13px] font-bold text-muted">{i + 1}</span>
+                      <select
+                        value={p.size}
+                        onChange={(e) => setPlayer(i, { size: e.target.value })}
+                        aria-label={`Player ${i + 1} size`}
+                        className={cn(
+                          'w-full border px-3 py-2.5 text-[15px] font-semibold outline-none focus:border-ink',
+                          p.size ? 'border-ink bg-[#FFF6CC]' : 'border-hairline bg-white text-muted'
+                        )}
+                      >
+                        <option value="">Size</option>
+                        {product.sizes.map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                      </select>
+                      {asksNumber ? (
+                        <input
+                          value={p.number}
+                          onChange={(e) => setPlayer(i, { number: e.target.value.replace(/[^0-9]/g, '').slice(0, 3) })}
+                          inputMode="numeric"
+                          placeholder="#"
+                          aria-label={`Player ${i + 1} number`}
+                          className="w-full border border-hairline px-3 py-2.5 text-center text-[15px] font-semibold outline-none focus:border-ink"
+                        />
+                      ) : (
+                        <span />
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removePlayer(i)}
+                        disabled={players.length <= 1}
+                        aria-label={`Remove player ${i + 1}`}
+                        className="flex h-[42px] items-center justify-center text-muted transition-colors hover:text-ink disabled:opacity-30"
+                      >
+                        <Icon name="close" size={16} />
+                      </button>
+                    </li>
+                  ))}
+                </ol>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button type="button" onClick={() => addPlayers(1)} className="btn btn-outline btn-md">
+                    + Add a player
+                  </button>
+                  <button type="button" onClick={() => addPlayers(5)} className="btn btn-outline btn-md">
+                    + Add 5
+                  </button>
+                </div>
+                {rosterProblem && !shortOfMinimum && (
+                  <p role="status" className="mt-3 text-[13px] font-medium text-muted">
+                    {rosterProblem}
+                  </p>
+                )}
               </div>
             ) : !hasSizes ? (
               /* One size, so a team order is simply a count — starting at ten. */
@@ -683,12 +798,14 @@ export function ProductDetail({
                 <button
                   type="button"
                   onClick={addToCart}
-                  disabled={shortOfMinimum}
+                  disabled={shortOfMinimum || !!rosterProblem}
                   className="btn btn-yellow btn-xl min-w-[240px] flex-1 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {shortOfMinimum
                     ? `Add ${TEAM_MINIMUM - units} more ${noun[1]}`
-                    : added
+                    : rosterProblem
+                      ? 'Complete the roster'
+                      : added
                       ? 'Added to cart ✓'
                       : `Add ${units} to cart · ${money(estTotal)}`}
                 </button>
@@ -808,14 +925,33 @@ export function ProductDetail({
             <span className="hidden text-[13px] font-medium text-body sm:block">
               Free mockup in 24h
             </span>
-            <button
-              type="button"
-              onClick={requestQuote}
-              disabled={shortOfMinimum}
-              className="btn btn-yellow btn-md disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {shortOfMinimum ? `Add ${TEAM_MINIMUM - units} more ${noun[1]}` : 'Request a quote'}
-            </button>
+            {/* The bar a phone keeps in reach does what the page's main button
+                does: buys a product sold online, quotes the rest. */}
+            {sellable ? (
+              <button
+                type="button"
+                onClick={addToCart}
+                disabled={shortOfMinimum || !!rosterProblem}
+                className="btn btn-yellow btn-md disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {shortOfMinimum
+                  ? `Add ${TEAM_MINIMUM - units} more ${noun[1]}`
+                  : rosterProblem
+                    ? 'Complete the roster'
+                    : added
+                      ? 'Added ✓'
+                      : 'Add to cart'}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={requestQuote}
+                disabled={shortOfMinimum}
+                className="btn btn-yellow btn-md disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {shortOfMinimum ? `Add ${TEAM_MINIMUM - units} more ${noun[1]}` : 'Request a quote'}
+              </button>
+            )}
           </div>
         </div>
       </div>
