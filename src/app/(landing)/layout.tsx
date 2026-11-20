@@ -18,6 +18,15 @@ import { LandingFooter } from '@/components/landing/LandingFooter';
  * (LandingFooter) that keeps to the pinstripe collection, with the address,
  * contact details and privacy policy Google Ads asks a landing page to show.
  */
+/** In-page links; each matches a section's anchor on the landing page. */
+const SECTIONS = [
+  [`#${SHOP_ANCHOR}`, 'Shop'],
+  ['#pricing', 'Bulk pricing'],
+  ['#reviews', 'Reviews'],
+  ['#how-to-order', 'How to order'],
+  ['#faq', 'FAQ'],
+] as const;
+
 export default async function LandingLayout({ children }: { children: React.ReactNode }) {
   const s = await getSettings();
 
@@ -45,6 +54,19 @@ export default async function LandingLayout({ children }: { children: React.Reac
               <span className="font-display text-[16px] font-black uppercase tracking-[.06em]">{s.siteName}</span>
             )}
           </span>
+          {/* The page's own sections, so a visitor can jump to what they
+              came to check — the price, the reviews — without leaving it. */}
+          <nav aria-label="On this page" className="hidden items-center gap-7 lg:flex">
+            {SECTIONS.map(([href, label]) => (
+              <a
+                key={href}
+                href={href}
+                className="text-[14px] font-semibold uppercase tracking-[.06em] text-body transition-colors hover:text-ink"
+              >
+                {label}
+              </a>
+            ))}
+          </nav>
           <div className="flex items-center gap-2.5 md:gap-4">
             {s.phone && s.phoneHref && (
               <a

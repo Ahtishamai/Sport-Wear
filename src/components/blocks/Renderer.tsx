@@ -69,7 +69,20 @@ export async function BlockRenderer({
   if (!list.length) return null;
 
   const rendered = await Promise.all(
-    list.map((b, i) => renderBlock(b, i, context ?? {}))
+    list.map(async (b, i) => {
+      const out = await renderBlock(b, i, context ?? {});
+      // A block with an anchor ("pricing", "reviews") can be linked to from
+      // the page's own menu: /page#reviews scrolls to it.
+      const anchor = String((b.props as Record<string, unknown>)?.anchor ?? '')
+        .trim()
+        .replace(/[^a-z0-9-]/gi, '');
+      if (!anchor || !out) return out;
+      return (
+        <div key={b.id || i} id={anchor} className="scroll-mt-20">
+          {out}
+        </div>
+      );
+    })
   );
 
   return <>{rendered}</>;
@@ -308,8 +321,15 @@ async function renderBlock(block: Block, index: number, ctx: RenderContext) {
       }
       const priced = products.filter((x) => x.showPrice && x.tiers.length);
       const from = showPrices && priced.length ? Math.min(...priced.map((x) => x.from)) : null;
+      // The Google rating, live from the listing when the key is set up,
+      // otherwise the figures typed into the block. Nothing is invented: with
+      // neither, no rating is shown.
+      const live = await getGoogleListing().catch(() => null);
+      const rating = Number(live?.rating) || Number(p.rating) || 0;
+      const reviewCount = Number(live?.total) || Number(String(p.reviewCount ?? '').replace(/[^0-9]/g, '')) || 0;
       return (
         <OfferHeroBlock
+          rating={rating > 0 ? { value: rating, count: reviewCount } : null}
           key={key}
           p={p}
           bid={block.id}

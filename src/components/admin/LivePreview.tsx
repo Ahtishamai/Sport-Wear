@@ -264,6 +264,7 @@ function PreviewBlock({
           p={p}
           bid={block.id}
           from={products.length ? Math.min(...products.map((x) => x.from)) : null}
+          rating={Number(p.rating) > 0 ? { value: Number(p.rating), count: Number(p.reviewCount) || 0 } : null}
           fallbackImage={products[0]?.image}
           lead={{ source: 'preview', phone: data.contact.phone, phoneHref: data.contact.phoneHref }}
         />

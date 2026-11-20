@@ -56,10 +56,13 @@ export function OfferHeroBlock({
   from,
   fallbackImage,
   lead,
+  rating,
 }: {
   p: P;
   bid?: string;
   priority?: boolean;
+  /** The shop's Google rating, when there is one to show. */
+  rating?: { value: number; count: number } | null;
   /** Lowest price across the collection; null when prices are hidden. */
   from: number | null;
   fallbackImage?: string | null;
@@ -79,6 +82,17 @@ export function OfferHeroBlock({
             >
               {p.badge}
             </span>
+          )}
+          {rating && (
+            <p className="mb-4 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[14px] font-semibold text-white/90">
+              <span className="tracking-[2px] text-brand" aria-hidden="true">
+                ★★★★★
+              </span>
+              <span>
+                {rating.value.toFixed(1)} on Google
+                {rating.count > 0 ? ` · ${rating.count.toLocaleString('en-US')} reviews` : ''}
+              </span>
+            </p>
           )}
           <h1
             className="h-display text-white"
