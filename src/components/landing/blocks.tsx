@@ -110,7 +110,8 @@ export function OfferHeroBlock({
             </p>
           )}
 
-          {from !== null && (
+          {/* The price is shown only when the block asks for it. */}
+          {p.showPrice === true && from !== null && (
             <p className="mt-6 flex items-baseline gap-3">
               <span className="text-[14px] font-semibold uppercase tracking-[.12em] text-white/70">
                 {p.priceLabel || 'Starting at'}

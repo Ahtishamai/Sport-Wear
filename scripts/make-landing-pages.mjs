@@ -86,6 +86,8 @@ function blocks({ detail, reviews, phoneHref, rating }) {
         heading: 'DTF Pinstripe Uniforms',
         body: 'Classic pinstripe jerseys made in your team colors, with your team name and player numbers applied as DTF transfers. Order one or a full roster — the more you order, the less each one costs.',
         collectionHandle: COLLECTION,
+        // No price in the hero: the products and the bulk pricing show it.
+        showPrice: false,
         priceLabel: 'Starting at',
         priceNote: '',
         ctaLabel: 'Shop the uniforms',
