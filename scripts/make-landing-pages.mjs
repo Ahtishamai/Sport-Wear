@@ -87,7 +87,7 @@ function blocks({ detail, reviews, phoneHref, rating }) {
         body: 'Classic pinstripe jerseys made in your team colors, with your team name and player numbers applied as DTF transfers. Order one or a full roster — the more you order, the less each one costs.',
         collectionHandle: COLLECTION,
         priceLabel: 'Starting at',
-        priceNote: 'per jersey',
+        priceNote: '',
         ctaLabel: 'Shop the uniforms',
         // Used only when the live Google listing is not set up.
         rating: rating?.value ?? '',
@@ -250,6 +250,7 @@ console.log(apply ? '\n=== APPLYING ===' : '\n=== DRY RUN (add --apply) ===');
 
 if (await db.setting.findUnique({ where: { key: MARKER } })) {
   await upgradeTrustBadges();
+  await dropPriceNote();
   await db.$disconnect();
   process.exit(0);
 }
@@ -261,6 +262,32 @@ if (await db.setting.findUnique({ where: { key: MARKER } })) {
  * phone. Only while the section is still exactly as first written, so an
  * edited one is left alone; once, by its own marker.
  */
+/**
+ * The hero read "Starting at $45 per jersey"; the shop wants the price alone.
+ * Clears the note only while it still says what was first written, so a note
+ * typed in the admin stays. Once, by its own marker.
+ */
+async function dropPriceNote() {
+  const key = 'task:lp-pinstripe-no-price-note';
+  if (await db.setting.findUnique({ where: { key } })) return;
+  const page = await db.page.findUnique({ where: { slug: SLUG }, select: { id: true, blocks: true } });
+  const list = Array.isArray(page?.blocks) ? page.blocks : [];
+  const at = list.findIndex((b) => b?.type === 'offerHero' && b.props?.priceNote === 'per jersey');
+  console.log(
+    at < 0
+      ? `  ${PATH}: no "per jersey" to remove`
+      : `  ${apply ? '' : 'would '}remove "per jersey" after the hero price`
+  );
+  if (!apply) return;
+  if (at >= 0) {
+    const next = list.map((b, i) => (i === at ? { ...b, props: { ...b.props, priceNote: '' } } : b));
+    await db.pageRevision.create({ data: { pageId: page.id, blocks: list, label: 'Before removing "per jersey"' } });
+    await db.page.update({ where: { id: page.id }, data: { blocks: next } });
+    console.log('DATA_CHANGED');
+  }
+  await db.setting.create({ data: { key, value: { doneAt: new Date().toISOString() } } });
+}
+
 async function upgradeTrustBadges() {
   const key = 'task:lp-pinstripe-trust-bar';
   if (await db.setting.findUnique({ where: { key } })) {

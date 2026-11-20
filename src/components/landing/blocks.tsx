@@ -118,7 +118,7 @@ export function OfferHeroBlock({
               <span className="font-display text-[44px] font-black leading-none text-brand md:text-[52px]">
                 {money(from)}
               </span>
-              <span className="text-[15px] font-semibold text-white/80">{p.priceNote || 'per jersey'}</span>
+              {p.priceNote && <span className="text-[15px] font-semibold text-white/80">{p.priceNote}</span>}
             </p>
           )}
 
@@ -148,14 +148,17 @@ export function OfferHeroBlock({
         </div>
 
         {image && (
-          <div className="relative aspect-square w-full overflow-hidden bg-[#0b0c0e]">
+          // The product photographs are 3:2 (two jerseys side by side). A square
+          // box cut both of them off at the edges; this one is their own shape,
+          // and `contain` keeps the whole photo even if one is not.
+          <div className="relative aspect-[3/2] w-full overflow-hidden bg-[#0b0c0e]">
             <Image
               src={image}
               alt={p.imageAlt || p.heading || ''}
               fill
               priority={priority}
               sizes="(min-width:1024px) 45vw, 100vw"
-              className="object-cover"
+              className="object-contain"
               {...edImage(bid, 'image')}
             />
           </div>
@@ -198,14 +201,14 @@ export function ProductOfferBlock({
               key={d.id}
               className="group flex flex-col border border-hairline bg-white transition-shadow hover:shadow-[0_12px_32px_rgba(0,0,0,.12)]"
             >
-              <a href={`/products/${d.handle}`} className="relative block aspect-square overflow-hidden bg-plate">
+              <a href={`/products/${d.handle}`} className="relative block aspect-[3/2] overflow-hidden bg-[#0b0c0e]">
                 {d.image && (
                   <Image
                     src={d.image}
                     alt={d.title}
                     fill
                     sizes="(min-width:1024px) 25vw, (min-width:640px) 50vw, 100vw"
-                    className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                    className="object-contain transition-transform duration-300 group-hover:scale-[1.03]"
                   />
                 )}
               </a>
