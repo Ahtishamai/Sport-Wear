@@ -57,6 +57,11 @@ const TASKS = [
     file: 'scripts/size-chart-page.mjs',
     args: ['--apply'],
   },
+  {
+    name: 'the client’s new pinstripe product photos',
+    file: 'scripts/replace-pinstripe-photos.mjs',
+    args: ['--apply'],
+  },
 ];
 
 let changed = false;
